@@ -16,7 +16,8 @@ import {
     TrendingUp,
     BookOpen,
     Clock,
-    Award
+    Award,
+    LogOut
 } from 'lucide-react';
 import MyChildrenPage from './MyChildrenPage';
 import AcademicProgressPage from './AcademicProgressPage';
@@ -79,6 +80,7 @@ const ParentDashboard = () => {
     ];
 
     const handleLogout = () => {
+        localStorage.removeItem('authToken');
         localStorage.removeItem('isAuthenticated');
         localStorage.removeItem('userRole');
         localStorage.removeItem('userEmail');
@@ -239,7 +241,7 @@ const ParentDashboard = () => {
                 </nav>
 
                 <div className={`p-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3 mb-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-semibold">
                             PU
                         </div>
@@ -248,6 +250,13 @@ const ParentDashboard = () => {
                             <p className="text-xs text-gray-500 truncate">{userRole}</p>
                         </div>
                     </div>
+                    <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        <span className="text-sm font-medium">Logout</span>
+                    </button>
                 </div>
             </aside>
 

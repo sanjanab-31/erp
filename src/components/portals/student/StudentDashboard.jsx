@@ -26,7 +26,8 @@ import {
     Sun,
     TrendingUp,
     BookOpenCheck,
-    Library
+    Library,
+    LogOut
 } from 'lucide-react';
 
 const StudentPortal = () => {
@@ -102,11 +103,12 @@ const StudentPortal = () => {
     ];
 
     const handleLogout = () => {
-        // Import and use JWT logout
-        import('../../../utils/jwt').then(({ logout }) => {
-            logout();
-            navigate('/login');
-        });
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userName');
+        navigate('/login');
     };
 
     // Simulate real-time updates
@@ -334,7 +336,7 @@ const StudentPortal = () => {
 
                 {/* User Profile */}
                 <div className={`p-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3 mb-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
                             MW
                         </div>
@@ -343,6 +345,13 @@ const StudentPortal = () => {
                             <p className="text-xs text-gray-500 truncate">{userRole}</p>
                         </div>
                     </div>
+                    <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        <span className="text-sm font-medium">Logout</span>
+                    </button>
                 </div>
             </aside>
 
