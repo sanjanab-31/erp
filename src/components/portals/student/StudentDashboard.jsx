@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import AttendancePage from './AttendancePage';
+import FeePage from './FeePage';
 import {
     Home,
     Calendar,
@@ -20,7 +22,7 @@ import {
     Library
 } from 'lucide-react';
 
-const StudentDashboard = () => {
+const StudentPortal = () => {
     const navigate = useNavigate();
     const userName = localStorage.getItem('userName') || 'Mike Wilson';
     const userRole = localStorage.getItem('userRole') || 'Student';
@@ -93,20 +95,18 @@ const StudentDashboard = () => {
     ];
 
     const handleLogout = () => {
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userName');
-        navigate('/login');
+        // Import and use JWT logout
+        import('../../../utils/jwt').then(({ logout }) => {
+            logout();
+            navigate('/login');
+        });
     };
 
     // Simulate real-time updates
     useEffect(() => {
         const interval = setInterval(() => {
-            // This would be replaced with actual API calls in production
             setDashboardData(prev => ({
                 ...prev,
-                // Data updates would happen here based on backend changes
             }));
         }, 5000);
 
@@ -118,6 +118,145 @@ const StudentDashboard = () => {
         if (hour < 12) return 'Good morning';
         if (hour < 18) return 'Good afternoon';
         return 'Good evening';
+    };
+
+    // Render content based on active tab
+    const renderContent = () => {
+        if (activeTab === 'Attendance') {
+            return <AttendancePage />;
+        }
+
+        if (activeTab === 'Fees & Finance') {
+            return <FeePage />;
+        }
+
+        // Default Dashboard Content
+        return (
+            <div className="flex-1 overflow-y-auto p-8">
+                {/* Greeting */}
+                <div className="mb-8">
+                    <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
+                        {getGreeting()}, {userName.split(' ')[0]}!
+                    </h1>
+                    <p className="text-sm text-gray-500">Student Dashboard</p>
+                </div>
+
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    {/* Attendance Card */}
+                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Attendance</h3>
+                            <TrendingUp className="w-5 h-5 text-gray-400" />
+                        </div>
+                        <div className="mb-3">
+                            <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.attendance}%</p>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                                className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500"
+                                style={{ width: `${dashboardData.attendance}%` }}
+                            ></div>
+                        </div>
+                    </div>
+
+                    {/* Current Grade Card */}
+                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Current Grade</h3>
+                            <GraduationCap className="w-5 h-5 text-gray-400" />
+                        </div>
+                        <div className="mb-2">
+                            <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.currentGrade}</p>
+                        </div>
+                        <p className="text-sm text-gray-500">{dashboardData.gradePerformance}</p>
+                    </div>
+
+                    {/* Assignments Card */}
+                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Assignments</h3>
+                            <BookOpenCheck className="w-5 h-5 text-gray-400" />
+                        </div>
+                        <div className="mb-2">
+                            <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.assignments.pending}</p>
+                        </div>
+                        <p className="text-sm text-gray-500">Pending submissions</p>
+                    </div>
+
+                    {/* Library Books Card */}
+                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Library Books</h3>
+                            <Library className="w-5 h-5 text-gray-400" />
+                        </div>
+                        <div className="mb-2">
+                            <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.libraryBooks.issued}</p>
+                        </div>
+                        <p className="text-sm text-gray-500">Currently issued</p>
+                    </div>
+                </div>
+
+                {/* Two Column Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Upcoming Assignments */}
+                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Upcoming Assignments</h3>
+                        <div className="space-y-4">
+                            {dashboardData.upcomingAssignments.map((assignment) => (
+                                <div
+                                    key={assignment.id}
+                                    className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}
+                                >
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex-1">
+                                            <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>{assignment.title}</h4>
+                                            <p className="text-sm text-gray-500 mb-2">{assignment.description}</p>
+                                            <p className={`text-xs ${assignment.status === 'urgent' ? 'text-red-500' : 'text-gray-500'}`}>
+                                                {assignment.dueDate}
+                                            </p>
+                                        </div>
+                                        {assignment.status === 'urgent' && (
+                                            <span className="px-3 py-1 bg-red-100 text-red-600 text-xs font-semibold rounded-full">
+                                                Due tomorrow
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Recent Grades */}
+                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Recent Grades</h3>
+                        <div className="space-y-4">
+                            {dashboardData.recentGrades.map((grade) => (
+                                <div
+                                    key={grade.id}
+                                    className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex-1">
+                                            <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>{grade.subject}</h4>
+                                            <p className="text-sm text-gray-500">{grade.assessment}</p>
+                                        </div>
+                                        <span
+                                            className={`px-4 py-2 rounded-lg font-bold text-lg ${grade.color === 'green'
+                                                ? 'bg-green-100 text-green-600'
+                                                : 'bg-blue-100 text-blue-600'
+                                                }`}
+                                        >
+                                            {grade.grade}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -146,8 +285,8 @@ const StudentDashboard = () => {
                                 <button
                                     onClick={() => setActiveTab(item.label)}
                                     className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${activeTab === item.label
-                                            ? 'bg-blue-50 text-blue-600'
-                                            : `${darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`
+                                        ? 'bg-blue-50 text-blue-600'
+                                        : `${darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`
                                         }`}
                                 >
                                     <item.icon className="w-5 h-5" />
@@ -195,8 +334,8 @@ const StudentDashboard = () => {
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className={`pl-10 pr-4 py-2 rounded-lg border ${darkMode
-                                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                                            : 'bg-gray-50 border-gray-300 text-gray-900'
+                                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                                        : 'bg-gray-50 border-gray-300 text-gray-900'
                                         } focus:outline-none focus:ring-2 focus:ring-blue-500 w-64`}
                                 />
                             </div>
@@ -231,136 +370,11 @@ const StudentDashboard = () => {
                     </div>
                 </header>
 
-                {/* Dashboard Content */}
-                <div className="flex-1 overflow-y-auto p-8">
-                    {/* Greeting */}
-                    <div className="mb-8">
-                        <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
-                            {getGreeting()}, {userName.split(' ')[0]}!
-                        </h1>
-                        <p className="text-sm text-gray-500 flex items-center justify-between">
-                            <span>Student Dashboard</span>
-                        </p>
-                    </div>
-
-                    {/* Stats Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        {/* Attendance Card */}
-                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Attendance</h3>
-                                <TrendingUp className="w-5 h-5 text-gray-400" />
-                            </div>
-                            <div className="mb-3">
-                                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.attendance}%</p>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div
-                                    className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500"
-                                    style={{ width: `${dashboardData.attendance}%` }}
-                                ></div>
-                            </div>
-                        </div>
-
-                        {/* Current Grade Card */}
-                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Current Grade</h3>
-                                <GraduationCap className="w-5 h-5 text-gray-400" />
-                            </div>
-                            <div className="mb-2">
-                                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.currentGrade}</p>
-                            </div>
-                            <p className="text-sm text-gray-500">{dashboardData.gradePerformance}</p>
-                        </div>
-
-                        {/* Assignments Card */}
-                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Assignments</h3>
-                                <BookOpenCheck className="w-5 h-5 text-gray-400" />
-                            </div>
-                            <div className="mb-2">
-                                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.assignments.pending}</p>
-                            </div>
-                            <p className="text-sm text-gray-500">Pending submissions</p>
-                        </div>
-
-                        {/* Library Books Card */}
-                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Library Books</h3>
-                                <Library className="w-5 h-5 text-gray-400" />
-                            </div>
-                            <div className="mb-2">
-                                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.libraryBooks.issued}</p>
-                            </div>
-                            <p className="text-sm text-gray-500">Currently issued</p>
-                        </div>
-                    </div>
-
-                    {/* Two Column Layout */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Upcoming Assignments */}
-                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                            <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Upcoming Assignments</h3>
-                            <div className="space-y-4">
-                                {dashboardData.upcomingAssignments.map((assignment) => (
-                                    <div
-                                        key={assignment.id}
-                                        className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}
-                                    >
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1">
-                                                <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>{assignment.title}</h4>
-                                                <p className="text-sm text-gray-500 mb-2">{assignment.description}</p>
-                                                <p className={`text-xs ${assignment.status === 'urgent' ? 'text-red-500' : 'text-gray-500'}`}>
-                                                    {assignment.dueDate}
-                                                </p>
-                                            </div>
-                                            {assignment.status === 'urgent' && (
-                                                <span className="px-3 py-1 bg-red-100 text-red-600 text-xs font-semibold rounded-full">
-                                                    Due tomorrow
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Recent Grades */}
-                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                            <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Recent Grades</h3>
-                            <div className="space-y-4">
-                                {dashboardData.recentGrades.map((grade) => (
-                                    <div
-                                        key={grade.id}
-                                        className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex-1">
-                                                <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>{grade.subject}</h4>
-                                                <p className="text-sm text-gray-500">{grade.assessment}</p>
-                                            </div>
-                                            <span
-                                                className={`px-4 py-2 rounded-lg font-bold text-lg ${grade.color === 'green'
-                                                        ? 'bg-green-100 text-green-600'
-                                                        : 'bg-blue-100 text-blue-600'
-                                                    }`}
-                                            >
-                                                {grade.grade}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {/* Dynamic Content */}
+                {renderContent()}
             </main>
         </div>
     );
 };
 
-export default StudentDashboard;
+export default StudentPortal;

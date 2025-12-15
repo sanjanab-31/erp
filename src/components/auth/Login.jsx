@@ -37,34 +37,28 @@ const Login = () => {
         setError('');
         setLoading(true);
 
-        const validUser = users[activeRole];
+        try {
+            // Use JWT mock login (simulates backend authentication)
+            const { mockLogin } = await import('../../utils/jwt');
+            const response = await mockLogin(email, password, activeRole);
 
-        if (
-            email !== validUser.email ||
-            password !== validUser.password
-        ) {
-            setError('Invalid email or password');
+            // Store JWT token
+            localStorage.setItem('authToken', response.token);
+            localStorage.setItem('userRole', response.user.role);
+            localStorage.setItem('userEmail', response.user.email);
+            localStorage.setItem('userName', response.user.name);
+
+            // Log token for debugging (remove in production)
+            console.log('JWT Token generated:', response.token);
+            console.log('Token payload:', JSON.parse(atob(response.token.split('.')[1])));
+
+            setTimeout(() => {
+                navigate(`/dashboard/${activeRole.toLowerCase()}`);
+            }, 800);
+        } catch (error) {
+            setError(error.message || 'Invalid email or password');
             setLoading(false);
-            return;
         }
-
-
-        localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('userRole', activeRole);
-        localStorage.setItem('userEmail', email);
-
-        // Set user name based on role
-        const userNames = {
-            Student: 'Mike Wilson',
-            Teacher: 'Sarah Johnson',
-            Admin: 'Admin User',
-            Parent: 'Parent User'
-        };
-        localStorage.setItem('userName', userNames[activeRole]);
-
-        setTimeout(() => {
-            navigate(`/dashboard/${activeRole.toLowerCase()}`);
-        }, 800);
     };
 
     return (

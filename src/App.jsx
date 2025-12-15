@@ -7,19 +7,20 @@ import StudentDashboard from './components/portals/student/StudentDashboard';
 import TeacherDashboard from './components/portals/teacher/TeacherDashboard';
 import AdminDashboard from './components/portals/admin/AdminDashboard';
 import ParentDashboard from './components/portals/parent/ParentDashboard';
+import { isAuthenticated, getUserRole } from './utils/jwt';
 import './App.css';
 
-// Protected Route Component
+// Protected Route Component - Uses JWT token verification
 const ProtectedRoute = ({ children }) => {
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  const authenticated = isAuthenticated();
+  return authenticated ? children : <Navigate to="/login" replace />;
 };
 
 // Public Route Component (redirect to dashboard if already logged in)
 const PublicRoute = ({ children }) => {
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-  const userRole = localStorage.getItem('userRole') || 'student';
-  return isAuthenticated ? <Navigate to={`/dashboard/${userRole.toLowerCase()}`} replace /> : children;
+  const authenticated = isAuthenticated();
+  const userRole = getUserRole() || 'student';
+  return authenticated ? <Navigate to={`/dashboard/${userRole.toLowerCase()}`} replace /> : children;
 };
 
 // Dashboard Router Component
