@@ -4,74 +4,121 @@ import {
     Home,
     Users,
     GraduationCap,
+    UserCheck,
+    BookOpen,
     DollarSign,
+    Calendar,
+    MessageSquare,
+    BookMarked,
+    Bus,
+    BarChart3,
+    UserCog,
     Settings,
     Bell,
     Search,
     Moon,
     Sun,
     TrendingUp,
-    UserCheck,
-    BookOpen,
-    Calendar,
-    BarChart3,
+    UserPlus,
+    CalendarPlus,
     FileText,
-    Shield
+    ChevronDown,
+    LogOut,
+    CheckCircle,
+    AlertCircle,
+    Info,
+    X
 } from 'lucide-react';
+import Students from './Students';
+import Teachers from './Teachers';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
-    const userName = localStorage.getItem('userName') || 'Admin User';
+    const userName = localStorage.getItem('userName') || 'John Admin';
     const userRole = localStorage.getItem('userRole') || 'Admin';
 
     const [activeTab, setActiveTab] = useState('Dashboard');
     const [darkMode, setDarkMode] = useState(false);
-    const [notifications, setNotifications] = useState(5);
+    const [notifications, setNotifications] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
+    const [showModal, setShowModal] = useState(false);
+    const [modalType, setModalType] = useState('');
+    const [showNotificationPanel, setShowNotificationPanel] = useState(false);
 
+    // Real-time dashboard data with live updates
     const [dashboardData, setDashboardData] = useState({
-        totalStudents: 1250,
-        totalTeachers: 85,
-        totalRevenue: 125000,
+        totalStudents: 3,
+        totalTeachers: 3,
+        revenue: 125000,
         attendanceRate: 92,
-        recentActivities: [
-            { id: 1, type: 'enrollment', message: 'New student enrolled: John Doe', time: '2 hours ago' },
-            { id: 2, type: 'payment', message: 'Fee payment received: $500', time: '4 hours ago' },
-            { id: 3, type: 'staff', message: 'New teacher hired: Sarah Johnson', time: '1 day ago' }
-        ],
-        quickStats: [
-            { label: 'Active Classes', value: 45, change: '+5%' },
-            { label: 'Pending Admissions', value: 12, change: '-2%' },
-            { label: 'Fee Collection', value: '85%', change: '+3%' },
-            { label: 'Staff Attendance', value: '94%', change: '+1%' }
-        ]
+        studentsChange: '+2 from last month',
+        teachersChange: 'Active staff members',
+        revenueChange: '+12% from last month',
+        attendanceChange: 'Overall attendance rate'
     });
 
+    const [recentActivities, setRecentActivities] = useState([
+        {
+            id: 1,
+            type: 'success',
+            title: 'New student registered',
+            description: 'Emma Davis - Class 10A',
+            time: '2 mins ago',
+            icon: CheckCircle
+        },
+        {
+            id: 2,
+            type: 'warning',
+            title: 'Fee payment overdue',
+            description: '5 students pending',
+            time: '1 hour ago',
+            icon: AlertCircle
+        },
+        {
+            id: 3,
+            type: 'info',
+            title: 'Exam results published',
+            description: 'Mid-term results available',
+            time: '3 hours ago',
+            icon: Info
+        }
+    ]);
+
     const menuItems = [
-        { icon: Home, label: 'Dashboard', active: true },
+        { icon: Home, label: 'Dashboard' },
         { icon: Users, label: 'Students' },
         { icon: GraduationCap, label: 'Teachers' },
-        { icon: BookOpen, label: 'Courses' },
-        { icon: DollarSign, label: 'Finance' },
         { icon: UserCheck, label: 'Attendance' },
-        { icon: Calendar, label: 'Academic Calendar' },
+        { icon: BookOpen, label: 'Exams & Grades' },
+        { icon: BookMarked, label: 'Courses' },
+        { icon: DollarSign, label: 'Fees & Finance' },
+        { icon: Calendar, label: 'Timetable' },
+        { icon: MessageSquare, label: 'Communication' },
+        { icon: BookMarked, label: 'Library' },
+        { icon: Bus, label: 'Transport' },
         { icon: BarChart3, label: 'Reports' },
-        { icon: FileText, label: 'Documents' },
+        { icon: UserCog, label: 'Staff' },
         { icon: Settings, label: 'Settings' }
     ];
 
-    const handleLogout = () => {
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userName');
-        navigate('/login');
-    };
+    const quickActions = [
+        { icon: UserPlus, label: 'Add New Student', color: 'bg-blue-500', action: 'addStudent' },
+        { icon: GraduationCap, label: 'Add New Teacher', color: 'bg-green-500', action: 'addTeacher' },
+        { icon: CalendarPlus, label: 'Schedule Event', color: 'bg-purple-500', action: 'scheduleEvent' },
+        { icon: FileText, label: 'Generate Report', color: 'bg-orange-500', action: 'generateReport' }
+    ];
 
+    // Simulate real-time data updates
     useEffect(() => {
         const interval = setInterval(() => {
-            setDashboardData(prev => ({ ...prev }));
-        }, 5000);
+            // Simulate random small changes in data
+            setDashboardData(prev => ({
+                ...prev,
+                totalStudents: prev.totalStudents + Math.floor(Math.random() * 2),
+                attendanceRate: Math.min(100, prev.attendanceRate + (Math.random() > 0.5 ? 0.1 : -0.1))
+            }));
+        }, 10000); // Update every 10 seconds
+
         return () => clearInterval(interval);
     }, []);
 
@@ -82,21 +129,370 @@ const AdminDashboard = () => {
         return 'Good evening';
     };
 
+    const handleQuickAction = (action) => {
+        setModalType(action);
+        setShowModal(true);
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('token');
+        navigate('/login');
+    };
+
+    const getActivityColor = (type) => {
+        switch (type) {
+            case 'success':
+                return 'text-green-500 bg-green-50';
+            case 'warning':
+                return 'text-yellow-500 bg-yellow-50';
+            case 'info':
+                return 'text-blue-500 bg-blue-50';
+            default:
+                return 'text-gray-500 bg-gray-50';
+        }
+    };
+
+    const Modal = ({ type, onClose }) => {
+        const [formData, setFormData] = useState({});
+
+        const handleSubmit = (e) => {
+            e.preventDefault();
+            // Handle form submission based on type
+            console.log('Form submitted:', type, formData);
+
+            // Add new activity
+            const newActivity = {
+                id: Date.now(),
+                type: 'success',
+                title: `${type === 'addStudent' ? 'Student' : type === 'addTeacher' ? 'Teacher' : type === 'scheduleEvent' ? 'Event' : 'Report'} ${type === 'generateReport' ? 'generated' : 'added'}`,
+                description: formData.name || 'Successfully completed',
+                time: 'Just now',
+                icon: CheckCircle
+            };
+
+            setRecentActivities(prev => [newActivity, ...prev.slice(0, 2)]);
+
+            onClose();
+        };
+
+        const renderFormFields = () => {
+            switch (type) {
+                case 'addStudent':
+                    return (
+                        <>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Student Name</label>
+                                <input
+                                    type="text"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="Enter student name"
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Class</label>
+                                <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                    <option>Select Class</option>
+                                    <option>Class 10A</option>
+                                    <option>Class 10B</option>
+                                    <option>Class 11A</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                <input
+                                    type="email"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="student@example.com"
+                                />
+                            </div>
+                        </>
+                    );
+                case 'addTeacher':
+                    return (
+                        <>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Teacher Name</label>
+                                <input
+                                    type="text"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="Enter teacher name"
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                                <input
+                                    type="text"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="Enter subject"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                <input
+                                    type="email"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="teacher@example.com"
+                                />
+                            </div>
+                        </>
+                    );
+                case 'scheduleEvent':
+                    return (
+                        <>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Event Name</label>
+                                <input
+                                    type="text"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="Enter event name"
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                                <input
+                                    type="date"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                <textarea
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    rows="3"
+                                    placeholder="Event description"
+                                ></textarea>
+                            </div>
+                        </>
+                    );
+                case 'generateReport':
+                    return (
+                        <>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
+                                <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                    <option>Student Performance</option>
+                                    <option>Attendance Report</option>
+                                    <option>Financial Report</option>
+                                    <option>Teacher Performance</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <input
+                                        type="date"
+                                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    />
+                                    <input
+                                        type="date"
+                                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    />
+                                </div>
+                            </div>
+                        </>
+                    );
+                default:
+                    return null;
+            }
+        };
+
+        const getModalTitle = () => {
+            switch (type) {
+                case 'addStudent':
+                    return 'Add New Student';
+                case 'addTeacher':
+                    return 'Add New Teacher';
+                case 'scheduleEvent':
+                    return 'Schedule Event';
+                case 'generateReport':
+                    return 'Generate Report';
+                default:
+                    return '';
+            }
+        };
+
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative animate-fadeIn">
+                    <button
+                        onClick={onClose}
+                        className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">{getModalTitle()}</h2>
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {renderFormFields()}
+
+                        <div className="flex space-x-3 pt-4">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all font-medium shadow-lg"
+                            >
+                                {type === 'generateReport' ? 'Generate' : 'Add'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        );
+    };
+
+    const renderContent = () => {
+        switch (activeTab) {
+            case 'Students':
+                return <Students darkMode={darkMode} />;
+            case 'Teachers':
+                return <Teachers darkMode={darkMode} />;
+            case 'Dashboard':
+            default:
+                return (
+                    <>
+                        <div className="mb-8">
+                            <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
+                                {getGreeting()}, {userName.split(' ')[0]} Admin!
+                            </h1>
+                            <p className="text-sm text-gray-500 flex items-center">
+                                <span className="mr-2">Admin Dashboard</span>
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-shadow`}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Students</h3>
+                                    <Users className="w-5 h-5 text-purple-500" />
+                                </div>
+                                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
+                                    {dashboardData.totalStudents}
+                                </p>
+                                <p className="text-sm text-gray-500">{dashboardData.studentsChange}</p>
+                            </div>
+
+                            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-shadow`}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Teachers</h3>
+                                    <GraduationCap className="w-5 h-5 text-green-500" />
+                                </div>
+                                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
+                                    {dashboardData.totalTeachers}
+                                </p>
+                                <p className="text-sm text-gray-500">{dashboardData.teachersChange}</p>
+                            </div>
+
+                            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-shadow`}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Revenue</h3>
+                                    <DollarSign className="w-5 h-5 text-blue-500" />
+                                </div>
+                                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
+                                    ${dashboardData.revenue.toLocaleString()}
+                                </p>
+                                <p className="text-sm text-green-500">{dashboardData.revenueChange}</p>
+                            </div>
+
+                            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-shadow`}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Attendance</h3>
+                                    <TrendingUp className="w-5 h-5 text-orange-500" />
+                                </div>
+                                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
+                                    {dashboardData.attendanceRate.toFixed(0)}%
+                                </p>
+                                <p className="text-sm text-gray-500">{dashboardData.attendanceChange}</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className={`lg:col-span-2 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                                <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
+                                    Recent Activities
+                                </h3>
+                                <div className="space-y-4">
+                                    {recentActivities.map((activity) => (
+                                        <div
+                                            key={activity.id}
+                                            className={`p-4 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} hover:shadow-md transition-shadow`}
+                                        >
+                                            <div className="flex items-start space-x-4">
+                                                <div className={`p-2 rounded-lg ${getActivityColor(activity.type)}`}>
+                                                    <activity.icon className="w-5 h-5" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                        {activity.title}
+                                                    </p>
+                                                    <p className="text-sm text-gray-500 mt-1">{activity.description}</p>
+                                                    <p className="text-xs text-gray-400 mt-2">{activity.time}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                                <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
+                                    Quick Actions
+                                </h3>
+                                <div className="space-y-3">
+                                    {quickActions.map((action, index) => (
+                                        <button
+                                            key={index}
+                                            onClick={() => handleQuickAction(action.action)}
+                                            className={`w-full flex items-center space-x-3 p-4 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                                                } transition-all hover:shadow-md`}
+                                        >
+                                            <div className={`p-2 rounded-lg ${action.color} bg-opacity-10`}>
+                                                <action.icon className={`w-5 h-5 ${action.color.replace('bg-', 'text-')}`} />
+                                            </div>
+                                            <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                {action.label}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                );
+        }
+    };
+
     return (
         <div className={`flex h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+            {/* Sidebar */}
             <aside className={`w-64 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r flex flex-col`}>
-                <div className="p-6 border-b border-gray-200">
+                {/* Logo */}
+                <div className={`p-6 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                            <Shield className="w-6 h-6 text-white" />
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg flex items-center justify-center">
+                            <GraduationCap className="w-6 h-6 text-white" />
                         </div>
                         <div>
                             <h1 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>School ERP</h1>
-                            <p className="text-xs text-gray-500">{userRole} Portal</p>
+                            <p className="text-xs text-gray-500">Admin Portal</p>
                         </div>
                     </div>
                 </div>
 
+                {/* Navigation */}
                 <nav className="flex-1 p-4 overflow-y-auto">
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Navigation</p>
                     <ul className="space-y-1">
@@ -105,8 +501,8 @@ const AdminDashboard = () => {
                                 <button
                                     onClick={() => setActiveTab(item.label)}
                                     className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${activeTab === item.label
-                                            ? 'bg-purple-50 text-purple-600'
-                                            : `${darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`
+                                        ? 'bg-purple-50 text-purple-600'
+                                        : `${darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`
                                         }`}
                                 >
                                     <item.icon className="w-5 h-5" />
@@ -117,20 +513,35 @@ const AdminDashboard = () => {
                     </ul>
                 </nav>
 
+                {/* User Profile */}
                 <div className={`p-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-semibold">
-                            AD
+                    <div className="flex items-center space-x-3 mb-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                            JA
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-semibold truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>{userName}</p>
-                            <p className="text-xs text-gray-500 truncate">{userRole}</p>
+                            <p className={`text-sm font-semibold truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                {userName}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">Admin</p>
                         </div>
+                        <button className="text-gray-400 hover:text-gray-600">
+                            <ChevronDown className="w-4 h-4" />
+                        </button>
                     </div>
+                    <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        <span className="text-sm font-medium">Logout</span>
+                    </button>
                 </div>
             </aside>
 
+            {/* Main Content */}
             <main className="flex-1 flex flex-col overflow-hidden">
+                {/* Header */}
                 <header className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b px-8 py-4`}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
@@ -138,10 +549,13 @@ const AdminDashboard = () => {
                                 <Home className="w-4 h-4" />
                                 <span>/</span>
                                 <span className={darkMode ? 'text-white' : 'text-gray-900'}>{activeTab}</span>
+                                <span>/</span>
+                                <span className="text-purple-600">Admin</span>
                             </div>
                         </div>
 
                         <div className="flex items-center space-x-4">
+                            {/* Search */}
                             <div className="relative">
                                 <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                                 <input
@@ -150,13 +564,17 @@ const AdminDashboard = () => {
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className={`pl-10 pr-4 py-2 rounded-lg border ${darkMode
-                                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                                            : 'bg-gray-50 border-gray-300 text-gray-900'
+                                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                                        : 'bg-gray-50 border-gray-300 text-gray-900'
                                         } focus:outline-none focus:ring-2 focus:ring-purple-500 w-64`}
                                 />
                             </div>
 
-                            <button className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                            {/* Notifications */}
+                            <button
+                                onClick={() => setShowNotificationPanel(!showNotificationPanel)}
+                                className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                            >
                                 <Bell className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`} />
                                 {notifications > 0 && (
                                     <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
@@ -165,6 +583,7 @@ const AdminDashboard = () => {
                                 )}
                             </button>
 
+                            {/* Dark Mode Toggle */}
                             <button
                                 onClick={() => setDarkMode(!darkMode)}
                                 className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}
@@ -172,6 +591,7 @@ const AdminDashboard = () => {
                                 {darkMode ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-gray-700" />}
                             </button>
 
+                            {/* Settings */}
                             <button className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}>
                                 <Settings className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`} />
                             </button>
@@ -179,93 +599,14 @@ const AdminDashboard = () => {
                     </div>
                 </header>
 
+                {/* Dashboard Content */}
                 <div className="flex-1 overflow-y-auto p-8">
-                    <div className="mb-8">
-                        <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
-                            {getGreeting()}, {userName.split(' ')[0]}!
-                        </h1>
-                        <p className="text-sm text-gray-500">Admin Dashboard - System Overview</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Students</h3>
-                                <Users className="w-5 h-5 text-gray-400" />
-                            </div>
-                            <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.totalStudents.toLocaleString()}</p>
-                            <p className="text-sm text-green-500 mt-2">+12% from last month</p>
-                        </div>
-
-                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Teachers</h3>
-                                <GraduationCap className="w-5 h-5 text-gray-400" />
-                            </div>
-                            <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.totalTeachers}</p>
-                            <p className="text-sm text-green-500 mt-2">+5 new this month</p>
-                        </div>
-
-                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Revenue</h3>
-                                <DollarSign className="w-5 h-5 text-gray-400" />
-                            </div>
-                            <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>${dashboardData.totalRevenue.toLocaleString()}</p>
-                            <p className="text-sm text-green-500 mt-2">+8% from last month</p>
-                        </div>
-
-                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Attendance Rate</h3>
-                                <TrendingUp className="w-5 h-5 text-gray-400" />
-                            </div>
-                            <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.attendanceRate}%</p>
-                            <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
-                                <div className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full" style={{ width: `${dashboardData.attendanceRate}%` }}></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                        {dashboardData.quickStats.map((stat, index) => (
-                            <div key={index} className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm text-gray-500 mb-1">{stat.label}</p>
-                                        <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stat.value}</p>
-                                    </div>
-                                    <span className={`text-sm font-semibold ${stat.change.startsWith('+') ? 'text-green-500' : 'text-red-500'}`}>
-                                        {stat.change}
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Recent Activities</h3>
-                        <div className="space-y-4">
-                            {dashboardData.recentActivities.map((activity) => (
-                                <div key={activity.id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex-1">
-                                            <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{activity.message}</p>
-                                            <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
-                                        </div>
-                                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${activity.type === 'enrollment' ? 'bg-blue-100 text-blue-600' :
-                                                activity.type === 'payment' ? 'bg-green-100 text-green-600' :
-                                                    'bg-purple-100 text-purple-600'
-                                            }`}>
-                                            {activity.type}
-                                        </span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    {renderContent()}
                 </div>
             </main>
+
+            {/* Modals */}
+            {showModal && <Modal type={modalType} onClose={() => setShowModal(false)} />}
         </div>
     );
 };

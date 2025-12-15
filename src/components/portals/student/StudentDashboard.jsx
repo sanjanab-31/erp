@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AttendancePage from './AttendancePage';
 import FeePage from './FeePage';
+import ExamsAndGrades from './ExamsAndGrades';
+import CoursesPage from './CoursesPage';
 import {
     Home,
     Calendar,
@@ -128,6 +130,14 @@ const StudentPortal = () => {
 
         if (activeTab === 'Fees & Finance') {
             return <FeePage />;
+        }
+
+        if (activeTab === 'Exams & Grade') {
+            return <ExamsAndGrades darkMode={darkMode} />;
+        }
+
+        if (activeTab === 'Courses') {
+            return <CoursesPage darkMode={darkMode} />;
         }
 
         // Default Dashboard Content
