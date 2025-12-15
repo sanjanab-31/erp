@@ -1,6 +1,258 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Plus, MoreVertical, Mail, Phone, Edit, Trash2, X, Save, UserPlus } from 'lucide-react';
 import { getAllStudents, addStudent, updateStudent, deleteStudent, subscribeToUpdates, getStudentStats } from '../../../utils/studentStore';
+
+// Move modal components outside to prevent re-creation on every render
+const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, darkMode }) => {
+    const classes = ['Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto`}>
+                <div className={`sticky top-0 ${darkMode ? 'bg-gray-800' : 'bg-white'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6 z-10`}>
+                    <div className="flex items-center justify-between">
+                        <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                            {isEdit ? 'Edit Student' : 'Add New Student'}
+                        </h2>
+                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                            <X className="w-6 h-6 text-gray-500" />
+                        </button>
+                    </div>
+                </div>
+
+                <form onSubmit={onSubmit} className="p-6 space-y-6">
+                    {/* Personal Information */}
+                    <div>
+                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
+                            Personal Information
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                                    Full Name *
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
+                                    placeholder="Enter full name"
+                                />
+                            </div>
+                            <div>
+                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                                    Roll Number *
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={formData.rollNo}
+                                    onChange={(e) => setFormData({ ...formData, rollNo: e.target.value })}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
+                                    placeholder="e.g., 10A-001"
+                                />
+                            </div>
+                            <div>
+                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                                    Class *
+                                </label>
+                                <select
+                                    required
+                                    value={formData.class}
+                                    onChange={(e) => setFormData({ ...formData, class: e.target.value })}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
+                                >
+                                    <option value="">Select Class</option>
+                                    {classes.map(cls => (
+                                        <option key={cls} value={cls}>{cls}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                                    Gender
+                                </label>
+                                <select
+                                    value={formData.gender}
+                                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
+                                >
+                                    <option value="">Select Gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                                    Date of Birth
+                                </label>
+                                <input
+                                    type="date"
+                                    value={formData.dateOfBirth}
+                                    onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
+                                />
+                            </div>
+                            <div>
+                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                                    Status
+                                </label>
+                                <select
+                                    value={formData.status}
+                                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
+                                >
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                    <option value="Warning">Warning</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Contact Information */}
+                    <div>
+                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
+                            Contact Information
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                                    Email *
+                                </label>
+                                <input
+                                    type="email"
+                                    required
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
+                                    placeholder="student@school.com"
+                                />
+                            </div>
+                            <div>
+                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                                    Phone
+                                </label>
+                                <input
+                                    type="tel"
+                                    value={formData.phone}
+                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
+                                    placeholder="+1 234-567-8900"
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                                    Address
+                                </label>
+                                <textarea
+                                    value={formData.address}
+                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
+                                    rows="2"
+                                    placeholder="Enter address"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Parent Information */}
+                    <div>
+                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
+                            Parent/Guardian Information
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                                    Parent Name *
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={formData.parent}
+                                    onChange={(e) => setFormData({ ...formData, parent: e.target.value })}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
+                                    placeholder="Enter parent name"
+                                />
+                            </div>
+                            <div>
+                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                                    Parent Email
+                                </label>
+                                <input
+                                    type="email"
+                                    value={formData.parentEmail}
+                                    onChange={(e) => setFormData({ ...formData, parentEmail: e.target.value })}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
+                                    placeholder="parent@email.com"
+                                />
+                            </div>
+                            <div>
+                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                                    Parent Phone
+                                </label>
+                                <input
+                                    type="tel"
+                                    value={formData.parentPhone}
+                                    onChange={(e) => setFormData({ ...formData, parentPhone: e.target.value })}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
+                                    placeholder="+1 234-567-8900"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className={`px-6 py-2 rounded-lg border ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'} transition-colors`}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+                        >
+                            <Save className="w-5 h-5" />
+                            <span>{isEdit ? 'Update Student' : 'Add Student'}</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+const DeleteConfirmModal = ({ darkMode, selectedStudent, onClose, onConfirm }) => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>
+            <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
+                Confirm Delete
+            </h3>
+            <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-6`}>
+                Are you sure you want to delete <strong>{selectedStudent?.name}</strong>? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+                <button
+                    onClick={onClose}
+                    className={`px-4 py-2 rounded-lg border ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                >
+                    Cancel
+                </button>
+                <button
+                    onClick={onConfirm}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                >
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+);
 
 const Students = ({ darkMode }) => {
     const [students, setStudents] = useState([]);
@@ -37,13 +289,13 @@ const Students = ({ darkMode }) => {
         return unsubscribe;
     }, []);
 
-    const loadStudents = () => {
+    const loadStudents = useCallback(() => {
         const data = getAllStudents();
         setStudents(data);
         setStats(getStudentStats());
-    };
+    }, []);
 
-    const resetForm = () => {
+    const resetForm = useCallback(() => {
         setFormData({
             name: '',
             rollNo: '',
@@ -60,9 +312,9 @@ const Students = ({ darkMode }) => {
             attendance: 100,
             grade: 'A'
         });
-    };
+    }, []);
 
-    const handleAddStudent = (e) => {
+    const handleAddStudent = useCallback((e) => {
         e.preventDefault();
         try {
             addStudent(formData);
@@ -72,9 +324,9 @@ const Students = ({ darkMode }) => {
         } catch (error) {
             alert('Error adding student: ' + error.message);
         }
-    };
+    }, [formData, resetForm]);
 
-    const handleEditStudent = (e) => {
+    const handleEditStudent = useCallback((e) => {
         e.preventDefault();
         try {
             updateStudent(selectedStudent.id, formData);
@@ -85,9 +337,9 @@ const Students = ({ darkMode }) => {
         } catch (error) {
             alert('Error updating student: ' + error.message);
         }
-    };
+    }, [formData, selectedStudent, resetForm]);
 
-    const handleDeleteStudent = () => {
+    const handleDeleteStudent = useCallback(() => {
         try {
             deleteStudent(selectedStudent.id);
             setShowDeleteConfirm(false);
@@ -96,9 +348,9 @@ const Students = ({ darkMode }) => {
         } catch (error) {
             alert('Error deleting student: ' + error.message);
         }
-    };
+    }, [selectedStudent]);
 
-    const openEditModal = (student) => {
+    const openEditModal = useCallback((student) => {
         setSelectedStudent(student);
         setFormData({
             name: student.name || '',
@@ -117,12 +369,12 @@ const Students = ({ darkMode }) => {
             grade: student.grade || 'A'
         });
         setShowEditModal(true);
-    };
+    }, []);
 
-    const openDeleteConfirm = (student) => {
+    const openDeleteConfirm = useCallback((student) => {
         setSelectedStudent(student);
         setShowDeleteConfirm(true);
-    };
+    }, []);
 
     const filteredStudents = students.filter(student => {
         const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -135,256 +387,6 @@ const Students = ({ darkMode }) => {
 
     const classes = ['All Classes', 'Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
     const statuses = ['All', 'Active', 'Inactive', 'Warning'];
-
-    const StudentFormModal = ({ isEdit, onClose, onSubmit }) => (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto`}>
-                <div className={`sticky top-0 ${darkMode ? 'bg-gray-800' : 'bg-white'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6 z-10`}>
-                    <div className="flex items-center justify-between">
-                        <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                            {isEdit ? 'Edit Student' : 'Add New Student'}
-                        </h2>
-                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                            <X className="w-6 h-6 text-gray-500" />
-                        </button>
-                    </div>
-                </div>
-
-                <form onSubmit={onSubmit} className="p-6 space-y-6">
-                    {/* Personal Information */}
-                    <div>
-                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-                            Personal Information
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Full Name *
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:ring-2 focus:ring-purple-500`}
-                                    placeholder="Enter full name"
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Roll Number *
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formData.rollNo}
-                                    onChange={(e) => setFormData({ ...formData, rollNo: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:ring-2 focus:ring-purple-500`}
-                                    placeholder="e.g., 10A-001"
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Class *
-                                </label>
-                                <select
-                                    required
-                                    value={formData.class}
-                                    onChange={(e) => setFormData({ ...formData, class: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:ring-2 focus:ring-purple-500`}
-                                >
-                                    <option value="">Select Class</option>
-                                    {classes.filter(c => c !== 'All Classes').map(cls => (
-                                        <option key={cls} value={cls}>{cls}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Gender
-                                </label>
-                                <select
-                                    value={formData.gender}
-                                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:ring-2 focus:ring-purple-500`}
-                                >
-                                    <option value="">Select Gender</option>
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Date of Birth
-                                </label>
-                                <input
-                                    type="date"
-                                    value={formData.dateOfBirth}
-                                    onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:ring-2 focus:ring-purple-500`}
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Status
-                                </label>
-                                <select
-                                    value={formData.status}
-                                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:ring-2 focus:ring-purple-500`}
-                                >
-                                    <option value="Active">Active</option>
-                                    <option value="Inactive">Inactive</option>
-                                    <option value="Warning">Warning</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Contact Information */}
-                    <div>
-                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-                            Contact Information
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Email *
-                                </label>
-                                <input
-                                    type="email"
-                                    required
-                                    value={formData.email}
-                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:ring-2 focus:ring-purple-500`}
-                                    placeholder="student@school.com"
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Phone
-                                </label>
-                                <input
-                                    type="tel"
-                                    value={formData.phone}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:ring-2 focus:ring-purple-500`}
-                                    placeholder="+1 234-567-8900"
-                                />
-                            </div>
-                            <div className="md:col-span-2">
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Address
-                                </label>
-                                <textarea
-                                    value={formData.address}
-                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:ring-2 focus:ring-purple-500`}
-                                    rows="2"
-                                    placeholder="Enter address"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Parent Information */}
-                    <div>
-                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-                            Parent/Guardian Information
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Parent Name *
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formData.parent}
-                                    onChange={(e) => setFormData({ ...formData, parent: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:ring-2 focus:ring-purple-500`}
-                                    placeholder="Enter parent name"
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Parent Email
-                                </label>
-                                <input
-                                    type="email"
-                                    value={formData.parentEmail}
-                                    onChange={(e) => setFormData({ ...formData, parentEmail: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:ring-2 focus:ring-purple-500`}
-                                    placeholder="parent@email.com"
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Parent Phone
-                                </label>
-                                <input
-                                    type="tel"
-                                    value={formData.parentPhone}
-                                    onChange={(e) => setFormData({ ...formData, parentPhone: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:ring-2 focus:ring-purple-500`}
-                                    placeholder="+1 234-567-8900"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className={`px-6 py-2 rounded-lg border ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'} transition-colors`}
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
-                        >
-                            <Save className="w-5 h-5" />
-                            <span>{isEdit ? 'Update Student' : 'Add Student'}</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-
-    const DeleteConfirmModal = () => (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>
-                <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-                    Confirm Delete
-                </h3>
-                <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-6`}>
-                    Are you sure you want to delete <strong>{selectedStudent?.name}</strong>? This action cannot be undone.
-                </p>
-                <div className="flex justify-end space-x-3">
-                    <button
-                        onClick={() => {
-                            setShowDeleteConfirm(false);
-                            setSelectedStudent(null);
-                        }}
-                        className={`px-4 py-2 rounded-lg border ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleDeleteStudent}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                    >
-                        Delete
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
 
     return (
         <div className="space-y-6">
@@ -424,13 +426,13 @@ const Students = ({ darkMode }) => {
                             className={`pl-10 pr-4 py-2 w-full sm:w-64 rounded-lg border ${darkMode
                                 ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                                 : 'bg-white border-gray-300 text-gray-900'
-                                } focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                                } focus:outline-none`}
                         />
                     </div>
                     <select
                         value={filterClass}
                         onChange={(e) => setFilterClass(e.target.value)}
-                        className={`px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:ring-2 focus:ring-purple-500`}
+                        className={`px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
                     >
                         {classes.map(cls => (
                             <option key={cls} value={cls}>{cls}</option>
@@ -439,7 +441,7 @@ const Students = ({ darkMode }) => {
                     <select
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
-                        className={`px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:ring-2 focus:ring-purple-500`}
+                        className={`px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
                     >
                         {statuses.map(status => (
                             <option key={status} value={status}>{status}</option>
@@ -564,6 +566,9 @@ const Students = ({ darkMode }) => {
                         resetForm();
                     }}
                     onSubmit={handleAddStudent}
+                    formData={formData}
+                    setFormData={setFormData}
+                    darkMode={darkMode}
                 />
             )}
 
@@ -576,10 +581,23 @@ const Students = ({ darkMode }) => {
                         resetForm();
                     }}
                     onSubmit={handleEditStudent}
+                    formData={formData}
+                    setFormData={setFormData}
+                    darkMode={darkMode}
                 />
             )}
 
-            {showDeleteConfirm && <DeleteConfirmModal />}
+            {showDeleteConfirm && (
+                <DeleteConfirmModal
+                    darkMode={darkMode}
+                    selectedStudent={selectedStudent}
+                    onClose={() => {
+                        setShowDeleteConfirm(false);
+                        setSelectedStudent(null);
+                    }}
+                    onConfirm={handleDeleteStudent}
+                />
+            )}
         </div>
     );
 };
