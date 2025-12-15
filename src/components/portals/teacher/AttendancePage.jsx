@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Calendar,
     Users,
@@ -14,60 +14,124 @@ import {
     UserCheck,
     UserX
 } from 'lucide-react';
+import { getAllStudents, subscribeToUpdates as subscribeToStudentUpdates } from '../../../utils/studentStore';
+import {
+    markAttendance,
+    bulkMarkAttendance,
+    getAttendanceByDate,
+    getAttendanceStats,
+    calculateAttendancePercentage,
+    subscribeToUpdates as subscribeToAttendanceUpdates
+} from '../../../utils/attendanceStore';
 
 const AttendancePage = ({ darkMode }) => {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-    const [selectedClass, setSelectedClass] = useState('Grade 10-A');
-    const [selectedSubject, setSelectedSubject] = useState('Mathematics');
+    const [selectedClass, setSelectedClass] = useState('All Classes');
     const [searchQuery, setSearchQuery] = useState('');
     const [saved, setSaved] = useState(false);
+    const [allStudents, setAllStudents] = useState([]);
+    const [attendanceData, setAttendanceData] = useState({});
+    const [stats, setStats] = useState({ total: 0, present: 0, absent: 0, late: 0 });
 
-    const classes = ['Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B'];
-    const subjects = ['Mathematics', 'Physics', 'Chemistry', 'Computer Science'];
+    const classes = ['All Classes', 'Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
 
-    const [students, setStudents] = useState([
-        { id: 1, name: 'John Doe', rollNo: '10A-001', status: 'present', totalAttendance: 95 },
-        { id: 2, name: 'Jane Smith', rollNo: '10A-002', status: 'present', totalAttendance: 88 },
-        { id: 3, name: 'Mike Wilson', rollNo: '10A-003', status: 'absent', totalAttendance: 92 },
-        { id: 4, name: 'Sarah Johnson', rollNo: '10A-004', status: 'present', totalAttendance: 78 },
-        { id: 5, name: 'David Brown', rollNo: '10A-005', status: 'late', totalAttendance: 85 },
-        { id: 6, name: 'Emily Davis', rollNo: '10A-006', status: 'present', totalAttendance: 97 },
-        { id: 7, name: 'James Wilson', rollNo: '10A-007', status: 'present', totalAttendance: 90 },
-        { id: 8, name: 'Lisa Anderson', rollNo: '10A-008', status: 'absent', totalAttendance: 82 }
-    ]);
+    // Load students and attendance
+    useEffect(() => {
+        loadStudents();
+        loadAttendance();
+
+        const unsubscribeStudents = subscribeToStudentUpdates(loadStudents);
+        const unsubscribeAttendance = subscribeToAttendanceUpdates(loadAttendance);
+
+        return () => {
+            unsubscribeStudents();
+            unsubscribeAttendance();
+        };
+    }, []);
+
+    // Reload attendance when date changes
+    useEffect(() => {
+        loadAttendance();
+    }, [selectedDate]);
+
+    const loadStudents = useCallback(() => {
+        const students = getAllStudents();
+        setAllStudents(students);
+    }, []);
+
+    const loadAttendance = useCallback(() => {
+        const todayAttendance = getAttendanceByDate(selectedDate);
+        const attendanceMap = {};
+
+        todayAttendance.forEach(record => {
+            attendanceMap[record.studentId] = record.status;
+        });
+
+        setAttendanceData(attendanceMap);
+
+        // Update stats
+        const statsData = getAttendanceStats(selectedDate);
+        setStats(statsData);
+    }, [selectedDate]);
 
     const toggleAttendance = (studentId, newStatus) => {
-        setStudents(students.map(student =>
-            student.id === studentId ? { ...student, status: newStatus } : student
-        ));
+        setAttendanceData(prev => ({
+            ...prev,
+            [studentId]: newStatus
+        }));
         setSaved(false);
     };
 
     const markAllPresent = () => {
-        setStudents(students.map(student => ({ ...student, status: 'present' })));
+        const newAttendance = {};
+        filteredStudents.forEach(student => {
+            newAttendance[student.id] = 'Present';
+        });
+        setAttendanceData(prev => ({ ...prev, ...newAttendance }));
         setSaved(false);
     };
 
     const markAllAbsent = () => {
-        setStudents(students.map(student => ({ ...student, status: 'absent' })));
+        const newAttendance = {};
+        filteredStudents.forEach(student => {
+            newAttendance[student.id] = 'Absent';
+        });
+        setAttendanceData(prev => ({ ...prev, ...newAttendance }));
         setSaved(false);
     };
 
     const saveAttendance = () => {
-        // Simulate saving to backend
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+        try {
+            const teacherName = localStorage.getItem('userName') || 'Teacher';
+            const attendanceList = filteredStudents.map(student => ({
+                date: selectedDate,
+                studentId: student.id,
+                status: attendanceData[student.id] || 'Absent',
+                markedBy: teacherName
+            }));
+
+            bulkMarkAttendance(attendanceList);
+            setSaved(true);
+            setTimeout(() => setSaved(false), 3000);
+        } catch (error) {
+            alert('Error saving attendance: ' + error.message);
+        }
     };
 
-    const filteredStudents = students.filter(student =>
-        student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        student.rollNo.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredStudents = allStudents.filter(student => {
+        const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            student.rollNo.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesClass = selectedClass === 'All Classes' || student.class === selectedClass;
+        return matchesSearch && matchesClass;
+    });
 
-    const presentCount = students.filter(s => s.status === 'present').length;
-    const absentCount = students.filter(s => s.status === 'absent').length;
-    const lateCount = students.filter(s => s.status === 'late').length;
-    const attendancePercentage = Math.round((presentCount / students.length) * 100);
+    // Calculate current stats based on UI state
+    const currentPresentCount = filteredStudents.filter(s => attendanceData[s.id] === 'Present').length;
+    const currentAbsentCount = filteredStudents.filter(s => attendanceData[s.id] === 'Absent').length;
+    const currentLateCount = filteredStudents.filter(s => attendanceData[s.id] === 'Late').length;
+    const currentAttendancePercentage = filteredStudents.length > 0
+        ? Math.round((currentPresentCount / filteredStudents.length) * 100)
+        : 0;
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
@@ -76,7 +140,7 @@ const AttendancePage = ({ darkMode }) => {
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Attendance Management
                 </h1>
-                <p className="text-sm text-gray-500">Mark and track student attendance</p>
+                <p className="text-sm text-gray-500">Mark and track student attendance (Real-time sync with Admin)</p>
             </div>
 
             {/* Stats Cards */}
@@ -86,7 +150,7 @@ const AttendancePage = ({ darkMode }) => {
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Students</h3>
                         <Users className="w-5 h-5 text-blue-500" />
                     </div>
-                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{students.length}</p>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{filteredStudents.length}</p>
                 </div>
 
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -94,7 +158,7 @@ const AttendancePage = ({ darkMode }) => {
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Present</h3>
                         <UserCheck className="w-5 h-5 text-green-500" />
                     </div>
-                    <p className={`text-3xl font-bold text-green-600`}>{presentCount}</p>
+                    <p className={`text-3xl font-bold text-green-600`}>{currentPresentCount}</p>
                 </div>
 
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -102,7 +166,7 @@ const AttendancePage = ({ darkMode }) => {
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Absent</h3>
                         <UserX className="w-5 h-5 text-red-500" />
                     </div>
-                    <p className={`text-3xl font-bold text-red-600`}>{absentCount}</p>
+                    <p className={`text-3xl font-bold text-red-600`}>{currentAbsentCount}</p>
                 </div>
 
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -110,13 +174,13 @@ const AttendancePage = ({ darkMode }) => {
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Attendance Rate</h3>
                         <TrendingUp className="w-5 h-5 text-purple-500" />
                     </div>
-                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{attendancePercentage}%</p>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{currentAttendancePercentage}%</p>
                 </div>
             </div>
 
             {/* Filters */}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6`}>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Date
@@ -128,7 +192,7 @@ const AttendancePage = ({ darkMode }) => {
                             className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                 ? 'bg-gray-700 border-gray-600 text-white'
                                 : 'bg-gray-50 border-gray-300 text-gray-900'
-                                } focus:outline-none focus:ring-2 focus:ring-green-500`}
+                                } focus:outline-none`}
                         />
                     </div>
 
@@ -142,28 +206,10 @@ const AttendancePage = ({ darkMode }) => {
                             className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                 ? 'bg-gray-700 border-gray-600 text-white'
                                 : 'bg-gray-50 border-gray-300 text-gray-900'
-                                } focus:outline-none focus:ring-2 focus:ring-green-500`}
+                                } focus:outline-none`}
                         >
                             {classes.map((cls) => (
                                 <option key={cls} value={cls}>{cls}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                            Subject
-                        </label>
-                        <select
-                            value={selectedSubject}
-                            onChange={(e) => setSelectedSubject(e.target.value)}
-                            className={`w-full px-4 py-2 rounded-lg border ${darkMode
-                                ? 'bg-gray-700 border-gray-600 text-white'
-                                : 'bg-gray-50 border-gray-300 text-gray-900'
-                                } focus:outline-none focus:ring-2 focus:ring-green-500`}
-                        >
-                            {subjects.map((subject) => (
-                                <option key={subject} value={subject}>{subject}</option>
                             ))}
                         </select>
                     </div>
@@ -182,7 +228,7 @@ const AttendancePage = ({ darkMode }) => {
                                 className={`w-full pl-10 pr-4 py-2 rounded-lg border ${darkMode
                                     ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                                     : 'bg-gray-50 border-gray-300 text-gray-900'
-                                    } focus:outline-none focus:ring-2 focus:ring-green-500`}
+                                    } focus:outline-none`}
                             />
                         </div>
                     </div>
@@ -212,17 +258,12 @@ const AttendancePage = ({ darkMode }) => {
                         <Save className="w-5 h-5" />
                         <span>Save Attendance</span>
                     </button>
-
-                    <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2">
-                        <Download className="w-5 h-5" />
-                        <span>Export Report</span>
-                    </button>
                 </div>
 
                 {saved && (
                     <div className="mt-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg flex items-center space-x-2">
                         <CheckCircle className="w-5 h-5" />
-                        <span>Attendance saved successfully!</span>
+                        <span>Attendance saved successfully and synced with Admin!</span>
                     </div>
                 )}
             </div>
@@ -230,96 +271,120 @@ const AttendancePage = ({ darkMode }) => {
             {/* Attendance Table */}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
                 <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead className={darkMode ? 'bg-gray-700' : 'bg-gray-50'}>
-                            <tr>
-                                <th className={`px-6 py-4 text-left text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                    Roll No
-                                </th>
-                                <th className={`px-6 py-4 text-left text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                    Student Name
-                                </th>
-                                <th className={`px-6 py-4 text-left text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                    Total Attendance
-                                </th>
-                                <th className={`px-6 py-4 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                    Status
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
-                            {filteredStudents.map((student) => (
-                                <tr key={student.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}>
-                                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                        {student.rollNo}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center">
-                                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
-                                                {student.name.split(' ').map(n => n[0]).join('')}
-                                            </div>
-                                            <div className="ml-4">
-                                                <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                    {student.name}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center">
-                                            <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                {student.totalAttendance}%
-                                            </span>
-                                            <div className="ml-2 w-20 bg-gray-200 rounded-full h-2">
-                                                <div
-                                                    className={`h-2 rounded-full ${student.totalAttendance >= 90 ? 'bg-green-500' :
-                                                        student.totalAttendance >= 75 ? 'bg-yellow-500' : 'bg-red-500'
-                                                        }`}
-                                                    style={{ width: `${student.totalAttendance}%` }}
-                                                ></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center justify-center space-x-2">
-                                            <button
-                                                onClick={() => toggleAttendance(student.id, 'present')}
-                                                className={`p-2 rounded-lg transition-all ${student.status === 'present'
-                                                    ? 'bg-green-100 text-green-600 ring-2 ring-green-500'
-                                                    : 'bg-gray-100 text-gray-400 hover:bg-green-50'
-                                                    }`}
-                                                title="Present"
-                                            >
-                                                <CheckCircle className="w-6 h-6" />
-                                            </button>
-
-                                            <button
-                                                onClick={() => toggleAttendance(student.id, 'late')}
-                                                className={`p-2 rounded-lg transition-all ${student.status === 'late'
-                                                    ? 'bg-yellow-100 text-yellow-600 ring-2 ring-yellow-500'
-                                                    : 'bg-gray-100 text-gray-400 hover:bg-yellow-50'
-                                                    }`}
-                                                title="Late"
-                                            >
-                                                <Clock className="w-6 h-6" />
-                                            </button>
-
-                                            <button
-                                                onClick={() => toggleAttendance(student.id, 'absent')}
-                                                className={`p-2 rounded-lg transition-all ${student.status === 'absent'
-                                                    ? 'bg-red-100 text-red-600 ring-2 ring-red-500'
-                                                    : 'bg-gray-100 text-gray-400 hover:bg-red-50'
-                                                    }`}
-                                                title="Absent"
-                                            >
-                                                <XCircle className="w-6 h-6" />
-                                            </button>
-                                        </div>
-                                    </td>
+                    {filteredStudents.length === 0 ? (
+                        <div className="p-12 text-center">
+                            <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                            <p className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                No students found
+                            </p>
+                            <p className="text-sm text-gray-500 mt-2">
+                                Students added by Admin will appear here automatically
+                            </p>
+                        </div>
+                    ) : (
+                        <table className="w-full">
+                            <thead className={darkMode ? 'bg-gray-700' : 'bg-gray-50'}>
+                                <tr>
+                                    <th className={`px-6 py-4 text-left text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
+                                        Roll No
+                                    </th>
+                                    <th className={`px-6 py-4 text-left text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
+                                        Student Name
+                                    </th>
+                                    <th className={`px-6 py-4 text-left text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
+                                        Class
+                                    </th>
+                                    <th className={`px-6 py-4 text-left text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
+                                        Overall Attendance
+                                    </th>
+                                    <th className={`px-6 py-4 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
+                                        Today's Status
+                                    </th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                                {filteredStudents.map((student) => {
+                                    const overallAttendance = calculateAttendancePercentage(student.id);
+                                    const todayStatus = attendanceData[student.id] || 'Absent';
+
+                                    return (
+                                        <tr key={student.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}>
+                                            <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                {student.rollNo}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center">
+                                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+                                                        {student.name.split(' ').map(n => n[0]).join('')}
+                                                    </div>
+                                                    <div className="ml-4">
+                                                        <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                            {student.name}
+                                                        </div>
+                                                        <div className="text-sm text-gray-500">{student.email}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                {student.class}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center">
+                                                    <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                        {overallAttendance}%
+                                                    </span>
+                                                    <div className="ml-2 w-20 bg-gray-200 rounded-full h-2">
+                                                        <div
+                                                            className={`h-2 rounded-full ${overallAttendance >= 90 ? 'bg-green-500' :
+                                                                overallAttendance >= 75 ? 'bg-yellow-500' : 'bg-red-500'
+                                                                }`}
+                                                            style={{ width: `${overallAttendance}%` }}
+                                                        ></div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center justify-center space-x-2">
+                                                    <button
+                                                        onClick={() => toggleAttendance(student.id, 'Present')}
+                                                        className={`p-2 rounded-lg transition-all ${todayStatus === 'Present'
+                                                            ? 'bg-green-100 text-green-600 ring-2 ring-green-500'
+                                                            : 'bg-gray-100 text-gray-400 hover:bg-green-50'
+                                                            }`}
+                                                        title="Present"
+                                                    >
+                                                        <CheckCircle className="w-6 h-6" />
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => toggleAttendance(student.id, 'Late')}
+                                                        className={`p-2 rounded-lg transition-all ${todayStatus === 'Late'
+                                                            ? 'bg-yellow-100 text-yellow-600 ring-2 ring-yellow-500'
+                                                            : 'bg-gray-100 text-gray-400 hover:bg-yellow-50'
+                                                            }`}
+                                                        title="Late"
+                                                    >
+                                                        <Clock className="w-6 h-6" />
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => toggleAttendance(student.id, 'Absent')}
+                                                        className={`p-2 rounded-lg transition-all ${todayStatus === 'Absent'
+                                                            ? 'bg-red-100 text-red-600 ring-2 ring-red-500'
+                                                            : 'bg-gray-100 text-gray-400 hover:bg-red-50'
+                                                            }`}
+                                                        title="Absent"
+                                                    >
+                                                        <XCircle className="w-6 h-6" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             </div>
         </div>
