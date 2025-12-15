@@ -3,7 +3,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './components/auth/Login';
 import Signup from './components/auth/Signup';
 import ForgotPassword from './components/auth/ForgotPassword';
-import Dashboard from './components/Dashboard';
+import StudentDashboard from './components/portals/student/StudentDashboard';
+import TeacherDashboard from './components/portals/teacher/TeacherDashboard';
+import AdminDashboard from './components/portals/admin/AdminDashboard';
+import ParentDashboard from './components/portals/parent/ParentDashboard';
 import './App.css';
 
 // Protected Route Component
@@ -17,6 +20,24 @@ const PublicRoute = ({ children }) => {
   const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
   const userRole = localStorage.getItem('userRole') || 'student';
   return isAuthenticated ? <Navigate to={`/dashboard/${userRole.toLowerCase()}`} replace /> : children;
+};
+
+// Dashboard Router Component
+const DashboardRouter = () => {
+  const userRole = localStorage.getItem('userRole') || 'student';
+
+  switch (userRole.toLowerCase()) {
+    case 'student':
+      return <StudentDashboard />;
+    case 'teacher':
+      return <TeacherDashboard />;
+    case 'admin':
+      return <AdminDashboard />;
+    case 'parent':
+      return <ParentDashboard />;
+    default:
+      return <StudentDashboard />;
+  }
 };
 
 function App() {
@@ -54,7 +75,7 @@ function App() {
           path="/dashboard/:role"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <DashboardRouter />
             </ProtectedRoute>
           }
         />
