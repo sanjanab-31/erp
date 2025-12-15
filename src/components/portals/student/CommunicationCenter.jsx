@@ -17,9 +17,7 @@ const CommunicationCenter = ({ darkMode }) => {
     const [communicationData, setCommunicationData] = useState({
         unreadMessages: 1,
         unreadMessagesText: 'New messages',
-        announcements: 4,
         announcementsText: 'Active announcements',
-        notifications: 3,
         notificationsText: 'Unread notifications',
         messages: [
             {

@@ -1,1 +1,9 @@
 export { default as ParentDashboard } from './ParentDashboard';
+export { default as MyChildrenPage } from './MyChildrenPage';
+export { default as AcademicProgressPage } from './AcademicProgressPage';
+export { default as AttendancePage } from './AttendancePage';
+export { default as FeeManagementPage } from './FeeManagementPage';
+export { default as TimetablePage } from './TimetablePage';
+export { default as CommunicationPage } from './CommunicationPage';
+export { default as ReportsPage } from './ReportsPage';
+export { default as SettingsPage } from './SettingsPage';
