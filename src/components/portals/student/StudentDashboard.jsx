@@ -4,6 +4,11 @@ import AttendancePage from './AttendancePage';
 import FeePage from './FeePage';
 import ExamsAndGrades from './ExamsAndGrades';
 import CoursesPage from './CoursesPage';
+import TimetablePage from './TimetablePage';
+import CommunicationCenter from './CommunicationCenter';
+import LibraryPage from './LibraryPage';
+import TransportPage from './TransportPage';
+import SettingsPage from './SettingsPage';
 import {
     Home,
     Calendar,
@@ -138,6 +143,26 @@ const StudentPortal = () => {
 
         if (activeTab === 'Courses') {
             return <CoursesPage darkMode={darkMode} />;
+        }
+
+        if (activeTab === 'Timetable') {
+            return <TimetablePage darkMode={darkMode} />;
+        }
+
+        if (activeTab === 'Communication') {
+            return <CommunicationCenter darkMode={darkMode} />;
+        }
+
+        if (activeTab === 'Library') {
+            return <LibraryPage darkMode={darkMode} />;
+        }
+
+        if (activeTab === 'Transport') {
+            return <TransportPage darkMode={darkMode} />;
+        }
+
+        if (activeTab === 'Settings') {
+            return <SettingsPage darkMode={darkMode} />;
         }
 
         // Default Dashboard Content
