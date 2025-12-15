@@ -31,6 +31,11 @@ import {
 } from 'lucide-react';
 import Students from './Students';
 import Teachers from './Teachers';
+import AttendancePage from './AttendancePage';
+import ExamsAndGradesPage from './ExamsAndGradesPage';
+import CoursesPage from './CoursesPage';
+import FeesAndFinancePage from './FeesAndFinancePage';
+import SettingsPage from './SettingsPage';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -360,6 +365,16 @@ const AdminDashboard = () => {
                 return <Students darkMode={darkMode} />;
             case 'Teachers':
                 return <Teachers darkMode={darkMode} />;
+            case 'Attendance':
+                return <AttendancePage darkMode={darkMode} />;
+            case 'Exams & Grades':
+                return <ExamsAndGradesPage darkMode={darkMode} />;
+            case 'Courses':
+                return <CoursesPage darkMode={darkMode} />;
+            case 'Fees & Finance':
+                return <FeesAndFinancePage darkMode={darkMode} />;
+            case 'Settings':
+                return <SettingsPage darkMode={darkMode} />;
             case 'Dashboard':
             default:
                 return (
