@@ -18,6 +18,7 @@ import {
     Edit,
     MoreVertical
 } from 'lucide-react';
+import { getAllStudents, subscribeToUpdates, getStudentStats } from '../../../utils/studentStore';
 
 const StudentsPage = ({ darkMode }) => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -25,75 +26,23 @@ const StudentsPage = ({ darkMode }) => {
     const [selectedStatus, setSelectedStatus] = useState('All');
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [showDetails, setShowDetails] = useState(false);
+    const [students, setStudents] = useState([]);
+    const [stats, setStats] = useState({ total: 0, active: 0, warning: 0, avgAttendance: 0 });
 
-    const [students, setStudents] = useState([
-        {
-            id: 1,
-            name: 'John Doe',
-            rollNo: '10A-001',
-            class: 'Grade 10-A',
-            email: 'john.doe@school.com',
-            phone: '+1 234-567-8901',
-            attendance: 95,
-            grade: 'A',
-            status: 'active',
-            subjects: ['Mathematics', 'Physics', 'Chemistry'],
-            recentGrades: [
-                { subject: 'Mathematics', grade: 'A', marks: 95 },
-                { subject: 'Physics', grade: 'A-', marks: 90 }
-            ]
-        },
-        {
-            id: 2,
-            name: 'Jane Smith',
-            rollNo: '10A-002',
-            class: 'Grade 10-A',
-            email: 'jane.smith@school.com',
-            phone: '+1 234-567-8902',
-            attendance: 88,
-            grade: 'B+',
-            status: 'active',
-            subjects: ['Mathematics', 'Physics', 'Chemistry'],
-            recentGrades: [
-                { subject: 'Mathematics', grade: 'B+', marks: 87 },
-                { subject: 'Physics', grade: 'B', marks: 85 }
-            ]
-        },
-        {
-            id: 3,
-            name: 'Mike Wilson',
-            rollNo: '11B-015',
-            class: 'Grade 11-B',
-            email: 'mike.wilson@school.com',
-            phone: '+1 234-567-8903',
-            attendance: 92,
-            grade: 'A-',
-            status: 'active',
-            subjects: ['Mathematics', 'Computer Science'],
-            recentGrades: [
-                { subject: 'Mathematics', grade: 'A', marks: 94 },
-                { subject: 'Computer Science', grade: 'A-', marks: 91 }
-            ]
-        },
-        {
-            id: 4,
-            name: 'Sarah Johnson',
-            rollNo: '10B-008',
-            class: 'Grade 10-B',
-            email: 'sarah.j@school.com',
-            phone: '+1 234-567-8904',
-            attendance: 78,
-            grade: 'C+',
-            status: 'warning',
-            subjects: ['Mathematics', 'Physics'],
-            recentGrades: [
-                { subject: 'Mathematics', grade: 'C+', marks: 75 },
-                { subject: 'Physics', grade: 'C', marks: 72 }
-            ]
-        }
-    ]);
+    // Load students on mount and subscribe to real-time updates
+    useEffect(() => {
+        loadStudents();
+        const unsubscribe = subscribeToUpdates(loadStudents);
+        return unsubscribe;
+    }, []);
 
-    const classes = ['All Classes', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B'];
+    const loadStudents = () => {
+        const data = getAllStudents();
+        setStudents(data);
+        setStats(getStudentStats());
+    };
+
+    const classes = ['All Classes', 'Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
     const statuses = ['All', 'Active', 'Warning', 'Inactive'];
 
     const filteredStudents = students.filter(student => {
@@ -118,6 +67,7 @@ const StudentsPage = ({ darkMode }) => {
     };
 
     const getGradeColor = (grade) => {
+        if (!grade) return 'text-gray-600';
         if (grade.startsWith('A')) return 'text-green-600';
         if (grade.startsWith('B')) return 'text-blue-600';
         if (grade.startsWith('C')) return 'text-yellow-600';
@@ -156,7 +106,7 @@ const StudentsPage = ({ darkMode }) => {
                                 </h3>
                                 <p className="text-gray-500">{selectedStudent.rollNo}</p>
                                 <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mt-2 ${getStatusColor(selectedStudent.status)}`}>
-                                    {selectedStudent.status.charAt(0).toUpperCase() + selectedStudent.status.slice(1)}
+                                    {selectedStudent.status}
                                 </span>
                             </div>
                         </div>
@@ -172,12 +122,14 @@ const StudentsPage = ({ darkMode }) => {
                                     {selectedStudent.email}
                                 </span>
                             </div>
-                            <div className="flex items-center space-x-3">
-                                <Phone className="w-5 h-5 text-gray-400" />
-                                <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
-                                    {selectedStudent.phone}
-                                </span>
-                            </div>
+                            {selectedStudent.phone && (
+                                <div className="flex items-center space-x-3">
+                                    <Phone className="w-5 h-5 text-gray-400" />
+                                    <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                                        {selectedStudent.phone}
+                                    </span>
+                                </div>
+                            )}
                             <div className="flex items-center space-x-3">
                                 <BookOpen className="w-5 h-5 text-gray-400" />
                                 <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
@@ -194,7 +146,7 @@ const StudentsPage = ({ darkMode }) => {
                                     <TrendingUp className="w-5 h-5 text-blue-500" />
                                 </div>
                                 <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                    {selectedStudent.attendance}%
+                                    {selectedStudent.attendance || 0}%
                                 </p>
                             </div>
                             <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-4`}>
@@ -203,52 +155,36 @@ const StudentsPage = ({ darkMode }) => {
                                     <Award className="w-5 h-5 text-yellow-500" />
                                 </div>
                                 <p className={`text-2xl font-bold ${getGradeColor(selectedStudent.grade)}`}>
-                                    {selectedStudent.grade}
+                                    {selectedStudent.grade || 'N/A'}
                                 </p>
                             </div>
                         </div>
 
-                        {/* Recent Grades */}
-                        <div>
-                            <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-3`}>
-                                Recent Grades
-                            </h4>
-                            <div className="space-y-2">
-                                {selectedStudent.recentGrades.map((grade, index) => (
-                                    <div
-                                        key={index}
-                                        className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-3 flex items-center justify-between`}
-                                    >
-                                        <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
-                                            {grade.subject}
-                                        </span>
-                                        <div className="flex items-center space-x-3">
-                                            <span className="text-gray-500">{grade.marks}/100</span>
-                                            <span className={`font-bold ${getGradeColor(grade.grade)}`}>
-                                                {grade.grade}
-                                            </span>
+                        {/* Parent Information */}
+                        {selectedStudent.parent && (
+                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-4`}>
+                                <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-3`}>
+                                    Parent/Guardian Information
+                                </h4>
+                                <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    {selectedStudent.parent}
+                                </p>
+                                <div className="mt-2 space-y-2">
+                                    {selectedStudent.parentEmail && (
+                                        <div className="flex items-center space-x-2 text-sm">
+                                            <Mail className="w-4 h-4 text-gray-400" />
+                                            <span className="text-gray-500">{selectedStudent.parentEmail}</span>
                                         </div>
-                                    </div>
-                                ))}
+                                    )}
+                                    {selectedStudent.parentPhone && (
+                                        <div className="flex items-center space-x-2 text-sm">
+                                            <Phone className="w-4 h-4 text-gray-400" />
+                                            <span className="text-gray-500">{selectedStudent.parentPhone}</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-
-                        {/* Enrolled Subjects */}
-                        <div>
-                            <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-3`}>
-                                Enrolled Subjects
-                            </h4>
-                            <div className="flex flex-wrap gap-2">
-                                {selectedStudent.subjects.map((subject, index) => (
-                                    <span
-                                        key={index}
-                                        className="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-sm font-medium"
-                                    >
-                                        {subject}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -262,7 +198,7 @@ const StudentsPage = ({ darkMode }) => {
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Students
                 </h1>
-                <p className="text-sm text-gray-500">Manage and view student information</p>
+                <p className="text-sm text-gray-500">View and manage student information (Real-time sync with Admin)</p>
             </div>
 
             {/* Stats Cards */}
@@ -272,7 +208,7 @@ const StudentsPage = ({ darkMode }) => {
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Students</h3>
                         <Users className="w-5 h-5 text-blue-500" />
                     </div>
-                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{students.length}</p>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.total}</p>
                 </div>
 
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -281,7 +217,7 @@ const StudentsPage = ({ darkMode }) => {
                         <CheckCircle className="w-5 h-5 text-green-500" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {students.filter(s => s.status === 'active').length}
+                        {stats.active}
                     </p>
                 </div>
 
@@ -291,7 +227,7 @@ const StudentsPage = ({ darkMode }) => {
                         <AlertCircle className="w-5 h-5 text-yellow-500" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {students.filter(s => s.status === 'warning').length}
+                        {stats.warning}
                     </p>
                 </div>
 
@@ -301,7 +237,7 @@ const StudentsPage = ({ darkMode }) => {
                         <TrendingUp className="w-5 h-5 text-purple-500" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {Math.round(students.reduce((acc, s) => acc + s.attendance, 0) / students.length)}%
+                        {stats.avgAttendance}%
                     </p>
                 </div>
             </div>
@@ -386,65 +322,80 @@ const StudentsPage = ({ darkMode }) => {
                             </tr>
                         </thead>
                         <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
-                            {filteredStudents.map((student) => (
-                                <tr key={student.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center">
-                                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
-                                                {student.name.split(' ').map(n => n[0]).join('')}
-                                            </div>
-                                            <div className="ml-4">
-                                                <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                    {student.name}
-                                                </div>
-                                                <div className="text-sm text-gray-500">{student.email}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                        {student.rollNo}
-                                    </td>
-                                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                        {student.class}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center">
-                                            <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                {student.attendance}%
-                                            </span>
-                                            <div className="ml-2 w-16 bg-gray-200 rounded-full h-2">
-                                                <div
-                                                    className={`h-2 rounded-full ${student.attendance >= 90 ? 'bg-green-500' :
-                                                        student.attendance >= 75 ? 'bg-yellow-500' : 'bg-red-500'
-                                                        }`}
-                                                    style={{ width: `${student.attendance}%` }}
-                                                ></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`text-sm font-bold ${getGradeColor(student.grade)}`}>
-                                            {student.grade}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(student.status)}`}>
-                                            {student.status.charAt(0).toUpperCase() + student.status.slice(1)}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                        <button
-                                            onClick={() => {
-                                                setSelectedStudent(student);
-                                                setShowDetails(true);
-                                            }}
-                                            className="text-green-600 hover:text-green-900 mr-3"
-                                        >
-                                            <Eye className="w-5 h-5" />
-                                        </button>
+                            {filteredStudents.length === 0 ? (
+                                <tr>
+                                    <td colSpan="7" className="px-6 py-12 text-center">
+                                        <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                                        <p className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                            No students found
+                                        </p>
+                                        <p className="text-sm text-gray-500 mt-2">
+                                            Students added by Admin will appear here automatically
+                                        </p>
                                     </td>
                                 </tr>
-                            ))}
+                            ) : (
+                                filteredStudents.map((student) => (
+                                    <tr key={student.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="flex items-center">
+                                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+                                                    {student.name.split(' ').map(n => n[0]).join('')}
+                                                </div>
+                                                <div className="ml-4">
+                                                    <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                        {student.name}
+                                                    </div>
+                                                    <div className="text-sm text-gray-500">{student.email}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                            {student.rollNo}
+                                        </td>
+                                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                            {student.class}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="flex items-center">
+                                                <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                    {student.attendance || 0}%
+                                                </span>
+                                                <div className="ml-2 w-16 bg-gray-200 rounded-full h-2">
+                                                    <div
+                                                        className={`h-2 rounded-full ${(student.attendance || 0) >= 90 ? 'bg-green-500' :
+                                                            (student.attendance || 0) >= 75 ? 'bg-yellow-500' : 'bg-red-500'
+                                                            }`}
+                                                        style={{ width: `${student.attendance || 0}%` }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`text-sm font-bold ${getGradeColor(student.grade)}`}>
+                                                {student.grade || 'N/A'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(student.status)}`}>
+                                                {student.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedStudent(student);
+                                                    setShowDetails(true);
+                                                }}
+                                                className="text-green-600 hover:text-green-900 mr-3"
+                                                title="View Details"
+                                            >
+                                                <Eye className="w-5 h-5" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>

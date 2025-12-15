@@ -1,6 +1,19 @@
 // JWT Utility Functions for Authentication
 
 /**
+ * Get JWT Secret from environment variable
+ * Falls back to a default key if not set (NOT recommended for production)
+ */
+const getJWTSecret = () => {
+    const secret = import.meta.env.VITE_JWT_SECRET;
+    if (!secret) {
+        console.warn('⚠️ VITE_JWT_SECRET not found in .env file. Using default key (NOT SECURE)');
+        return 'default-insecure-key-change-this';
+    }
+    return secret;
+};
+
+/**
  * Token Expiration Options:
  * - '1h' = 1 hour
  * - '24h' = 24 hours
@@ -59,8 +72,13 @@ export const generateToken = (userData, expiresIn = 'permanent') => {
     const encodedHeader = btoa(JSON.stringify(header));
     const encodedPayload = btoa(JSON.stringify(payload));
 
-    // Create a mock signature (in production, this would be signed with a secret key)
-    const signature = btoa(`${encodedHeader}.${encodedPayload}.secret-key`);
+    // Get secret key from environment variable
+    const secretKey = getJWTSecret();
+
+    // Create a signature using the secret key
+    // NOTE: This is still a mock implementation. In production, use a proper JWT library
+    // like 'jsonwebtoken' on the backend with HMAC-SHA256 signing
+    const signature = btoa(`${encodedHeader}.${encodedPayload}.${secretKey}`);
 
     // Return the complete JWT token
     return `${encodedHeader}.${encodedPayload}.${signature}`;
