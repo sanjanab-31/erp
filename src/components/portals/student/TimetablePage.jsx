@@ -1,278 +1,288 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Calendar,
-    Grid,
-    Download,
     MapPin,
-    User
+    User,
+    AlertCircle,
+    Clock,
+    BookOpen
 } from 'lucide-react';
+import { getClassTimetable, subscribeToUpdates } from '../../../utils/timetableStore';
+import { getAllStudents } from '../../../utils/studentStore';
 
 const TimetablePage = ({ darkMode }) => {
-    const [viewMode, setViewMode] = useState('Week View');
+    const [timetable, setTimetable] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [studentClass, setStudentClass] = useState('');
 
-    // Real-time timetable data
-    const [timetableData, setTimetableData] = useState({
-        periods: [
-            {
-                id: 1,
-                name: 'Period 1',
-                time: '08:00 - 08:45'
-            },
-            {
-                id: 2,
-                name: 'Period 2',
-                time: '08:45 - 09:30'
-            },
-            {
-                id: 3,
-                name: 'Period 3',
-                time: '09:45 - 10:30'
-            },
-            {
-                id: 4,
-                name: 'Period 4',
-                time: '10:30 - 11:15'
-            },
-            {
-                id: 5,
-                name: 'Period 5',
-                time: '11:30 - 12:15'
-            },
-            {
-                id: 6,
-                name: 'Period 6',
-                time: '12:15 - 01:00'
-            }
-        ],
-        days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-        schedule: {
-            Monday: [
-                { subject: 'Mathematics', teacher: 'Sarah Johnson', room: 'Room 101', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-                { subject: 'Physics', teacher: 'David Brown', room: 'Room 102', color: 'bg-purple-100 text-purple-800 border-purple-200' },
-                { subject: 'Chemistry', teacher: 'Robert Lee', room: 'Room 103', color: 'bg-green-100 text-green-800 border-green-200' },
-                { subject: 'English', teacher: 'Lisa Anderson', room: 'Room 201', color: 'bg-orange-100 text-orange-800 border-orange-200' },
-                { subject: 'History', teacher: 'Mark Wilson', room: 'Room 202', color: 'bg-pink-100 text-pink-800 border-pink-200' },
-                { subject: 'Lunch Break', teacher: '', room: '', color: 'bg-yellow-50 text-yellow-800 border-yellow-200' }
-            ],
-            Tuesday: [
-                { subject: 'Mathematics', teacher: 'Sarah Johnson', room: 'Room 101', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-                { subject: 'Physics', teacher: 'David Brown', room: 'Room 102', color: 'bg-purple-100 text-purple-800 border-purple-200' },
-                { subject: 'Chemistry', teacher: 'Robert Lee', room: 'Room 103', color: 'bg-green-100 text-green-800 border-green-200' },
-                { subject: 'English', teacher: 'Lisa Anderson', room: 'Room 201', color: 'bg-orange-100 text-orange-800 border-orange-200' },
-                { subject: 'History', teacher: 'Mark Wilson', room: 'Room 202', color: 'bg-pink-100 text-pink-800 border-pink-200' },
-                { subject: 'Lunch Break', teacher: '', room: '', color: 'bg-yellow-50 text-yellow-800 border-yellow-200' }
-            ],
-            Wednesday: [
-                { subject: 'Mathematics', teacher: 'Sarah Johnson', room: 'Room 101', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-                { subject: 'Physics', teacher: 'David Brown', room: 'Room 102', color: 'bg-purple-100 text-purple-800 border-purple-200' },
-                { subject: 'Chemistry', teacher: 'Robert Lee', room: 'Room 103', color: 'bg-green-100 text-green-800 border-green-200' },
-                { subject: 'English', teacher: 'Lisa Anderson', room: 'Room 201', color: 'bg-orange-100 text-orange-800 border-orange-200' },
-                { subject: 'History', teacher: 'Mark Wilson', room: 'Room 202', color: 'bg-pink-100 text-pink-800 border-pink-200' },
-                { subject: 'Lunch Break', teacher: '', room: '', color: 'bg-yellow-50 text-yellow-800 border-yellow-200' }
-            ],
-            Thursday: [
-                { subject: 'Mathematics', teacher: 'Sarah Johnson', room: 'Room 101', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-                { subject: 'Physics', teacher: 'David Brown', room: 'Room 102', color: 'bg-purple-100 text-purple-800 border-purple-200' },
-                { subject: 'Chemistry', teacher: 'Robert Lee', room: 'Room 103', color: 'bg-green-100 text-green-800 border-green-200' },
-                { subject: 'English', teacher: 'Lisa Anderson', room: 'Room 201', color: 'bg-orange-100 text-orange-800 border-orange-200' },
-                { subject: 'History', teacher: 'Mark Wilson', room: 'Room 202', color: 'bg-pink-100 text-pink-800 border-pink-200' },
-                { subject: 'Lunch Break', teacher: '', room: '', color: 'bg-yellow-50 text-yellow-800 border-yellow-200' }
-            ],
-            Friday: [
-                { subject: 'Mathematics', teacher: 'Sarah Johnson', room: 'Room 101', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-                { subject: 'Physics', teacher: 'David Brown', room: 'Room 102', color: 'bg-purple-100 text-purple-800 border-purple-200' },
-                { subject: 'Chemistry', teacher: 'Robert Lee', room: 'Room 103', color: 'bg-green-100 text-green-800 border-green-200' },
-                { subject: 'English', teacher: 'Lisa Anderson', room: 'Room 201', color: 'bg-orange-100 text-orange-800 border-orange-200' },
-                { subject: 'History', teacher: 'Mark Wilson', room: 'Room 202', color: 'bg-pink-100 text-pink-800 border-pink-200' },
-                { subject: 'Lunch Break', teacher: '', room: '', color: 'bg-yellow-50 text-yellow-800 border-yellow-200' }
-            ],
-            Saturday: [
-                { subject: 'Mathematics', teacher: 'Sarah Johnson', room: 'Room 101', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-                { subject: 'Physics', teacher: 'David Brown', room: 'Room 102', color: 'bg-purple-100 text-purple-800 border-purple-200' },
-                { subject: 'Chemistry', teacher: 'Robert Lee', room: 'Room 103', color: 'bg-green-100 text-green-800 border-green-200' },
-                { subject: 'English', teacher: 'Lisa Anderson', room: 'Room 201', color: 'bg-orange-100 text-orange-800 border-orange-200' },
-                { subject: 'History', teacher: 'Mark Wilson', room: 'Room 202', color: 'bg-pink-100 text-pink-800 border-pink-200' },
-                { subject: 'Lunch Break', teacher: '', room: '', color: 'bg-yellow-50 text-yellow-800 border-yellow-200' }
-            ]
-        },
-        legend: [
-            { subject: 'Mathematics', color: 'bg-blue-100 border-blue-200' },
-            { subject: 'Physics', color: 'bg-purple-100 border-purple-200' },
-            { subject: 'Chemistry', color: 'bg-green-100 border-green-200' },
-            { subject: 'English', color: 'bg-orange-100 border-orange-200' },
-            { subject: 'History', color: 'bg-pink-100 border-pink-200' },
-            { subject: 'Biology', color: 'bg-teal-100 border-teal-200' },
-            { subject: 'Computer Science', color: 'bg-cyan-100 border-cyan-200' },
-            { subject: 'Physical Education', color: 'bg-amber-100 border-amber-200' }
-        ]
-    });
+    // Get logged-in student info
+    const studentEmail = localStorage.getItem('userEmail');
 
-    // Simulate real-time updates
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const timeSlots = [
+        '09:00-10:00',
+        '10:00-11:00',
+        '11:00-12:00',
+        '12:00-13:00',
+        '13:00-14:00',
+        '14:00-15:00',
+        '15:00-16:00'
+    ];
+
+    // Load student's class and timetable
     useEffect(() => {
-        const interval = setInterval(() => {
-            setTimetableData(prev => ({
-                ...prev,
-                // Update any real-time fields
-            }));
-        }, 5000);
-
-        return () => clearInterval(interval);
+        loadStudentClass();
     }, []);
 
-    // Get current day highlight
-    const getCurrentDay = () => {
-        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const today = new Date().getDay();
-        return days[today];
+    useEffect(() => {
+        if (studentClass) {
+            loadTimetable();
+            const unsubscribe = subscribeToUpdates(loadTimetable);
+            return unsubscribe;
+        }
+    }, [studentClass]);
+
+    const loadStudentClass = useCallback(() => {
+        console.log('Loading student class for email:', studentEmail);
+        // Find student by email to get their class
+        const students = getAllStudents();
+        console.log('All students:', students);
+
+        const student = students.find(s => s.email === studentEmail);
+        console.log('Student found:', student);
+
+        if (student) {
+            setStudentClass(student.class);
+            console.log('Student class set to:', student.class);
+        } else {
+            console.log('Student not found with email:', studentEmail);
+        }
+        setLoading(false);
+    }, [studentEmail]);
+
+    const loadTimetable = useCallback(() => {
+        if (studentClass) {
+            console.log('Loading timetable for class:', studentClass);
+            const classTT = getClassTimetable(studentClass);
+            console.log('Class timetable found:', classTT);
+            setTimetable(classTT);
+        }
+    }, [studentClass]);
+
+    // Organize schedule by day
+    const scheduleByDay = {};
+    days.forEach(day => {
+        scheduleByDay[day] = [];
+    });
+
+    if (timetable && timetable.schedule) {
+        timetable.schedule.forEach(entry => {
+            if (scheduleByDay[entry.day]) {
+                scheduleByDay[entry.day].push(entry);
+            }
+        });
+    }
+
+    // Calculate stats
+    const totalClasses = timetable?.schedule?.length || 0;
+    const todayIndex = new Date().getDay() - 1; // 0 = Monday
+    const todayClasses = todayIndex >= 0 && todayIndex < 5 ? scheduleByDay[days[todayIndex]]?.length || 0 : 0;
+
+    // Get unique subjects
+    const uniqueSubjects = timetable?.schedule
+        ? [...new Set(timetable.schedule.map(entry => entry.subject).filter(s => s))]
+        : [];
+
+    const formatTime = (time) => {
+        const [start] = time.split('-');
+        const [hours, minutes] = start.split(':');
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour % 12 || 12;
+        return `${displayHour}:${minutes} ${ampm}`;
     };
 
-    const currentDay = getCurrentDay();
+    const getSubjectColor = (subject) => {
+        const colors = [
+            'bg-blue-100 text-blue-800 border-blue-200',
+            'bg-purple-100 text-purple-800 border-purple-200',
+            'bg-green-100 text-green-800 border-green-200',
+            'bg-orange-100 text-orange-800 border-orange-200',
+            'bg-pink-100 text-pink-800 border-pink-200',
+            'bg-teal-100 text-teal-800 border-teal-200',
+            'bg-cyan-100 text-cyan-800 border-cyan-200',
+            'bg-amber-100 text-amber-800 border-amber-200'
+        ];
+        const index = subject ? subject.charCodeAt(0) % colors.length : 0;
+        return colors[index];
+    };
+
+    if (loading) {
+        return (
+            <div className="flex-1 overflow-y-auto p-8">
+                <div className="flex items-center justify-center h-64">
+                    <div className="text-center">
+                        <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4 animate-spin" />
+                        <p className={`text-lg ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                            Loading timetable...
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {/* Page Header */}
-            <div className="mb-6">
+            {/* Header */}
+            <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
-                    Timetable
+                    My Timetable
                 </h1>
-                <p className="text-sm text-gray-500">View your class schedule</p>
+                <p className="text-sm text-gray-500">
+                    {studentClass ? `Class ${studentClass} Schedule (Real-time sync with Admin)` : 'View your class schedule'}
+                </p>
             </div>
 
-            {/* View Toggle and Export */}
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-2">
-                    <button
-                        onClick={() => setViewMode('Day View')}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg border transition-colors ${viewMode === 'Day View'
-                                ? 'bg-gray-900 text-white border-gray-900'
-                                : `${darkMode ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-white border-gray-300 text-gray-700'} hover:bg-gray-50`
-                            }`}
-                    >
-                        <Calendar className="w-4 h-4" />
-                        <span className="text-sm font-medium">Day View</span>
-                    </button>
-                    <button
-                        onClick={() => setViewMode('Week View')}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg border transition-colors ${viewMode === 'Week View'
-                                ? 'bg-gray-900 text-white border-gray-900'
-                                : `${darkMode ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-white border-gray-300 text-gray-700'} hover:bg-gray-50`
-                            }`}
-                    >
-                        <Grid className="w-4 h-4" />
-                        <span className="text-sm font-medium">Week View</span>
-                    </button>
+            {!timetable ? (
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-center`}>
+                    <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
+                        No Timetable Available
+                    </h3>
+                    <p className="text-gray-500">
+                        Your class timetable hasn't been created yet. Please contact the admin.
+                    </p>
                 </div>
-            </div>
-
-            {/* Timetable Card */}
-            <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl shadow-sm border mb-6`}>
-                <div className="p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <div>
-                            <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                Weekly Timetable
-                            </h3>
-                            <p className="text-sm text-gray-500">Class schedule for the week</p>
+            ) : (
+                <>
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Periods</h3>
+                                <BookOpen className="w-5 h-5 text-blue-500" />
+                            </div>
+                            <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{totalClasses}</p>
+                            <p className="text-sm text-gray-500 mt-1">This week</p>
                         </div>
-                        <button className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                            <Download className="w-4 h-4 text-gray-600" />
-                            <span className="text-sm font-medium text-gray-700">Export</span>
-                        </button>
+
+                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Today's Classes</h3>
+                                <Calendar className="w-5 h-5 text-purple-500" />
+                            </div>
+                            <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{todayClasses}</p>
+                            <p className="text-sm text-gray-500 mt-1">Scheduled today</p>
+                        </div>
+
+                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Subjects</h3>
+                                <BookOpen className="w-5 h-5 text-green-500" />
+                            </div>
+                            <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{uniqueSubjects.length}</p>
+                            <p className="text-sm text-gray-500 mt-1">Different subjects</p>
+                        </div>
                     </div>
 
                     {/* Timetable Grid */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
-                            <thead>
-                                <tr>
-                                    <th className={`sticky left-0 z-10 ${darkMode ? 'bg-gray-800' : 'bg-white'} border-b-2 ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-3 text-left`}>
-                                        <div className={`text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden mb-6`}>
+                        <div className="p-6 border-b border-gray-200">
+                            <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                Weekly Schedule
+                            </h3>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className={`w-full border-collapse ${darkMode ? 'border-gray-600' : 'border-gray-300'}`}>
+                                <thead>
+                                    <tr>
+                                        <th className={`border ${darkMode ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-300 bg-gray-100 text-gray-700'} p-3 text-left font-semibold sticky left-0 z-10`}>
                                             Time
-                                        </div>
-                                    </th>
-                                    {timetableData.days.map((day) => (
-                                        <th
-                                            key={day}
-                                            className={`border-b-2 ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-3 text-center min-w-[150px] ${day === currentDay ? 'bg-gray-900 text-white' : ''
-                                                }`}
-                                        >
-                                            <div className={`text-sm font-semibold ${day === currentDay ? 'text-white' : darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                                {day}
-                                            </div>
-                                            {day === currentDay && (
-                                                <div className="text-xs text-gray-300 mt-1">Today</div>
-                                            )}
                                         </th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {timetableData.periods.map((period, periodIndex) => (
-                                    <tr key={period.id}>
-                                        <td className={`sticky left-0 z-10 ${darkMode ? 'bg-gray-800' : 'bg-white'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'} p-3`}>
-                                            <div className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                {period.name}
-                                            </div>
-                                            <div className="text-xs text-gray-500">{period.time}</div>
-                                        </td>
-                                        {timetableData.days.map((day) => {
-                                            const classData = timetableData.schedule[day][periodIndex];
-                                            const isLunchBreak = classData.subject === 'Lunch Break';
-
+                                        {days.map(day => {
+                                            const isToday = new Date().getDay() - 1 === days.indexOf(day);
                                             return (
-                                                <td
-                                                    key={day}
-                                                    className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'} p-2`}
-                                                >
-                                                    <div
-                                                        className={`${classData.color} border rounded-lg p-3 h-full ${isLunchBreak ? 'flex items-center justify-center' : ''
-                                                            }`}
-                                                    >
-                                                        {isLunchBreak ? (
-                                                            <span className="text-sm font-semibold">{classData.subject}</span>
-                                                        ) : (
-                                                            <>
-                                                                <div className="text-sm font-semibold mb-2">
-                                                                    {classData.subject}
-                                                                </div>
-                                                                <div className="flex items-center space-x-1 text-xs mb-1">
-                                                                    <User className="w-3 h-3" />
-                                                                    <span>{classData.teacher}</span>
-                                                                </div>
-                                                                <div className="flex items-center space-x-1 text-xs">
-                                                                    <MapPin className="w-3 h-3" />
-                                                                    <span>{classData.room}</span>
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </td>
+                                                <th key={day} className={`border ${darkMode ? 'border-gray-600 text-gray-300' : 'border-gray-300 text-gray-700'} p-3 text-center font-semibold ${isToday ? 'bg-purple-600 text-white' : darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                                                    {day}
+                                                    {isToday && <div className="text-xs mt-1">Today</div>}
+                                                </th>
                                             );
                                         })}
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+                                </thead>
+                                <tbody>
+                                    {timeSlots.map(slot => (
+                                        <tr key={slot}>
+                                            <td className={`border ${darkMode ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-300 bg-gray-50 text-gray-700'} p-3 font-medium whitespace-nowrap sticky left-0 z-10`}>
+                                                {formatTime(slot)}
+                                            </td>
+                                            {days.map(day => {
+                                                const daySchedule = scheduleByDay[day] || [];
+                                                const classAtTime = daySchedule.find(entry => entry.time === slot);
 
-            {/* Subject Legend */}
-            <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl shadow-sm border p-6`}>
-                <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-                    Subject Legend
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {timetableData.legend.map((item) => (
-                        <div key={item.subject} className="flex items-center space-x-3">
-                            <div className={`w-4 h-4 rounded border ${item.color}`}></div>
-                            <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                {item.subject}
-                            </span>
+                                                return (
+                                                    <td key={day} className={`border ${darkMode ? 'border-gray-600' : 'border-gray-300'} p-2`}>
+                                                        {classAtTime ? (
+                                                            <div className={`p-3 rounded-lg border ${getSubjectColor(classAtTime.subject)}`}>
+                                                                <h4 className="font-semibold text-sm mb-2">
+                                                                    {classAtTime.subject}
+                                                                </h4>
+                                                                {classAtTime.room && (
+                                                                    <div className="flex items-center space-x-1 text-xs">
+                                                                        <MapPin className="w-3 h-3" />
+                                                                        <span>Room {classAtTime.room}</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-center text-gray-400 text-xs">-</div>
+                                                        )}
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
-                    ))}
-                </div>
-            </div>
+                    </div>
+
+                    {/* Subject Legend */}
+                    {uniqueSubjects.length > 0 && (
+                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6`}>
+                            <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
+                                Subject Legend
+                            </h3>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {uniqueSubjects.map((subject) => (
+                                    <div key={subject} className="flex items-center space-x-3">
+                                        <div className={`w-4 h-4 rounded border ${getSubjectColor(subject)}`}></div>
+                                        <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                            {subject}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Info Note */}
+                    <div className={`${darkMode ? 'bg-blue-900 border-blue-700' : 'bg-blue-50 border-blue-200'} border rounded-xl p-4`}>
+                        <div className="flex items-start space-x-3">
+                            <AlertCircle className={`w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'} mt-0.5`} />
+                            <div>
+                                <h4 className={`font-semibold text-sm ${darkMode ? 'text-blue-300' : 'text-blue-900'} mb-1`}>
+                                    Real-time Sync
+                                </h4>
+                                <p className={`text-sm ${darkMode ? 'text-blue-200' : 'text-blue-700'}`}>
+                                    Your timetable is managed by the admin. Any changes made by the admin will appear here automatically without needing to refresh the page.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 };
