@@ -59,10 +59,7 @@ const CoursesPage = ({ darkMode }) => {
                     <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                         Courses Management
                     </h1>
-                    <p className="text-sm text-gray-500">View all courses created by teachers (Read-only)</p>
-                </div>
-                <div className={`px-4 py-2 rounded-lg ${darkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-700'}`}>
-                    <p className="text-sm font-medium">Real-time Updates Active</p>
+                    <p className="text-sm text-gray-500">View all courses created by teachers</p>
                 </div>
             </div>
 
@@ -212,13 +209,6 @@ const CoursesPage = ({ darkMode }) => {
                                     <Eye className="w-4 h-4" />
                                     <span>View Details</span>
                                 </button>
-                            </div>
-
-                            {/* Read-only indicator */}
-                            <div className={`mt-3 pt-3 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                                <p className="text-xs text-gray-500 text-center">
-                                    📖 Read-only • Created by teacher
-                                </p>
                             </div>
                         </div>
                     ))}
