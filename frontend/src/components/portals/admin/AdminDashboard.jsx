@@ -99,11 +99,11 @@ const AdminDashboard = () => {
         { icon: BookMarked, label: 'Courses' },
         { icon: DollarSign, label: 'Fees & Finance' },
         { icon: Calendar, label: 'Timetable' },
+        { icon: Calendar, label: 'Exam Schedules' },
         { icon: BookMarked, label: 'Library' },
         { icon: Bus, label: 'Transport' },
         { icon: BarChart3, label: 'Reports' },
-        { icon: Settings, label: 'Settings' },
-        { icon: Calendar, label: 'Exam Schedules' }
+        { icon: Settings, label: 'Settings' }
     ];
 
     const quickActions = [

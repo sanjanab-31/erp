@@ -111,9 +111,9 @@ const ParentChildAcademics = ({ darkMode }) => {
                                         <BookOpen className="w-6 h-6 text-white" />
                                     </div>
                                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${finalMarks.finalTotal >= 90 ? 'bg-green-100 text-green-600' :
-                                            finalMarks.finalTotal >= 75 ? 'bg-blue-100 text-blue-600' :
-                                                finalMarks.finalTotal >= 60 ? 'bg-yellow-100 text-yellow-600' :
-                                                    finalMarks.finalTotal > 0 ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'
+                                        finalMarks.finalTotal >= 75 ? 'bg-blue-100 text-blue-600' :
+                                            finalMarks.finalTotal >= 60 ? 'bg-yellow-100 text-yellow-600' :
+                                                finalMarks.finalTotal > 0 ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'
                                         }`}>
                                         {finalMarks.finalTotal > 0 ? `${finalMarks.finalTotal}/100` : 'No marks'}
                                     </span>
@@ -285,46 +285,59 @@ const ParentChildAcademics = ({ darkMode }) => {
                         </p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {examSchedules.map((schedule) => (
-                            <div
-                                key={schedule.id}
-                                className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border p-6`}
-                            >
-                                <div className="flex items-start justify-between mb-4">
-                                    <div>
-                                        <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>
-                                            {schedule.examName}
+                    <div className="space-y-6">
+                        {(() => {
+                            const groupedSchedules = {};
+                            examSchedules.forEach(schedule => {
+                                if (!groupedSchedules[schedule.examName]) {
+                                    groupedSchedules[schedule.examName] = [];
+                                }
+                                groupedSchedules[schedule.examName].push(schedule);
+                            });
+
+                            return Object.entries(groupedSchedules).map(([examName, papers]) => (
+                                <div key={examName} className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border overflow-hidden`}>
+                                    <div className={`p-4 border-b ${darkMode ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'} flex justify-between items-center`}>
+                                        <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                            {examName}
                                         </h3>
-                                        <p className="text-sm text-gray-500">{schedule.courseName}</p>
+                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${darkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
+                                            {papers.length} Papers
+                                        </span>
                                     </div>
-                                    <span className="px-3 py-1 bg-purple-100 text-purple-600 text-xs font-semibold rounded-full">
-                                        {schedule.class}
-                                    </span>
-                                </div>
-                                <div className="space-y-2 text-sm">
-                                    <p className="flex items-center space-x-2 text-gray-500">
-                                        <Calendar className="w-4 h-4" />
-                                        <span>{new Date(schedule.examDate).toLocaleDateString()}</span>
-                                    </p>
-                                    <p className="flex items-center space-x-2 text-gray-500">
-                                        <Clock className="w-4 h-4" />
-                                        <span>{schedule.startTime} - {schedule.endTime}</span>
-                                    </p>
-                                    {schedule.venue && (
-                                        <p className="text-gray-500">Venue: {schedule.venue}</p>
-                                    )}
-                                </div>
-                                {schedule.instructions && (
-                                    <div className={`mt-4 p-3 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
-                                        <p className="text-xs text-gray-500 mb-1">Instructions:</p>
-                                        <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                            {schedule.instructions}
-                                        </p>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left">
+                                            <thead>
+                                                <tr className={`border-b ${darkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-100 bg-white'}`}>
+                                                    <th className={`p-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Subject</th>
+                                                    <th className={`p-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Date</th>
+                                                    <th className={`p-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Time</th>
+                                                    <th className={`p-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Venue</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                                                {papers.sort((a, b) => new Date(a.examDate) - new Date(b.examDate)).map(paper => (
+                                                    <tr key={paper.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
+                                                        <td className={`p-4 text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                            {paper.subject || paper.courseName}
+                                                        </td>
+                                                        <td className={`p-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                                            {new Date(paper.examDate).toLocaleDateString()}
+                                                        </td>
+                                                        <td className={`p-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                                            {paper.startTime} - {paper.endTime}
+                                                        </td>
+                                                        <td className={`p-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                                            {paper.venue || '-'}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
                                     </div>
-                                )}
-                            </div>
-                        ))}
+                                </div>
+                            ));
+                        })()}
                     </div>
                 )}
             </div>

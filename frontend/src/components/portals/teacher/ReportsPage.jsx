@@ -72,10 +72,10 @@ const ReportsPage = ({ darkMode }) => {
                 return (
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-blue-50'} rounded-lg p-4`}>
+                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-green-50'} rounded-lg p-4`}>
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-sm text-gray-500">Total Classes</span>
-                                    <BookOpen className="w-5 h-5 text-blue-500" />
+                                    <BookOpen className="w-5 h-5 text-green-500" />
                                 </div>
                                 <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                     {attendanceData.totalClasses}
@@ -169,10 +169,10 @@ const ReportsPage = ({ darkMode }) => {
                                     {gradesData.averageGrade}
                                 </p>
                             </div>
-                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-blue-50'} rounded-lg p-4`}>
+                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-green-50'} rounded-lg p-4`}>
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-sm text-gray-500">Total Assessments</span>
-                                    <FileText className="w-5 h-5 text-blue-500" />
+                                    <FileText className="w-5 h-5 text-green-500" />
                                 </div>
                                 <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                     {gradesData.totalAssessments}
@@ -232,7 +232,7 @@ const ReportsPage = ({ darkMode }) => {
                                                 {student.marks}/100
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                                <span className={`px-3 py-1 rounded-full text-sm font-bold ${student.grade.startsWith('A') ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
+                                                <span className={`px-3 py-1 rounded-full text-sm font-bold ${student.grade.startsWith('A') ? 'bg-green-100 text-green-600' : 'bg-green-100 text-green-600'}`}>
                                                     {student.grade}
                                                 </span>
                                             </td>
@@ -319,7 +319,7 @@ const ReportsPage = ({ darkMode }) => {
                         <span>Export PDF</span>
                     </button>
 
-                    <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+                    <button className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2">
                         <Download className="w-5 h-5" />
                         <span>Export Excel</span>
                     </button>
@@ -333,3 +333,4 @@ const ReportsPage = ({ darkMode }) => {
 };
 
 export default ReportsPage;
+

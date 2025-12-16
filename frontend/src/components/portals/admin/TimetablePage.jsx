@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Clock, Plus, Edit, Trash2, Save, X, Calendar as CalendarIcon, Users, GraduationCap } from 'lucide-react';
+import { Clock, Plus, Edit, Trash2, Save, X, Calendar as CalendarIcon, Users, GraduationCap, ChevronDown, ChevronUp, MapPin } from 'lucide-react';
 import { getAllTeachers } from '../../../utils/teacherStore';
 import { useToast } from '../../../context/ToastContext';
 import {
@@ -26,6 +26,135 @@ const timeSlots = [
 
 const classNames = ['Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
 
+const getSubjectColor = (subject) => {
+    const colors = [
+        'bg-blue-100 text-blue-800 border-blue-200',
+        'bg-purple-100 text-purple-800 border-purple-200',
+        'bg-green-100 text-green-800 border-green-200',
+        'bg-orange-100 text-orange-800 border-orange-200',
+        'bg-pink-100 text-pink-800 border-pink-200',
+        'bg-teal-100 text-teal-800 border-teal-200',
+        'bg-cyan-100 text-cyan-800 border-cyan-200',
+        'bg-amber-100 text-amber-800 border-amber-200'
+    ];
+    const index = subject ? subject.charCodeAt(0) % colors.length : 0;
+    return colors[index];
+};
+
+const TimetableTableView = ({ schedule, darkMode }) => {
+    // Organize schedule for quick lookup
+    const scheduleMap = {};
+    if (schedule) {
+        schedule.forEach(entry => {
+            scheduleMap[`${entry.day}-${entry.time}`] = entry;
+        });
+    }
+
+    return (
+        <div className="overflow-x-auto">
+            <table className={`w-full border-collapse ${darkMode ? 'border-gray-600' : 'border-gray-300'}`}>
+                <thead>
+                    <tr>
+                        <th className={`border ${darkMode ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-300 bg-gray-100 text-gray-700'} p-3 text-left font-semibold sticky left-0 z-10 w-32`}>
+                            Time
+                        </th>
+                        {days.map(day => (
+                            <th key={day} className={`border ${darkMode ? 'border-gray-600 text-gray-300' : 'border-gray-300 text-gray-700'} p-3 text-center font-semibold ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                                {day}
+                            </th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {timeSlots.map(slot => (
+                        <tr key={slot.value}>
+                            <td className={`border ${darkMode ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-300 bg-gray-50 text-gray-700'} p-3 font-medium whitespace-nowrap sticky left-0 z-10`}>
+                                {slot.label}
+                            </td>
+                            {days.map(day => {
+                                const entry = scheduleMap[`${day}-${slot.value}`];
+                                return (
+                                    <td key={day} className={`border ${darkMode ? 'border-gray-600' : 'border-gray-300'} p-2 h-24 align-top`}>
+                                        {entry ? (
+                                            <div className={`p-2 rounded-lg border h-full ${getSubjectColor(entry.subject)}`}>
+                                                <h4 className="font-semibold text-sm mb-1 line-clamp-2">
+                                                    {entry.subject}
+                                                </h4>
+                                                {entry.room && (
+                                                    <div className="flex items-center space-x-1 text-xs opacity-80">
+                                                        <MapPin className="w-3 h-3" />
+                                                        <span>{entry.room}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="h-full flex items-center justify-center">
+                                                <span className={`text-xs ${darkMode ? 'text-gray-600' : 'text-gray-300'}`}>-</span>
+                                            </div>
+                                        )}
+                                    </td>
+                                );
+                            })}
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+};
+
+const TimetableItem = ({ item, type, darkMode, onEdit, onDelete }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    const title = type === 'teacher' ? item.teacherName : item.className;
+    const periodCount = item.schedule?.length || 0;
+
+    return (
+        <div className={`border-b last:border-b-0 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div
+                className={`p-6 flex items-center justify-between cursor-pointer ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}
+                onClick={() => setIsExpanded(!isExpanded)}
+            >
+                <div>
+                    <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {title}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                        {periodCount} periods scheduled
+                    </p>
+                </div>
+                <div className="flex items-center space-x-3">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onEdit(item); }}
+                        className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-100'}`}
+                        title="Edit"
+                    >
+                        <Edit className="w-5 h-5 text-blue-500" />
+                    </button>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onDelete(item); }}
+                        className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-100'}`}
+                        title="Delete"
+                    >
+                        <Trash2 className="w-5 h-5 text-red-500" />
+                    </button>
+                    {isExpanded ? (
+                        <ChevronUp className="w-5 h-5 text-gray-400" />
+                    ) : (
+                        <ChevronDown className="w-5 h-5 text-gray-400" />
+                    )}
+                </div>
+            </div>
+
+            {isExpanded && (
+                <div className={`p-6 pt-0 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                    <TimetableTableView schedule={item.schedule} darkMode={darkMode} />
+                </div>
+            )}
+        </div>
+    );
+};
+
 // Move modal component outside to prevent re-creation
 const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onClose, onSave }) => {
     const { showSuccess, showError, showWarning, showInfo } = useToast();
@@ -33,13 +162,8 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
     const [timetableGrid, setTimetableGrid] = useState({});
 
     useEffect(() => {
-        console.log('TimetableModal useEffect triggered');
-        console.log('editingTimetable:', editingTimetable);
-
         // Initialize grid
         const grid = {};
-
-        // First, initialize all cells with empty values
         days.forEach(day => {
             timeSlots.forEach(slot => {
                 const key = `${day}-${slot.value}`;
@@ -47,12 +171,9 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
             });
         });
 
-        // Then, if editing, overlay the existing data
         if (editingTimetable && editingTimetable.schedule) {
-            console.log('Loading existing schedule:', editingTimetable.schedule);
             editingTimetable.schedule.forEach(entry => {
                 const key = `${entry.day}-${entry.time}`;
-                console.log('Setting cell:', key, entry);
                 grid[key] = {
                     subject: entry.subject || '',
                     room: entry.room || ''
@@ -60,8 +181,6 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
             });
             setSelectedEntity(activeView === 'teacher' ? editingTimetable.teacherId.toString() : editingTimetable.className);
         }
-
-        console.log('Final grid:', grid);
         setTimetableGrid(grid);
     }, [editingTimetable, activeView]);
 
@@ -85,16 +204,13 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
         }
 
         try {
-            // Convert grid to schedule array
             const schedule = [];
             Object.keys(timetableGrid).forEach(key => {
-                // Split only on the first hyphen to separate day from time
                 const firstHyphenIndex = key.indexOf('-');
                 const day = key.substring(0, firstHyphenIndex);
                 const time = key.substring(firstHyphenIndex + 1);
                 const cell = timetableGrid[key];
 
-                // Only add non-empty cells
                 if (cell.subject || cell.room) {
                     schedule.push({
                         day,
@@ -123,9 +239,9 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
     }, [selectedEntity, timetableGrid, activeView, teachers, onSave]);
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-7xl w-full max-h-[95vh] overflow-y-auto my-4`}>
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6 rounded-t-xl`}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-7xl w-full max-h-[95vh] overflow-y-auto my-4 shadow-2xl`}>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6 rounded-t-xl sticky top-0 z-20`}>
                     <div className="flex items-center justify-between">
                         <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                             {editingTimetable ? 'Edit' : 'Create'} {activeView === 'teacher' ? 'Teacher' : 'Class'} Timetable
@@ -222,7 +338,7 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <button
                             type="button"
                             onClick={onClose}
@@ -302,11 +418,8 @@ const TimetablePage = ({ darkMode }) => {
     }, []);
 
     const handleEdit = useCallback((timetable) => {
-        // Close modal first if open
         setShowAddModal(false);
-        // Reset editing state
         setEditingTimetable(null);
-        // Use setTimeout to ensure state updates
         setTimeout(() => {
             setEditingTimetable(timetable);
             setShowAddModal(true);
@@ -394,61 +507,16 @@ const TimetablePage = ({ darkMode }) => {
                         </p>
                     </div>
                 ) : (
-                    <div className="divide-y divide-gray-200">
+                    <div>
                         {currentTimetables.map((timetable) => (
-                            <div key={timetable.id} className={`p-6 ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}>
-                                <div className="flex items-center justify-between mb-4">
-                                    <div>
-                                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                            {activeView === 'teacher' ? timetable.teacherName : timetable.className}
-                                        </h3>
-                                        <p className="text-sm text-gray-500">
-                                            {timetable.schedule?.length || 0} periods scheduled
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <button
-                                            onClick={() => handleEdit(timetable)}
-                                            className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-100'}`}
-                                        >
-                                            <Edit className="w-5 h-5 text-blue-500" />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(activeView === 'teacher' ? timetable.teacherId : timetable.className, activeView)}
-                                            className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-100'}`}
-                                        >
-                                            <Trash2 className="w-5 h-5 text-red-500" />
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Schedule Preview */}
-                                {timetable.schedule && timetable.schedule.length > 0 && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                        {timetable.schedule.slice(0, 6).map((entry, index) => (
-                                            <div key={index} className={`p-3 rounded-lg border ${darkMode ? 'bg-gray-600 border-gray-500' : 'bg-gray-50 border-gray-200'}`}>
-                                                <div className="flex items-center space-x-2 mb-1">
-                                                    <Clock className="w-4 h-4 text-purple-500" />
-                                                    <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                        {entry.day}
-                                                    </span>
-                                                </div>
-                                                <p className="text-xs text-gray-500">{entry.time}</p>
-                                                <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'} mt-1`}>
-                                                    {entry.subject} {entry.room && `• Room ${entry.room}`}
-                                                </p>
-                                            </div>
-                                        ))}
-                                        {timetable.schedule.length > 6 && (
-                                            <div className={`p-3 rounded-lg border ${darkMode ? 'bg-gray-600 border-gray-500' : 'bg-gray-50 border-gray-200'} flex items-center justify-center`}>
-                                                <span className="text-sm text-gray-500">
-                                                    +{timetable.schedule.length - 6} more
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
+                            <TimetableItem
+                                key={timetable.id}
+                                item={timetable}
+                                type={activeView}
+                                darkMode={darkMode}
+                                onEdit={() => handleEdit(timetable)}
+                                onDelete={() => handleDelete(activeView === 'teacher' ? timetable.teacherId : timetable.className, activeView)}
+                            />
                         ))}
                     </div>
                 )}

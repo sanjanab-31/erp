@@ -131,7 +131,7 @@ const LibraryPage = ({ darkMode }) => {
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Books</h3>
-                        <BookOpen className="w-5 h-5 text-blue-500" />
+                        <BookOpen className="w-5 h-5 text-green-500" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{totalBooks}</p>
                 </div>
@@ -296,7 +296,7 @@ const LibraryPage = ({ darkMode }) => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <button className="text-blue-600 hover:text-blue-900 mr-3">
+                                                <button className="text-green-600 hover:text-green-900 mr-3">
                                                     <Edit className="w-5 h-5" />
                                                 </button>
                                             </td>
@@ -365,7 +365,7 @@ const LibraryPage = ({ darkMode }) => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                                            <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
                                                 Return Book
                                             </button>
                                         </td>
@@ -381,3 +381,4 @@ const LibraryPage = ({ darkMode }) => {
 };
 
 export default LibraryPage;
+

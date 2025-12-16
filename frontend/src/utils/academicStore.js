@@ -266,6 +266,34 @@ export const getSubmission = (studentId, assignmentId) => {
     return data.submissions.find(s => s.studentId === studentId && s.assignmentId === assignmentId);
 };
 
+// Create submission (for teacher grading when student hasn't submitted)
+export const createSubmission = (submissionData) => {
+    try {
+        const data = getAllAcademicData();
+
+        const newSubmission = {
+            id: `submission_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            assignmentId: submissionData.assignmentId,
+            courseId: submissionData.courseId,
+            studentId: submissionData.studentId,
+            studentName: submissionData.studentName,
+            driveLink: submissionData.link || '',
+            submittedAt: new Date().toISOString(),
+            status: 'pending',
+            marks: null,
+            feedback: ''
+        };
+
+        data.submissions.push(newSubmission);
+        saveAcademicData(data);
+
+        return newSubmission;
+    } catch (error) {
+        console.error('Error creating submission:', error);
+        throw error;
+    }
+};
+
 // Grade submission (Teacher)
 export const gradeSubmission = (submissionId, marks, feedback = '') => {
     try {
@@ -434,9 +462,10 @@ export const createExamSchedule = (scheduleData) => {
         const data = getAllAcademicData();
 
         const newSchedule = {
-            id: `schedule_${Date.now()}`,
-            courseId: scheduleData.courseId,
-            courseName: scheduleData.courseName,
+            id: `schedule_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            courseId: scheduleData.courseId || '',
+            courseName: scheduleData.courseName || '',
+            subject: scheduleData.subject || scheduleData.courseName || '', // Added subject
             class: scheduleData.class,
             examName: scheduleData.examName,
             examDate: scheduleData.examDate,
@@ -454,6 +483,36 @@ export const createExamSchedule = (scheduleData) => {
         return newSchedule;
     } catch (error) {
         console.error('Error creating exam schedule:', error);
+        throw error;
+    }
+};
+
+// Create multiple exam schedules (Bulk)
+export const createBulkExamSchedules = (schedulesData) => {
+    try {
+        const data = getAllAcademicData();
+        const newSchedules = schedulesData.map(scheduleData => ({
+            id: `schedule_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            courseId: scheduleData.courseId || '',
+            courseName: scheduleData.courseName || '',
+            subject: scheduleData.subject || scheduleData.courseName || '',
+            class: scheduleData.class,
+            examName: scheduleData.examName,
+            examDate: scheduleData.examDate,
+            startTime: scheduleData.startTime,
+            endTime: scheduleData.endTime,
+            venue: scheduleData.venue || '',
+            instructions: scheduleData.instructions || '',
+            createdBy: scheduleData.createdBy,
+            createdAt: new Date().toISOString()
+        }));
+
+        data.examSchedules.push(...newSchedules);
+        saveAcademicData(data);
+
+        return newSchedules;
+    } catch (error) {
+        console.error('Error creating bulk exam schedules:', error);
         throw error;
     }
 };
@@ -626,6 +685,7 @@ export default {
 
     // Exam Schedules
     createExamSchedule,
+    createBulkExamSchedules,
     getExamSchedulesByClass,
     getExamSchedulesByCourse,
     updateExamSchedule,

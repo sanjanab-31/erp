@@ -212,7 +212,7 @@ const AttendancePage = ({ darkMode }) => {
                     <button
                         onClick={() => setActiveTab('student_attendance')}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'student_attendance'
-                                ? 'bg-white text-blue-600 shadow-sm'
+                                ? 'bg-white text-green-600 shadow-sm'
                                 : 'text-gray-600 hover:text-gray-900'
                             }`}
                     >
@@ -221,7 +221,7 @@ const AttendancePage = ({ darkMode }) => {
                     <button
                         onClick={() => setActiveTab('my_attendance')}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'my_attendance'
-                                ? 'bg-white text-blue-600 shadow-sm'
+                                ? 'bg-white text-green-600 shadow-sm'
                                 : 'text-gray-600 hover:text-gray-900'
                             }`}
                     >
@@ -286,7 +286,7 @@ const AttendancePage = ({ darkMode }) => {
                         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Students</h3>
-                                <Users className="w-5 h-5 text-blue-500" />
+                                <Users className="w-5 h-5 text-green-500" />
                             </div>
                             <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{filteredStudents.length}</p>
                         </div>
@@ -396,7 +396,7 @@ const AttendancePage = ({ darkMode }) => {
                                 disabled={saveStatus === 'saved'}
                                 className={`ml-auto px-6 py-2 rounded-lg transition-colors flex items-center space-x-2 font-medium ${saveStatus === 'saved'
                                         ? 'bg-green-600 text-white cursor-default'
-                                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                                        : 'bg-green-600 text-white hover:bg-green-700'
                                     }`}
                             >
                                 {saveStatus === 'saved' ? (
@@ -454,7 +454,7 @@ const AttendancePage = ({ darkMode }) => {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="flex items-center">
-                                                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-xs mr-3">
+                                                            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-semibold text-xs mr-3">
                                                                 {student.name.substring(0, 2).toUpperCase()}
                                                             </div>
                                                             <div>
@@ -522,3 +522,4 @@ const AttendancePage = ({ darkMode }) => {
 };
 
 export default AttendancePage;
+
