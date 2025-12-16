@@ -77,7 +77,7 @@ const CourseModal = ({ darkMode, onClose, onSave, teacherId, teacherName }) => {
                             value={formData.courseName}
                             onChange={(e) => setFormData({ ...formData, courseName: e.target.value })}
                             placeholder="e.g., Advanced Mathematics"
-                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                         />
                     </div>
 
@@ -91,7 +91,7 @@ const CourseModal = ({ darkMode, onClose, onSave, teacherId, teacherName }) => {
                             value={formData.subject}
                             onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                             placeholder="e.g., Mathematics"
-                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                         />
                     </div>
 
@@ -103,7 +103,7 @@ const CourseModal = ({ darkMode, onClose, onSave, teacherId, teacherName }) => {
                             required
                             value={formData.class}
                             onChange={(e) => setFormData({ ...formData, class: e.target.value })}
-                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                         >
                             <option value="">Select Class</option>
                             {classes.map(cls => (
@@ -121,7 +121,7 @@ const CourseModal = ({ darkMode, onClose, onSave, teacherId, teacherName }) => {
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             placeholder="Course description..."
                             rows="3"
-                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                         />
                     </div>
 
@@ -146,7 +146,7 @@ const CourseModal = ({ darkMode, onClose, onSave, teacherId, teacherName }) => {
                         </button>
                         <button
                             type="submit"
-                            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2"
+                            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2"
                         >
                             <Save className="w-5 h-5" />
                             <span>Create Course</span>
@@ -202,7 +202,7 @@ const MaterialModal = ({ darkMode, onClose, onSave }) => {
                             value={formData.title}
                             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                             placeholder="e.g., Chapter 1 Notes"
-                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                         />
                     </div>
 
@@ -214,7 +214,7 @@ const MaterialModal = ({ darkMode, onClose, onSave }) => {
                             required
                             value={formData.type}
                             onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                         >
                             <option value="link">External Link</option>
                             <option value="drive">Google Drive Link</option>
@@ -232,7 +232,7 @@ const MaterialModal = ({ darkMode, onClose, onSave }) => {
                             value={formData.link}
                             onChange={(e) => setFormData({ ...formData, link: e.target.value })}
                             placeholder="https://..."
-                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                         />
                     </div>
 
@@ -245,7 +245,7 @@ const MaterialModal = ({ darkMode, onClose, onSave }) => {
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             placeholder="Material description..."
                             rows="3"
-                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                         />
                     </div>
 
@@ -259,7 +259,7 @@ const MaterialModal = ({ darkMode, onClose, onSave }) => {
                         </button>
                         <button
                             type="submit"
-                            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2"
+                            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2"
                         >
                             <Upload className="w-5 h-5" />
                             <span>Add Material</span>
@@ -314,7 +314,7 @@ const AssignmentModal = ({ darkMode, onClose, onSave }) => {
                             value={formData.title}
                             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                             placeholder="e.g., Chapter 1 Assignment"
-                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                         />
                     </div>
 
@@ -327,7 +327,7 @@ const AssignmentModal = ({ darkMode, onClose, onSave }) => {
                             required
                             value={formData.dueDate}
                             onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                         />
                     </div>
 
@@ -340,7 +340,7 @@ const AssignmentModal = ({ darkMode, onClose, onSave }) => {
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             placeholder="Assignment instructions..."
                             rows="4"
-                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                         />
                     </div>
 
@@ -354,7 +354,7 @@ const AssignmentModal = ({ darkMode, onClose, onSave }) => {
                         </button>
                         <button
                             type="submit"
-                            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2"
+                            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2"
                         >
                             <Save className="w-5 h-5" />
                             <span>Create Assignment</span>
@@ -506,7 +506,7 @@ const CoursesPage = ({ darkMode }) => {
             <div className="mb-6">
                 <button
                     onClick={() => setShowCourseModal(true)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                 >
                     <Plus className="w-5 h-5" />
                     <span>Create New Course</span>
@@ -525,7 +525,7 @@ const CoursesPage = ({ darkMode }) => {
                     </p>
                     <button
                         onClick={() => setShowCourseModal(true)}
-                        className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                        className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                     >
                         Create Course
                     </button>
@@ -539,7 +539,7 @@ const CoursesPage = ({ darkMode }) => {
                                 key={course.id}
                                 onClick={() => setSelectedCourse(course)}
                                 className={`p-4 rounded-lg border cursor-pointer transition-all ${selectedCourse?.id === course.id
-                                    ? 'bg-purple-50 border-purple-500'
+                                    ? 'bg-green-50 border-green-500'
                                     : darkMode
                                         ? 'bg-gray-800 border-gray-700 hover:bg-gray-700'
                                         : 'bg-white border-gray-200 hover:bg-gray-50'
@@ -606,7 +606,7 @@ const CoursesPage = ({ darkMode }) => {
                                         </h3>
                                         <button
                                             onClick={() => setShowMaterialModal(true)}
-                                            className="flex items-center space-x-2 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
+                                            className="flex items-center space-x-2 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
                                         >
                                             <Plus className="w-4 h-4" />
                                             <span>Add Material</span>
@@ -631,7 +631,7 @@ const CoursesPage = ({ darkMode }) => {
                                                                 href={material.link}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="text-sm text-purple-600 hover:text-purple-700 flex items-center space-x-1"
+                                                                className="text-sm text-green-600 hover:text-green-700 flex items-center space-x-1"
                                                             >
                                                                 <LinkIcon className="w-4 h-4" />
                                                                 <span>Open Link</span>
@@ -658,7 +658,7 @@ const CoursesPage = ({ darkMode }) => {
                                         </h3>
                                         <button
                                             onClick={() => setShowAssignmentModal(true)}
-                                            className="flex items-center space-x-2 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
+                                            className="flex items-center space-x-2 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
                                         >
                                             <Plus className="w-4 h-4" />
                                             <span>Create Assignment</span>
@@ -712,7 +712,7 @@ const CoursesPage = ({ darkMode }) => {
                                                                             href={submission.link}
                                                                             target="_blank"
                                                                             rel="noopener noreferrer"
-                                                                            className="text-purple-600 hover:text-purple-700 flex items-center space-x-1"
+                                                                            className="text-green-600 hover:text-green-700 flex items-center space-x-1"
                                                                         >
                                                                             <LinkIcon className="w-3 h-3" />
                                                                             <span>View</span>
@@ -769,3 +769,4 @@ const CoursesPage = ({ darkMode }) => {
 };
 
 export default CoursesPage;
+

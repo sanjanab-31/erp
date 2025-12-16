@@ -589,3 +589,4 @@ const SettingsPage = ({ darkMode }) => {
 };
 
 export default SettingsPage;
+

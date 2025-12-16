@@ -6,3 +6,4 @@ const TeacherCommunicationPage = ({ darkMode }) => {
 };
 
 export default TeacherCommunicationPage;
+

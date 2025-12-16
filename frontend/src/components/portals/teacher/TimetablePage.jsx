@@ -144,7 +144,7 @@ const TimetablePage = ({ darkMode }) => {
                         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Periods</h3>
-                                <BookOpen className="w-5 h-5 text-blue-500" />
+                                <BookOpen className="w-5 h-5 text-green-500" />
                             </div>
                             <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{totalClasses}</p>
                             <p className="text-sm text-gray-500 mt-1">This week</p>
@@ -153,7 +153,7 @@ const TimetablePage = ({ darkMode }) => {
                         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Today's Classes</h3>
-                                <Calendar className="w-5 h-5 text-purple-500" />
+                                <Calendar className="w-5 h-5 text-green-500" />
                             </div>
                             <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{todayClasses}</p>
                             <p className="text-sm text-gray-500 mt-1">Scheduled today</p>
@@ -203,12 +203,12 @@ const TimetablePage = ({ darkMode }) => {
                                                 return (
                                                     <td key={day} className={`border ${darkMode ? 'border-gray-600' : 'border-gray-300'} p-2`}>
                                                         {classAtTime ? (
-                                                            <div className={`p-3 rounded-lg ${darkMode ? 'bg-purple-900 border-l-4 border-purple-500' : 'bg-purple-50 border-l-4 border-purple-500'}`}>
-                                                                <h4 className={`font-semibold text-sm mb-1 ${darkMode ? 'text-white' : 'text-purple-900'}`}>
+                                                            <div className={`p-3 rounded-lg ${darkMode ? 'bg-green-900 border-l-4 border-green-500' : 'bg-green-50 border-l-4 border-green-500'}`}>
+                                                                <h4 className={`font-semibold text-sm mb-1 ${darkMode ? 'text-white' : 'text-green-900'}`}>
                                                                     {classAtTime.subject}
                                                                 </h4>
                                                                 {classAtTime.room && (
-                                                                    <div className="flex items-center space-x-1 text-xs text-purple-600">
+                                                                    <div className="flex items-center space-x-1 text-xs text-green-600">
                                                                         <MapPin className="w-3 h-3" />
                                                                         <span>Room {classAtTime.room}</span>
                                                                     </div>
@@ -226,21 +226,6 @@ const TimetablePage = ({ darkMode }) => {
                             </table>
                         </div>
                     </div>
-
-                    {/* Info Note */}
-                    <div className={`${darkMode ? 'bg-blue-900 border-blue-700' : 'bg-blue-50 border-blue-200'} border rounded-xl p-4 mt-6`}>
-                        <div className="flex items-start space-x-3">
-                            <AlertCircle className={`w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'} mt-0.5`} />
-                            <div>
-                                <h4 className={`font-semibold text-sm ${darkMode ? 'text-blue-300' : 'text-blue-900'} mb-1`}>
-                                    Real-time Sync
-                                </h4>
-                                <p className={`text-sm ${darkMode ? 'text-blue-200' : 'text-blue-700'}`}>
-                                    Your timetable is managed by the admin. Any changes made by the admin will appear here automatically without needing to refresh the page.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
                 </>
             )}
         </div>
@@ -248,3 +233,4 @@ const TimetablePage = ({ darkMode }) => {
 };
 
 export default TimetablePage;
+

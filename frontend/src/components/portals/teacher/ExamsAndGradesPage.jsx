@@ -135,8 +135,8 @@ const ExamsAndGradesPage = ({ darkMode }) => {
         const score = parseFloat(finalTotal);
         if (score >= 90) return { grade: 'A+', color: 'text-green-600 bg-green-100' };
         if (score >= 85) return { grade: 'A', color: 'text-green-600 bg-green-100' };
-        if (score >= 75) return { grade: 'B+', color: 'text-blue-600 bg-blue-100' };
-        if (score >= 70) return { grade: 'B', color: 'text-blue-600 bg-blue-100' };
+        if (score >= 75) return { grade: 'B+', color: 'text-green-600 bg-green-100' };
+        if (score >= 70) return { grade: 'B', color: 'text-green-600 bg-green-100' };
         if (score >= 60) return { grade: 'C+', color: 'text-yellow-600 bg-yellow-100' };
         if (score >= 50) return { grade: 'C', color: 'text-yellow-600 bg-yellow-100' };
         return { grade: 'D', color: 'text-red-600 bg-red-100' };
@@ -235,7 +235,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Students</h3>
-                        <Users className="w-5 h-5 text-blue-500" />
+                        <Users className="w-5 h-5 text-green-500" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{students.length}</p>
                 </div>
@@ -314,7 +314,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                     ) : (
                         <button
                             onClick={() => setEditMode(true)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
                         >
                             <Edit className="w-5 h-5" />
                             <span>Edit Grades</span>
@@ -342,11 +342,11 @@ const ExamsAndGradesPage = ({ darkMode }) => {
 
             {/* Info Alert */}
             {editMode && (
-                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start space-x-3">
-                    <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start space-x-3">
+                    <AlertCircle className="w-5 h-5 text-green-600 mt-0.5" />
                     <div>
-                        <p className="text-sm text-blue-800 font-medium">Edit Mode Active</p>
-                        <p className="text-sm text-blue-600 mt-1">
+                        <p className="text-sm text-green-800 font-medium">Edit Mode Active</p>
+                        <p className="text-sm text-green-600 mt-1">
                             Enter marks for Exam 1, Exam 2, Exam 3, Assignment 1, and Assignment 2 (each out of 100).
                             Totals will be calculated automatically: Exam Total (75) + Assignment Total (25) = Final Total (100).
                         </p>
@@ -377,16 +377,16 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                                     <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
                                         Student ID
                                     </th>
-                                    <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider bg-blue-50`}>
+                                    <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider bg-green-50`}>
                                         Exam 1
                                     </th>
-                                    <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider bg-blue-50`}>
+                                    <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider bg-green-50`}>
                                         Exam 2
                                     </th>
-                                    <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider bg-blue-50`}>
+                                    <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider bg-green-50`}>
                                         Exam 3
                                     </th>
-                                    <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider bg-blue-100`}>
+                                    <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider bg-green-100`}>
                                         Exam Total (75)
                                     </th>
                                     <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider bg-green-50`}>
@@ -417,7 +417,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                                             {/* Student Name */}
                                             <td className={`px-4 py-3 whitespace-nowrap sticky left-0 ${darkMode ? 'bg-gray-800' : 'bg-white'} z-10`}>
                                                 <div className="flex items-center">
-                                                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                                    <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">
                                                         {student.name.split(' ').map(n => n[0]).join('')}
                                                     </div>
                                                     <div className="ml-3">
@@ -434,13 +434,13 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                                             </td>
 
                                             {/* Exam 1 */}
-                                            <td className="px-4 py-3 text-center bg-blue-50">
+                                            <td className="px-4 py-3 text-center bg-green-50">
                                                 {editMode ? (
                                                     <input
                                                         type="number"
                                                         value={marks.exam1 || ''}
                                                         onChange={(e) => updateMarks(student.id, 'exam1', e.target.value)}
-                                                        className="w-16 px-2 py-1 text-center rounded border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        className="w-16 px-2 py-1 text-center rounded border border-green-300 focus:outline-none focus:ring-2 focus:ring-green-500"
                                                         min="0"
                                                         max="100"
                                                         placeholder="0"
@@ -453,13 +453,13 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                                             </td>
 
                                             {/* Exam 2 */}
-                                            <td className="px-4 py-3 text-center bg-blue-50">
+                                            <td className="px-4 py-3 text-center bg-green-50">
                                                 {editMode ? (
                                                     <input
                                                         type="number"
                                                         value={marks.exam2 || ''}
                                                         onChange={(e) => updateMarks(student.id, 'exam2', e.target.value)}
-                                                        className="w-16 px-2 py-1 text-center rounded border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        className="w-16 px-2 py-1 text-center rounded border border-green-300 focus:outline-none focus:ring-2 focus:ring-green-500"
                                                         min="0"
                                                         max="100"
                                                         placeholder="0"
@@ -472,13 +472,13 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                                             </td>
 
                                             {/* Exam 3 */}
-                                            <td className="px-4 py-3 text-center bg-blue-50">
+                                            <td className="px-4 py-3 text-center bg-green-50">
                                                 {editMode ? (
                                                     <input
                                                         type="number"
                                                         value={marks.exam3 || ''}
                                                         onChange={(e) => updateMarks(student.id, 'exam3', e.target.value)}
-                                                        className="w-16 px-2 py-1 text-center rounded border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        className="w-16 px-2 py-1 text-center rounded border border-green-300 focus:outline-none focus:ring-2 focus:ring-green-500"
                                                         min="0"
                                                         max="100"
                                                         placeholder="0"
@@ -491,8 +491,8 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                                             </td>
 
                                             {/* Exam Total (75) */}
-                                            <td className="px-4 py-3 text-center bg-blue-100">
-                                                <span className="text-sm font-bold text-blue-700">
+                                            <td className="px-4 py-3 text-center bg-green-100">
+                                                <span className="text-sm font-bold text-green-700">
                                                     {totals.examTotal}
                                                 </span>
                                             </td>
@@ -576,33 +576,10 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Legend */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <h4 className="text-sm font-semibold text-gray-700 mb-3">How to Use:</h4>
-                <div className="space-y-2 text-sm text-gray-600 mb-4">
-                    <p>1. Click <strong>"Edit Grades"</strong> to enter marks</p>
-                    <p>2. Enter marks for <strong>Exam 1, Exam 2, Exam 3, Assignment 1, and Assignment 2</strong> (each out of 100)</p>
-                    <p>3. Totals calculate automatically</p>
-                    <p>4. Click <strong>"Save Changes"</strong> to save all marks</p>
-                </div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-3">Calculation Formula:</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                    <div>
-                        <span className="font-medium">Exam Total (75):</span>
-                        <p className="text-xs mt-1">(Exam1 + Exam2 + Exam3) / 300 × 75</p>
-                    </div>
-                    <div>
-                        <span className="font-medium">Assignment Total (25):</span>
-                        <p className="text-xs mt-1">(Assignment1 + Assignment2) / 200 × 25</p>
-                    </div>
-                    <div>
-                        <span className="font-medium">Final Total (100):</span>
-                        <p className="text-xs mt-1">Exam Total (75) + Assignment Total (25)</p>
-                    </div>
-                </div>
-            </div>
+            
         </div>
     );
 };
 
 export default ExamsAndGradesPage;
+
