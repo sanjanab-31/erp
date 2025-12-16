@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Settings as SettingsIcon,
     User,
@@ -13,11 +13,13 @@ import {
     Shield,
     Database
 } from 'lucide-react';
+import { getSettings, updateSettingsSection, changePassword, subscribeToSettingsUpdates } from '../../../utils/settingsStore';
 
 const SettingsPage = ({ darkMode }) => {
     const [activeSection, setActiveSection] = useState('general');
     const [showPassword, setShowPassword] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [saveMessage, setSaveMessage] = useState('');
 
     const [settings, setSettings] = useState({
         schoolName: 'ABC International School',
@@ -32,9 +34,60 @@ const SettingsPage = ({ darkMode }) => {
         systemUpdates: true
     });
 
+    const [securitySettings, setSecuritySettings] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+
+    // Load settings from store on component mount
+    useEffect(() => {
+        const storedSettings = getSettings('admin');
+        if (storedSettings.general) {
+            setSettings(prev => ({ ...prev, ...storedSettings.general }));
+        }
+        if (storedSettings.notifications) {
+            setSettings(prev => ({ ...prev, ...storedSettings.notifications }));
+        }
+
+        // Subscribe to real-time updates
+        const unsubscribe = subscribeToSettingsUpdates('admin', (updatedSettings) => {
+            if (updatedSettings.general) {
+                setSettings(prev => ({ ...prev, ...updatedSettings.general }));
+            }
+            if (updatedSettings.notifications) {
+                setSettings(prev => ({ ...prev, ...updatedSettings.notifications }));
+            }
+        });
+
+        return () => unsubscribe();
+    }, []);
+
     const handleSave = () => {
+        // Save general settings
+        updateSettingsSection('admin', 'general', {
+            schoolName: settings.schoolName,
+            email: settings.email,
+            phone: settings.phone,
+            address: settings.address,
+            timezone: settings.timezone,
+            language: settings.language,
+            currency: settings.currency
+        });
+
+        // Save notification settings
+        updateSettingsSection('admin', 'notifications', {
+            emailNotifications: settings.emailNotifications,
+            smsNotifications: settings.smsNotifications,
+            systemUpdates: settings.systemUpdates
+        });
+
         setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+        setSaveMessage('Settings saved successfully!');
+        setTimeout(() => {
+            setSaved(false);
+            setSaveMessage('');
+        }, 3000);
     };
 
     const sections = [
@@ -61,7 +114,11 @@ const SettingsPage = ({ darkMode }) => {
                                 <input
                                     type="text"
                                     value={settings.schoolName}
-                                    onChange={(e) => setSettings({ ...settings, schoolName: e.target.value })}
+                                    onChange={(e) => {
+                                        const updated = { ...settings, schoolName: e.target.value };
+                                        setSettings(updated);
+                                        updateSettingsSection('admin', 'general', { schoolName: e.target.value });
+                                    }}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -76,7 +133,11 @@ const SettingsPage = ({ darkMode }) => {
                                 <input
                                     type="email"
                                     value={settings.email}
-                                    onChange={(e) => setSettings({ ...settings, email: e.target.value })}
+                                    onChange={(e) => {
+                                        const updated = { ...settings, email: e.target.value };
+                                        setSettings(updated);
+                                        updateSettingsSection('admin', 'general', { email: e.target.value });
+                                    }}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -91,7 +152,11 @@ const SettingsPage = ({ darkMode }) => {
                                 <input
                                     type="tel"
                                     value={settings.phone}
-                                    onChange={(e) => setSettings({ ...settings, phone: e.target.value })}
+                                    onChange={(e) => {
+                                        const updated = { ...settings, phone: e.target.value };
+                                        setSettings(updated);
+                                        updateSettingsSection('admin', 'general', { phone: e.target.value });
+                                    }}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -105,7 +170,11 @@ const SettingsPage = ({ darkMode }) => {
                                 </label>
                                 <select
                                     value={settings.timezone}
-                                    onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}
+                                    onChange={(e) => {
+                                        const updated = { ...settings, timezone: e.target.value };
+                                        setSettings(updated);
+                                        updateSettingsSection('admin', 'general', { timezone: e.target.value });
+                                    }}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -124,7 +193,11 @@ const SettingsPage = ({ darkMode }) => {
                                 </label>
                                 <textarea
                                     value={settings.address}
-                                    onChange={(e) => setSettings({ ...settings, address: e.target.value })}
+                                    onChange={(e) => {
+                                        const updated = { ...settings, address: e.target.value };
+                                        setSettings(updated);
+                                        updateSettingsSection('admin', 'general', { address: e.target.value });
+                                    }}
                                     rows="3"
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
@@ -155,7 +228,11 @@ const SettingsPage = ({ darkMode }) => {
                                         </p>
                                     </div>
                                     <button
-                                        onClick={() => setSettings({ ...settings, [key]: !value })}
+                                        onClick={() => {
+                                            const updated = { ...settings, [key]: !value };
+                                            setSettings(updated);
+                                            updateSettingsSection('admin', 'notifications', { [key]: !value });
+                                        }}
                                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${value ? 'bg-purple-600' : 'bg-gray-300'
                                             }`}
                                     >
@@ -184,6 +261,8 @@ const SettingsPage = ({ darkMode }) => {
                                 </label>
                                 <input
                                     type={showPassword ? 'text' : 'password'}
+                                    value={securitySettings.currentPassword}
+                                    onChange={(e) => setSecuritySettings({ ...securitySettings, currentPassword: e.target.value })}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -197,6 +276,8 @@ const SettingsPage = ({ darkMode }) => {
                                 </label>
                                 <input
                                     type="password"
+                                    value={securitySettings.newPassword}
+                                    onChange={(e) => setSecuritySettings({ ...securitySettings, newPassword: e.target.value })}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -210,12 +291,36 @@ const SettingsPage = ({ darkMode }) => {
                                 </label>
                                 <input
                                     type="password"
+                                    value={securitySettings.confirmPassword}
+                                    onChange={(e) => setSecuritySettings({ ...securitySettings, confirmPassword: e.target.value })}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
                                         } focus:outline-none focus:ring-2 focus:ring-purple-500`}
                                 />
                             </div>
+
+                            <button
+                                onClick={() => {
+                                    if (!securitySettings.currentPassword || !securitySettings.newPassword || !securitySettings.confirmPassword) {
+                                        setSaveMessage('Please fill all password fields');
+                                        setTimeout(() => setSaveMessage(''), 3000);
+                                        return;
+                                    }
+                                    if (securitySettings.newPassword !== securitySettings.confirmPassword) {
+                                        setSaveMessage('New passwords do not match');
+                                        setTimeout(() => setSaveMessage(''), 3000);
+                                        return;
+                                    }
+                                    changePassword('admin', securitySettings.currentPassword, securitySettings.newPassword);
+                                    setSecuritySettings({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                                    setSaveMessage('Password updated successfully!');
+                                    setTimeout(() => setSaveMessage(''), 3000);
+                                }}
+                                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                            >
+                                Update Password
+                            </button>
                         </div>
                     </div>
                 );
@@ -234,7 +339,11 @@ const SettingsPage = ({ darkMode }) => {
                                 </label>
                                 <select
                                     value={settings.language}
-                                    onChange={(e) => setSettings({ ...settings, language: e.target.value })}
+                                    onChange={(e) => {
+                                        const updated = { ...settings, language: e.target.value };
+                                        setSettings(updated);
+                                        updateSettingsSection('admin', 'general', { language: e.target.value });
+                                    }}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -252,7 +361,11 @@ const SettingsPage = ({ darkMode }) => {
                                 </label>
                                 <select
                                     value={settings.currency}
-                                    onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
+                                    onChange={(e) => {
+                                        const updated = { ...settings, currency: e.target.value };
+                                        setSettings(updated);
+                                        updateSettingsSection('admin', 'general', { currency: e.target.value });
+                                    }}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -310,8 +423,10 @@ const SettingsPage = ({ darkMode }) => {
 
                         {/* Save Button */}
                         <div className="flex items-center justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
-                            {saved && (
-                                <span className="text-green-600 text-sm font-medium">Settings saved successfully!</span>
+                            {(saved || saveMessage) && (
+                                <span className={`text-sm font-medium ${saveMessage.includes('success') || saveMessage.includes('updated') || saved ? 'text-green-600' : 'text-red-600'}`}>
+                                    {saveMessage || 'Settings saved successfully!'}
+                                </span>
                             )}
                             <button
                                 onClick={handleSave}

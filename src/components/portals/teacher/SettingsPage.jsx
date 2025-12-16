@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Settings as SettingsIcon,
     User,
@@ -15,11 +15,13 @@ import {
     Eye,
     EyeOff
 } from 'lucide-react';
+import { getSettings, updateSettingsSection, changePassword, subscribeToSettingsUpdates } from '../../../utils/settingsStore';
 
 const SettingsPage = ({ darkMode }) => {
     const [activeSection, setActiveSection] = useState('profile');
     const [showPassword, setShowPassword] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [saveMessage, setSaveMessage] = useState('');
 
     const [profileData, setProfileData] = useState({
         name: 'Sarah Johnson',
@@ -57,9 +59,36 @@ const SettingsPage = ({ darkMode }) => {
         theme: 'System Default'
     });
 
+    // Load settings from store on component mount
+    useEffect(() => {
+        const settings = getSettings('teacher');
+        if (settings.profile) setProfileData(settings.profile);
+        if (settings.notifications) setNotificationSettings(settings.notifications);
+        if (settings.preferences) setPreferenceSettings(settings.preferences);
+        if (settings.security) setSecuritySettings(prev => ({ ...prev, twoFactorAuth: settings.security.twoFactorAuth || false }));
+
+        // Subscribe to real-time updates
+        const unsubscribe = subscribeToSettingsUpdates('teacher', (updatedSettings) => {
+            if (updatedSettings.profile) setProfileData(updatedSettings.profile);
+            if (updatedSettings.notifications) setNotificationSettings(updatedSettings.notifications);
+            if (updatedSettings.preferences) setPreferenceSettings(updatedSettings.preferences);
+            if (updatedSettings.security) setSecuritySettings(prev => ({ ...prev, twoFactorAuth: updatedSettings.security.twoFactorAuth || false }));
+        });
+
+        return () => unsubscribe();
+    }, []);
+
     const handleSave = () => {
+        updateSettingsSection('teacher', 'profile', profileData);
+        updateSettingsSection('teacher', 'notifications', notificationSettings);
+        updateSettingsSection('teacher', 'preferences', preferenceSettings);
+
         setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+        setSaveMessage('Settings saved successfully!');
+        setTimeout(() => {
+            setSaved(false);
+            setSaveMessage('');
+        }, 3000);
     };
 
     const sections = [
@@ -100,7 +129,11 @@ const SettingsPage = ({ darkMode }) => {
                                 <input
                                     type="text"
                                     value={profileData.name}
-                                    onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                                    onChange={(e) => {
+                                        const updated = { ...profileData, name: e.target.value };
+                                        setProfileData(updated);
+                                        updateSettingsSection('teacher', 'profile', updated);
+                                    }}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -115,7 +148,11 @@ const SettingsPage = ({ darkMode }) => {
                                 <input
                                     type="email"
                                     value={profileData.email}
-                                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                                    onChange={(e) => {
+                                        const updated = { ...profileData, email: e.target.value };
+                                        setProfileData(updated);
+                                        updateSettingsSection('teacher', 'profile', updated);
+                                    }}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -130,7 +167,11 @@ const SettingsPage = ({ darkMode }) => {
                                 <input
                                     type="tel"
                                     value={profileData.phone}
-                                    onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                                    onChange={(e) => {
+                                        const updated = { ...profileData, phone: e.target.value };
+                                        setProfileData(updated);
+                                        updateSettingsSection('teacher', 'profile', updated);
+                                    }}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -145,7 +186,11 @@ const SettingsPage = ({ darkMode }) => {
                                 <input
                                     type="date"
                                     value={profileData.dateOfBirth}
-                                    onChange={(e) => setProfileData({ ...profileData, dateOfBirth: e.target.value })}
+                                    onChange={(e) => {
+                                        const updated = { ...profileData, dateOfBirth: e.target.value };
+                                        setProfileData(updated);
+                                        updateSettingsSection('teacher', 'profile', updated);
+                                    }}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -160,7 +205,11 @@ const SettingsPage = ({ darkMode }) => {
                                 <input
                                     type="text"
                                     value={profileData.address}
-                                    onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
+                                    onChange={(e) => {
+                                        const updated = { ...profileData, address: e.target.value };
+                                        setProfileData(updated);
+                                        updateSettingsSection('teacher', 'profile', updated);
+                                    }}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -175,7 +224,11 @@ const SettingsPage = ({ darkMode }) => {
                                 <input
                                     type="text"
                                     value={profileData.department}
-                                    onChange={(e) => setProfileData({ ...profileData, department: e.target.value })}
+                                    onChange={(e) => {
+                                        const updated = { ...profileData, department: e.target.value };
+                                        setProfileData(updated);
+                                        updateSettingsSection('teacher', 'profile', updated);
+                                    }}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -190,7 +243,11 @@ const SettingsPage = ({ darkMode }) => {
                                 <input
                                     type="text"
                                     value={profileData.qualification}
-                                    onChange={(e) => setProfileData({ ...profileData, qualification: e.target.value })}
+                                    onChange={(e) => {
+                                        const updated = { ...profileData, qualification: e.target.value };
+                                        setProfileData(updated);
+                                        updateSettingsSection('teacher', 'profile', updated);
+                                    }}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -219,7 +276,11 @@ const SettingsPage = ({ darkMode }) => {
                                     </p>
                                 </div>
                                 <button
-                                    onClick={() => setNotificationSettings({ ...notificationSettings, [key]: !value })}
+                                    onClick={() => {
+                                        const updated = { ...notificationSettings, [key]: !value };
+                                        setNotificationSettings(updated);
+                                        updateSettingsSection('teacher', 'notifications', updated);
+                                    }}
                                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${value ? 'bg-green-600' : 'bg-gray-300'
                                         }`}
                                 >
@@ -293,6 +354,28 @@ const SettingsPage = ({ darkMode }) => {
                             />
                         </div>
 
+                        <button
+                            onClick={() => {
+                                if (!securitySettings.currentPassword || !securitySettings.newPassword || !securitySettings.confirmPassword) {
+                                    setSaveMessage('Please fill all password fields');
+                                    setTimeout(() => setSaveMessage(''), 3000);
+                                    return;
+                                }
+                                if (securitySettings.newPassword !== securitySettings.confirmPassword) {
+                                    setSaveMessage('New passwords do not match');
+                                    setTimeout(() => setSaveMessage(''), 3000);
+                                    return;
+                                }
+                                changePassword('teacher', securitySettings.currentPassword, securitySettings.newPassword);
+                                setSecuritySettings({ currentPassword: '', newPassword: '', confirmPassword: '', twoFactorAuth: securitySettings.twoFactorAuth });
+                                setSaveMessage('Password updated successfully!');
+                                setTimeout(() => setSaveMessage(''), 3000);
+                            }}
+                            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                            Update Password
+                        </button>
+
                         <div className="flex items-center justify-between py-4 border-t border-gray-200 mt-6">
                             <div>
                                 <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -303,7 +386,11 @@ const SettingsPage = ({ darkMode }) => {
                                 </p>
                             </div>
                             <button
-                                onClick={() => setSecuritySettings({ ...securitySettings, twoFactorAuth: !securitySettings.twoFactorAuth })}
+                                onClick={() => {
+                                    const updated = !securitySettings.twoFactorAuth;
+                                    setSecuritySettings({ ...securitySettings, twoFactorAuth: updated });
+                                    updateSettingsSection('teacher', 'security', { twoFactorAuth: updated });
+                                }}
                                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${securitySettings.twoFactorAuth ? 'bg-green-600' : 'bg-gray-300'
                                     }`}
                             >
@@ -329,7 +416,11 @@ const SettingsPage = ({ darkMode }) => {
                             </label>
                             <select
                                 value={preferenceSettings.language}
-                                onChange={(e) => setPreferenceSettings({ ...preferenceSettings, language: e.target.value })}
+                                onChange={(e) => {
+                                    const updated = { ...preferenceSettings, language: e.target.value };
+                                    setPreferenceSettings(updated);
+                                    updateSettingsSection('teacher', 'preferences', updated);
+                                }}
                                 className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                     ? 'bg-gray-700 border-gray-600 text-white'
                                     : 'bg-white border-gray-300 text-gray-900'
@@ -348,7 +439,11 @@ const SettingsPage = ({ darkMode }) => {
                             </label>
                             <select
                                 value={preferenceSettings.timezone}
-                                onChange={(e) => setPreferenceSettings({ ...preferenceSettings, timezone: e.target.value })}
+                                onChange={(e) => {
+                                    const updated = { ...preferenceSettings, timezone: e.target.value };
+                                    setPreferenceSettings(updated);
+                                    updateSettingsSection('teacher', 'preferences', updated);
+                                }}
                                 className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                     ? 'bg-gray-700 border-gray-600 text-white'
                                     : 'bg-white border-gray-300 text-gray-900'
@@ -367,7 +462,11 @@ const SettingsPage = ({ darkMode }) => {
                             </label>
                             <select
                                 value={preferenceSettings.dateFormat}
-                                onChange={(e) => setPreferenceSettings({ ...preferenceSettings, dateFormat: e.target.value })}
+                                onChange={(e) => {
+                                    const updated = { ...preferenceSettings, dateFormat: e.target.value };
+                                    setPreferenceSettings(updated);
+                                    updateSettingsSection('teacher', 'preferences', updated);
+                                }}
                                 className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                     ? 'bg-gray-700 border-gray-600 text-white'
                                     : 'bg-white border-gray-300 text-gray-900'
@@ -385,7 +484,11 @@ const SettingsPage = ({ darkMode }) => {
                             </label>
                             <select
                                 value={preferenceSettings.theme}
-                                onChange={(e) => setPreferenceSettings({ ...preferenceSettings, theme: e.target.value })}
+                                onChange={(e) => {
+                                    const updated = { ...preferenceSettings, theme: e.target.value };
+                                    setPreferenceSettings(updated);
+                                    updateSettingsSection('teacher', 'preferences', updated);
+                                }}
                                 className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                     ? 'bg-gray-700 border-gray-600 text-white'
                                     : 'bg-white border-gray-300 text-gray-900'
@@ -441,8 +544,10 @@ const SettingsPage = ({ darkMode }) => {
 
                         {/* Save Button */}
                         <div className="flex items-center justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
-                            {saved && (
-                                <span className="text-green-600 text-sm font-medium">Settings saved successfully!</span>
+                            {(saved || saveMessage) && (
+                                <span className={`text-sm font-medium ${saveMessage.includes('success') || saveMessage.includes('updated') || saved ? 'text-green-600' : 'text-red-600'}`}>
+                                    {saveMessage || 'Settings saved successfully!'}
+                                </span>
                             )}
                             <button
                                 onClick={handleSave}

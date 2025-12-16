@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Settings as SettingsIcon,
     User,
@@ -10,11 +10,13 @@ import {
     Mail,
     Phone
 } from 'lucide-react';
+import { getSettings, updateSettingsSection, changePassword, subscribeToSettingsUpdates } from '../../../utils/settingsStore';
 
 const SettingsPage = ({ darkMode }) => {
     const [activeSection, setActiveSection] = useState('profile');
     const [showPassword, setShowPassword] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [saveMessage, setSaveMessage] = useState('');
 
     const [profileData, setProfileData] = useState({
         name: 'John Parent',
@@ -33,9 +35,37 @@ const SettingsPage = ({ darkMode }) => {
         eventNotifications: true
     });
 
+    const [securitySettings, setSecuritySettings] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+
+    // Load settings from store on component mount
+    useEffect(() => {
+        const settings = getSettings('parent');
+        if (settings.profile) setProfileData(settings.profile);
+        if (settings.notifications) setNotificationSettings(settings.notifications);
+
+        // Subscribe to real-time updates
+        const unsubscribe = subscribeToSettingsUpdates('parent', (updatedSettings) => {
+            if (updatedSettings.profile) setProfileData(updatedSettings.profile);
+            if (updatedSettings.notifications) setNotificationSettings(updatedSettings.notifications);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
     const handleSave = () => {
+        updateSettingsSection('parent', 'profile', profileData);
+        updateSettingsSection('parent', 'notifications', notificationSettings);
+
         setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+        setSaveMessage('Settings saved successfully!');
+        setTimeout(() => {
+            setSaved(false);
+            setSaveMessage('');
+        }, 3000);
     };
 
     const sections = [
@@ -61,7 +91,11 @@ const SettingsPage = ({ darkMode }) => {
                                 <input
                                     type="text"
                                     value={profileData.name}
-                                    onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                                    onChange={(e) => {
+                                        const updated = { ...profileData, name: e.target.value };
+                                        setProfileData(updated);
+                                        updateSettingsSection('parent', 'profile', updated);
+                                    }}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -76,7 +110,11 @@ const SettingsPage = ({ darkMode }) => {
                                 <input
                                     type="email"
                                     value={profileData.email}
-                                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                                    onChange={(e) => {
+                                        const updated = { ...profileData, email: e.target.value };
+                                        setProfileData(updated);
+                                        updateSettingsSection('parent', 'profile', updated);
+                                    }}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -91,7 +129,11 @@ const SettingsPage = ({ darkMode }) => {
                                 <input
                                     type="tel"
                                     value={profileData.phone}
-                                    onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                                    onChange={(e) => {
+                                        const updated = { ...profileData, phone: e.target.value };
+                                        setProfileData(updated);
+                                        updateSettingsSection('parent', 'profile', updated);
+                                    }}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -105,7 +147,11 @@ const SettingsPage = ({ darkMode }) => {
                                 </label>
                                 <select
                                     value={profileData.relationship}
-                                    onChange={(e) => setProfileData({ ...profileData, relationship: e.target.value })}
+                                    onChange={(e) => {
+                                        const updated = { ...profileData, relationship: e.target.value };
+                                        setProfileData(updated);
+                                        updateSettingsSection('parent', 'profile', updated);
+                                    }}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -123,7 +169,11 @@ const SettingsPage = ({ darkMode }) => {
                                 </label>
                                 <textarea
                                     value={profileData.address}
-                                    onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
+                                    onChange={(e) => {
+                                        const updated = { ...profileData, address: e.target.value };
+                                        setProfileData(updated);
+                                        updateSettingsSection('parent', 'profile', updated);
+                                    }}
                                     rows="3"
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
@@ -154,7 +204,11 @@ const SettingsPage = ({ darkMode }) => {
                                         </p>
                                     </div>
                                     <button
-                                        onClick={() => setNotificationSettings({ ...notificationSettings, [key]: !value })}
+                                        onClick={() => {
+                                            const updated = { ...notificationSettings, [key]: !value };
+                                            setNotificationSettings(updated);
+                                            updateSettingsSection('parent', 'notifications', updated);
+                                        }}
                                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${value ? 'bg-orange-600' : 'bg-gray-300'
                                             }`}
                                     >
@@ -183,6 +237,8 @@ const SettingsPage = ({ darkMode }) => {
                                 </label>
                                 <input
                                     type={showPassword ? 'text' : 'password'}
+                                    value={securitySettings.currentPassword}
+                                    onChange={(e) => setSecuritySettings({ ...securitySettings, currentPassword: e.target.value })}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -196,6 +252,8 @@ const SettingsPage = ({ darkMode }) => {
                                 </label>
                                 <input
                                     type="password"
+                                    value={securitySettings.newPassword}
+                                    onChange={(e) => setSecuritySettings({ ...securitySettings, newPassword: e.target.value })}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -209,12 +267,36 @@ const SettingsPage = ({ darkMode }) => {
                                 </label>
                                 <input
                                     type="password"
+                                    value={securitySettings.confirmPassword}
+                                    onChange={(e) => setSecuritySettings({ ...securitySettings, confirmPassword: e.target.value })}
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
                                         } focus:outline-none focus:ring-2 focus:ring-orange-500`}
                                 />
                             </div>
+
+                            <button
+                                onClick={() => {
+                                    if (!securitySettings.currentPassword || !securitySettings.newPassword || !securitySettings.confirmPassword) {
+                                        setSaveMessage('Please fill all password fields');
+                                        setTimeout(() => setSaveMessage(''), 3000);
+                                        return;
+                                    }
+                                    if (securitySettings.newPassword !== securitySettings.confirmPassword) {
+                                        setSaveMessage('New passwords do not match');
+                                        setTimeout(() => setSaveMessage(''), 3000);
+                                        return;
+                                    }
+                                    changePassword('parent', securitySettings.currentPassword, securitySettings.newPassword);
+                                    setSecuritySettings({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                                    setSaveMessage('Password updated successfully!');
+                                    setTimeout(() => setSaveMessage(''), 3000);
+                                }}
+                                className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                            >
+                                Update Password
+                            </button>
                         </div>
                     </div>
                 );
@@ -261,8 +343,10 @@ const SettingsPage = ({ darkMode }) => {
 
                         {/* Save Button */}
                         <div className="flex items-center justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
-                            {saved && (
-                                <span className="text-green-600 text-sm font-medium">Settings saved successfully!</span>
+                            {(saved || saveMessage) && (
+                                <span className={`text-sm font-medium ${saveMessage.includes('success') || saveMessage.includes('updated') || saved ? 'text-green-600' : 'text-red-600'}`}>
+                                    {saveMessage || 'Settings saved successfully!'}
+                                </span>
                             )}
                             <button
                                 onClick={handleSave}

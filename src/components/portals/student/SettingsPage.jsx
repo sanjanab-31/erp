@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Bell, Lock, Palette, Settings as SettingsIcon, Camera, Mail, Phone, MapPin, FileText } from 'lucide-react';
+import { getSettings, updateSettingsSection, changePassword, subscribeToSettingsUpdates } from '../../../utils/settingsStore';
 
 const SettingsPage = ({ darkMode }) => {
     const [activeTab, setActiveTab] = useState('Profile');
+    const [saveMessage, setSaveMessage] = useState('');
     const [profileData, setProfileData] = useState({
         fullName: 'Mike Wilson',
         email: 'student@school.com',
@@ -42,26 +44,66 @@ const SettingsPage = ({ darkMode }) => {
         timeFormat: '12-hour'
     });
 
+    // Load settings from store on component mount
+    useEffect(() => {
+        const settings = getSettings('student');
+        if (settings.profile) setProfileData(settings.profile);
+        if (settings.notifications) setNotificationSettings(settings.notifications);
+        if (settings.appearance) setAppearanceSettings(settings.appearance);
+        if (settings.preferences) setPreferences(settings.preferences);
+
+        // Subscribe to real-time updates
+        const unsubscribe = subscribeToSettingsUpdates('student', (updatedSettings) => {
+            if (updatedSettings.profile) setProfileData(updatedSettings.profile);
+            if (updatedSettings.notifications) setNotificationSettings(updatedSettings.notifications);
+            if (updatedSettings.appearance) setAppearanceSettings(updatedSettings.appearance);
+            if (updatedSettings.preferences) setPreferences(updatedSettings.preferences);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
     const handleProfileUpdate = (field, value) => {
-        setProfileData(prev => ({
-            ...prev,
+        const updatedProfile = {
+            ...profileData,
             [field]: value
-        }));
+        };
+        setProfileData(updatedProfile);
+        // Auto-save to store
+        updateSettingsSection('student', 'profile', updatedProfile);
     };
 
     const handleNotificationToggle = (setting) => {
-        setNotificationSettings(prev => ({
-            ...prev,
-            [setting]: !prev[setting]
-        }));
+        const updatedNotifications = {
+            ...notificationSettings,
+            [setting]: !notificationSettings[setting]
+        };
+        setNotificationSettings(updatedNotifications);
+        // Auto-save to store
+        updateSettingsSection('student', 'notifications', updatedNotifications);
     };
 
     const handleSaveChanges = () => {
-        alert('Settings saved successfully!');
+        // Save all sections
+        updateSettingsSection('student', 'profile', profileData);
+        updateSettingsSection('student', 'notifications', notificationSettings);
+        updateSettingsSection('student', 'appearance', appearanceSettings);
+        updateSettingsSection('student', 'preferences', preferences);
+
+        setSaveMessage('Settings saved successfully!');
+        setTimeout(() => setSaveMessage(''), 3000);
     };
 
     const handleCancel = () => {
-        alert('Changes cancelled');
+        // Reload settings from store
+        const settings = getSettings('student');
+        if (settings.profile) setProfileData(settings.profile);
+        if (settings.notifications) setNotificationSettings(settings.notifications);
+        if (settings.appearance) setAppearanceSettings(settings.appearance);
+        if (settings.preferences) setPreferences(settings.preferences);
+
+        setSaveMessage('Changes cancelled');
+        setTimeout(() => setSaveMessage(''), 3000);
     };
 
     const renderProfileTab = () => (
@@ -194,6 +236,11 @@ const SettingsPage = ({ darkMode }) => {
 
             {/* Action Buttons */}
             <div className="flex items-center justify-end space-x-4">
+                {saveMessage && (
+                    <span className={`text-sm font-medium ${saveMessage.includes('success') || saveMessage.includes('updated') ? 'text-green-600' : 'text-red-600'}`}>
+                        {saveMessage}
+                    </span>
+                )}
                 <button
                     onClick={handleCancel}
                     className={`px-6 py-3 rounded-lg border ${darkMode
@@ -418,7 +465,22 @@ const SettingsPage = ({ darkMode }) => {
                 </div>
 
                 <button
-                    onClick={() => alert('Password updated successfully!')}
+                    onClick={() => {
+                        if (!securitySettings.currentPassword || !securitySettings.newPassword || !securitySettings.confirmPassword) {
+                            setSaveMessage('Please fill all password fields');
+                            setTimeout(() => setSaveMessage(''), 3000);
+                            return;
+                        }
+                        if (securitySettings.newPassword !== securitySettings.confirmPassword) {
+                            setSaveMessage('New passwords do not match');
+                            setTimeout(() => setSaveMessage(''), 3000);
+                            return;
+                        }
+                        changePassword('student', securitySettings.currentPassword, securitySettings.newPassword);
+                        setSecuritySettings({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                        setSaveMessage('Password updated successfully!');
+                        setTimeout(() => setSaveMessage(''), 3000);
+                    }}
                     className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
                 >
                     Update Password
@@ -440,7 +502,11 @@ const SettingsPage = ({ darkMode }) => {
                     </label>
                     <select
                         value={appearanceSettings.theme}
-                        onChange={(e) => setAppearanceSettings(prev => ({ ...prev, theme: e.target.value }))}
+                        onChange={(e) => {
+                            const updated = { ...appearanceSettings, theme: e.target.value };
+                            setAppearanceSettings(updated);
+                            updateSettingsSection('student', 'appearance', updated);
+                        }}
                         className={`w-full px-4 py-3 rounded-lg border ${darkMode
                             ? 'bg-gray-700 border-gray-600 text-white'
                             : 'bg-gray-50 border-gray-300 text-gray-900'
@@ -459,7 +525,11 @@ const SettingsPage = ({ darkMode }) => {
                     </label>
                     <select
                         value={appearanceSettings.fontSize}
-                        onChange={(e) => setAppearanceSettings(prev => ({ ...prev, fontSize: e.target.value }))}
+                        onChange={(e) => {
+                            const updated = { ...appearanceSettings, fontSize: e.target.value };
+                            setAppearanceSettings(updated);
+                            updateSettingsSection('student', 'appearance', updated);
+                        }}
                         className={`w-full px-4 py-3 rounded-lg border ${darkMode
                             ? 'bg-gray-700 border-gray-600 text-white'
                             : 'bg-gray-50 border-gray-300 text-gray-900'
@@ -478,7 +548,11 @@ const SettingsPage = ({ darkMode }) => {
                     </label>
                     <select
                         value={appearanceSettings.language}
-                        onChange={(e) => setAppearanceSettings(prev => ({ ...prev, language: e.target.value }))}
+                        onChange={(e) => {
+                            const updated = { ...appearanceSettings, language: e.target.value };
+                            setAppearanceSettings(updated);
+                            updateSettingsSection('student', 'appearance', updated);
+                        }}
                         className={`w-full px-4 py-3 rounded-lg border ${darkMode
                             ? 'bg-gray-700 border-gray-600 text-white'
                             : 'bg-gray-50 border-gray-300 text-gray-900'
@@ -507,7 +581,11 @@ const SettingsPage = ({ darkMode }) => {
                     </label>
                     <select
                         value={preferences.defaultPage}
-                        onChange={(e) => setPreferences(prev => ({ ...prev, defaultPage: e.target.value }))}
+                        onChange={(e) => {
+                            const updated = { ...preferences, defaultPage: e.target.value };
+                            setPreferences(updated);
+                            updateSettingsSection('student', 'preferences', updated);
+                        }}
                         className={`w-full px-4 py-3 rounded-lg border ${darkMode
                             ? 'bg-gray-700 border-gray-600 text-white'
                             : 'bg-gray-50 border-gray-300 text-gray-900'
@@ -526,7 +604,11 @@ const SettingsPage = ({ darkMode }) => {
                     </label>
                     <select
                         value={preferences.itemsPerPage}
-                        onChange={(e) => setPreferences(prev => ({ ...prev, itemsPerPage: parseInt(e.target.value) }))}
+                        onChange={(e) => {
+                            const updated = { ...preferences, itemsPerPage: parseInt(e.target.value) };
+                            setPreferences(updated);
+                            updateSettingsSection('student', 'preferences', updated);
+                        }}
                         className={`w-full px-4 py-3 rounded-lg border ${darkMode
                             ? 'bg-gray-700 border-gray-600 text-white'
                             : 'bg-gray-50 border-gray-300 text-gray-900'
@@ -546,7 +628,11 @@ const SettingsPage = ({ darkMode }) => {
                     </label>
                     <select
                         value={preferences.dateFormat}
-                        onChange={(e) => setPreferences(prev => ({ ...prev, dateFormat: e.target.value }))}
+                        onChange={(e) => {
+                            const updated = { ...preferences, dateFormat: e.target.value };
+                            setPreferences(updated);
+                            updateSettingsSection('student', 'preferences', updated);
+                        }}
                         className={`w-full px-4 py-3 rounded-lg border ${darkMode
                             ? 'bg-gray-700 border-gray-600 text-white'
                             : 'bg-gray-50 border-gray-300 text-gray-900'
@@ -565,7 +651,11 @@ const SettingsPage = ({ darkMode }) => {
                     </label>
                     <select
                         value={preferences.timeFormat}
-                        onChange={(e) => setPreferences(prev => ({ ...prev, timeFormat: e.target.value }))}
+                        onChange={(e) => {
+                            const updated = { ...preferences, timeFormat: e.target.value };
+                            setPreferences(updated);
+                            updateSettingsSection('student', 'preferences', updated);
+                        }}
                         className={`w-full px-4 py-3 rounded-lg border ${darkMode
                             ? 'bg-gray-700 border-gray-600 text-white'
                             : 'bg-gray-50 border-gray-300 text-gray-900'

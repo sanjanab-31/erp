@@ -1,436 +1,363 @@
-import React, { useState, useEffect } from 'react';
-import {
-    Calendar as CalendarIcon,
-    ChevronLeft,
-    ChevronRight,
-    Download,
-    Users,
-    CheckCircle,
-    XCircle,
-    Clock,
-    Filter
-} from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Calendar, CheckCircle, XCircle, Clock, TrendingUp, AlertCircle, User } from 'lucide-react';
+import { getAllStudents } from '../../../utils/studentStore';
+import { getAllAttendance, subscribeToUpdates } from '../../../utils/attendanceStore';
 
-const AttendancePage = () => {
-    const [selectedDate, setSelectedDate] = useState(new Date(2025, 11, 15)); // December 15, 2025
-    const [selectedClass, setSelectedClass] = useState('Class 10/');
-    const [selectedSubject, setSelectedSubject] = useState('All Subjects');
-    const [activeTab, setActiveTab] = useState('View Attendance');
+const AttendancePage = ({ darkMode }) => {
+    const [attendanceRecords, setAttendanceRecords] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [studentName, setStudentName] = useState('');
+    const [studentClass, setStudentClass] = useState('');
+    const [studentId, setStudentId] = useState('');
+    const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-    // Real-time attendance data
-    const [attendanceData, setAttendanceData] = useState({
-        totalStudents: 3,
-        present: 3,
-        absent: 0,
-        late: 0,
-        attendanceRecords: [
-            {
-                id: 1,
-                studentName: 'Mike Wilson',
-                studentId: 'STU001',
-                class: '10A',
-                date: '12/30/2024',
-                status: 'present'
-            },
-            {
-                id: 2,
-                studentName: 'Emma Davis',
-                studentId: 'STU002',
-                class: '10A',
-                date: '12/30/2024',
-                status: 'present'
-            },
-            {
-                id: 3,
-                studentName: 'Alex Johnson',
-                studentId: 'STU003',
-                class: '10B',
-                date: '12/30/2024',
-                status: 'absent'
-            }
-        ]
-    });
+    const studentEmail = localStorage.getItem('userEmail');
 
-    // Calendar state
-    const [currentMonth, setCurrentMonth] = useState(new Date(2025, 11, 1)); // December 2025
-
-    // Update attendance counts in real-time
     useEffect(() => {
-        const interval = setInterval(() => {
-            // Recalculate counts based on records
-            const present = attendanceData.attendanceRecords.filter(r => r.status === 'present').length;
-            const absent = attendanceData.attendanceRecords.filter(r => r.status === 'absent').length;
-            const late = attendanceData.attendanceRecords.filter(r => r.status === 'late').length;
+        loadAttendance();
+        const unsubscribe = subscribeToUpdates(loadAttendance);
+        return unsubscribe;
+    }, []);
 
-            setAttendanceData(prev => ({
-                ...prev,
-                present,
-                absent,
-                late
-            }));
-        }, 1000);
+    const loadAttendance = useCallback(() => {
+        setLoading(true);
+        console.log('Loading attendance for student email:', studentEmail);
 
-        return () => clearInterval(interval);
-    }, [attendanceData.attendanceRecords]);
+        // Find student by email
+        const students = getAllStudents();
+        const student = students.find(s => s.email === studentEmail);
+        console.log('Student found:', student);
 
-    // Calendar functions
-    const getDaysInMonth = (date) => {
-        const year = date.getFullYear();
-        const month = date.getMonth();
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
+        if (student) {
+            setStudentName(student.name);
+            setStudentClass(student.class);
+            setStudentId(student.id);
+
+            // Get all attendance records
+            const allRecords = getAllAttendance();
+            console.log('All attendance records:', allRecords);
+
+            // Filter for this student
+            const studentRecords = allRecords.filter(record =>
+                record.studentId.toString() === student.id.toString()
+            );
+            console.log('Student attendance records:', studentRecords);
+
+            setAttendanceRecords(studentRecords);
+        }
+
+        setLoading(false);
+    }, [studentEmail]);
+
+    // Calculate statistics
+    const calculateStats = () => {
+        let totalDays = attendanceRecords.length;
+        let presentDays = attendanceRecords.filter(r => r.status === 'Present').length;
+        let absentDays = attendanceRecords.filter(r => r.status === 'Absent').length;
+        let lateDays = attendanceRecords.filter(r => r.status === 'Late').length;
+
+        const attendanceRate = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
+
+        return { totalDays, presentDays, absentDays, lateDays, attendanceRate };
+    };
+
+    const stats = calculateStats();
+
+    // Get attendance for calendar view
+    const getAttendanceForDate = (date) => {
+        const dateStr = date.toISOString().split('T')[0];
+        const record = attendanceRecords.find(r => r.date === dateStr);
+        return record ? record.status : null;
+    };
+
+    // Generate calendar days
+    const generateCalendarDays = () => {
+        const firstDay = new Date(selectedYear, selectedMonth, 1);
+        const lastDay = new Date(selectedYear, selectedMonth + 1, 0);
         const daysInMonth = lastDay.getDate();
         const startingDayOfWeek = firstDay.getDay();
 
         const days = [];
 
-        // Previous month days
-        const prevMonthLastDay = new Date(year, month, 0).getDate();
-        for (let i = startingDayOfWeek - 1; i >= 0; i--) {
-            days.push({
-                day: prevMonthLastDay - i,
-                isCurrentMonth: false,
-                date: new Date(year, month - 1, prevMonthLastDay - i)
-            });
+        // Add empty cells for days before month starts
+        for (let i = 0; i < startingDayOfWeek; i++) {
+            days.push(null);
         }
 
-        // Current month days
-        for (let i = 1; i <= daysInMonth; i++) {
-            days.push({
-                day: i,
-                isCurrentMonth: true,
-                date: new Date(year, month, i)
-            });
-        }
-
-        // Next month days
-        const remainingDays = 42 - days.length; // 6 rows * 7 days
-        for (let i = 1; i <= remainingDays; i++) {
-            days.push({
-                day: i,
-                isCurrentMonth: false,
-                date: new Date(year, month + 1, i)
-            });
+        // Add days of month
+        for (let day = 1; day <= daysInMonth; day++) {
+            const date = new Date(selectedYear, selectedMonth, day);
+            const status = getAttendanceForDate(date);
+            days.push({ day, date, status });
         }
 
         return days;
     };
 
-    const monthNames = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-
-    const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-
-    const handlePrevMonth = () => {
-        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
-    };
-
-    const handleNextMonth = () => {
-        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
-    };
-
-    const handleDateClick = (date) => {
-        setSelectedDate(date);
-    };
-
-    const isToday = (date) => {
-        const today = new Date();
-        return date.getDate() === today.getDate() &&
-            date.getMonth() === today.getMonth() &&
-            date.getFullYear() === today.getFullYear();
-    };
-
-    const isSelected = (date) => {
-        if (!selectedDate) return false;
-        return date.getDate() === selectedDate.getDate() &&
-            date.getMonth() === selectedDate.getMonth() &&
-            date.getFullYear() === selectedDate.getFullYear();
-    };
-
-    const handleDownloadReport = () => {
-        // Create CSV content
-        const headers = ['Student Name', 'Student ID', 'Class', 'Date', 'Status'];
-        const rows = attendanceData.attendanceRecords.map(record => [
-            record.studentName,
-            record.studentId,
-            record.class,
-            record.date,
-            record.status
-        ]);
-
-        const csvContent = [
-            headers.join(','),
-            ...rows.map(row => row.join(','))
-        ].join('\n');
-
-        // Create and download file
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `attendance_report_${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-    };
+    const calendarDays = generateCalendarDays();
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     const getStatusColor = (status) => {
         switch (status) {
-            case 'present':
-                return 'bg-green-100 text-green-700';
-            case 'absent':
-                return 'bg-red-100 text-red-700';
-            case 'late':
-                return 'bg-yellow-100 text-yellow-700';
+            case 'Present':
+                return 'bg-green-500';
+            case 'Absent':
+                return 'bg-red-500';
+            case 'Late':
+                return 'bg-yellow-500';
             default:
-                return 'bg-gray-100 text-gray-700';
+                return 'bg-gray-300';
         }
     };
 
-    const days = getDaysInMonth(currentMonth);
+    const getStatusIcon = (status) => {
+        switch (status) {
+            case 'Present':
+                return <CheckCircle className="w-4 h-4 text-white" />;
+            case 'Absent':
+                return <XCircle className="w-4 h-4 text-white" />;
+            case 'Late':
+                return <Clock className="w-4 h-4 text-white" />;
+            default:
+                return null;
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex-1 overflow-y-auto p-8">
+                <div className="flex items-center justify-center h-64">
+                    <div className="text-center">
+                        <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4 animate-spin" />
+                        <p className={`text-lg ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                            Loading attendance...
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="flex-1 overflow-y-auto p-8 bg-gray-50">
+        <div className="flex-1 overflow-y-auto p-8">
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Attendance Management</h1>
-                <p className="text-sm text-gray-500">Track and manage student attendance</p>
+                <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
+                    My Attendance
+                </h1>
+                <p className="text-sm text-gray-500">
+                    {studentName} - {studentClass} (Real-time sync with Teacher)
+                </p>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                {/* Total Students */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-medium text-gray-600">Total Students</h3>
-                        <Users className="w-5 h-5 text-gray-400" />
+                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Days</h3>
+                        <Calendar className="w-5 h-5 text-blue-500" />
                     </div>
-                    <div className="mb-2">
-                        <p className="text-3xl font-bold text-gray-900">{attendanceData.totalStudents}</p>
-                    </div>
-                    <p className="text-sm text-gray-500">In selected class</p>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.totalDays}</p>
+                    <p className="text-sm text-gray-500 mt-1">Recorded</p>
                 </div>
 
-                {/* Present */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-medium text-gray-600">Present</h3>
+                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Present</h3>
                         <CheckCircle className="w-5 h-5 text-green-500" />
                     </div>
-                    <div className="mb-2">
-                        <p className="text-3xl font-bold text-gray-900">{attendanceData.present}</p>
-                    </div>
-                    <p className="text-sm text-gray-500">
-                        {attendanceData.totalStudents > 0
-                            ? `${Math.round((attendanceData.present / attendanceData.totalStudents) * 100)}% attendance`
-                            : '0% attendance'}
-                    </p>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.presentDays}</p>
+                    <p className="text-sm text-gray-500 mt-1">Days present</p>
                 </div>
 
-                {/* Absent */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-medium text-gray-600">Absent</h3>
+                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Absent</h3>
                         <XCircle className="w-5 h-5 text-red-500" />
                     </div>
-                    <div className="mb-2">
-                        <p className="text-3xl font-bold text-gray-900">{attendanceData.absent}</p>
-                    </div>
-                    <p className="text-sm text-gray-500">Students absent</p>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.absentDays}</p>
+                    <p className="text-sm text-gray-500 mt-1">Days absent</p>
                 </div>
 
-                {/* Late */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-medium text-gray-600">Late</h3>
-                        <Clock className="w-5 h-5 text-yellow-500" />
+                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Attendance Rate</h3>
+                        <TrendingUp className="w-5 h-5 text-purple-500" />
                     </div>
-                    <div className="mb-2">
-                        <p className="text-3xl font-bold text-gray-900">{attendanceData.late}</p>
-                    </div>
-                    <p className="text-sm text-gray-500">Students late</p>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.attendanceRate}%</p>
+                    <p className="text-sm text-gray-500 mt-1">Overall</p>
                 </div>
             </div>
 
-            {/* Tabs */}
-            <div className="mb-6">
-                <div className="flex gap-4 border-b border-gray-200">
-                    <button
-                        onClick={() => setActiveTab('View Attendance')}
-                        className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'View Attendance'
-                                ? 'border-blue-600 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
+            {/* Progress Bar */}
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-8`}>
+                <div className="flex justify-between items-center mb-2">
+                    <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        Attendance Progress
+                    </h3>
+                    <span className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {stats.attendanceRate}%
+                    </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-4">
+                    <div
+                        className={`h-4 rounded-full transition-all duration-300 ${stats.attendanceRate >= 75 ? 'bg-green-500' : stats.attendanceRate >= 50 ? 'bg-yellow-500' : 'bg-red-500'
                             }`}
-                    >
-                        View Attendance
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('Reports')}
-                        className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'Reports'
-                                ? 'border-blue-600 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                            }`}
-                    >
-                        Reports
-                    </button>
+                        style={{ width: `${stats.attendanceRate}%` }}
+                    ></div>
+                </div>
+                <div className="flex justify-between mt-2 text-xs text-gray-500">
+                    <span>0%</span>
+                    <span>50%</span>
+                    <span>75%</span>
+                    <span>100%</span>
                 </div>
             </div>
 
-            {/* Attendance History Section */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Attendance History</h3>
-                <p className="text-sm text-gray-500 mb-6">View attendance records for different dates and classes</p>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Calendar Section */}
-                    <div>
-                        <h4 className="text-sm font-semibold text-gray-900 mb-4">Select Date</h4>
-
-                        {/* Calendar Header */}
-                        <div className="flex items-center justify-between mb-4">
-                            <button
-                                onClick={handlePrevMonth}
-                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                <ChevronLeft className="w-5 h-5 text-gray-600" />
-                            </button>
-                            <span className="text-sm font-semibold text-gray-900">
-                                {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
-                            </span>
-                            <button
-                                onClick={handleNextMonth}
-                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                <ChevronRight className="w-5 h-5 text-gray-600" />
-                            </button>
-                        </div>
-
-                        {/* Calendar Grid */}
-                        <div className="grid grid-cols-7 gap-2">
-                            {/* Week day headers */}
-                            {weekDays.map(day => (
-                                <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
-                                    {day}
-                                </div>
-                            ))}
-
-                            {/* Calendar days */}
-                            {days.map((dayObj, index) => (
-                                <button
-                                    key={index}
-                                    onClick={() => dayObj.isCurrentMonth && handleDateClick(dayObj.date)}
-                                    disabled={!dayObj.isCurrentMonth}
-                                    className={`
-                    aspect-square flex items-center justify-center text-sm rounded-lg transition-all
-                    ${!dayObj.isCurrentMonth ? 'text-gray-300 cursor-not-allowed' : 'text-gray-900 hover:bg-gray-100'}
-                    ${isToday(dayObj.date) && dayObj.isCurrentMonth ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
-                    ${isSelected(dayObj.date) && !isToday(dayObj.date) && dayObj.isCurrentMonth ? 'bg-gray-900 text-white' : ''}
-                  `}
-                                >
-                                    {dayObj.day}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Filters Section */}
-                    <div>
-                        <h4 className="text-sm font-semibold text-gray-900 mb-4">Filters</h4>
-
-                        {/* Class Filter */}
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Class</label>
-                            <select
-                                value={selectedClass}
-                                onChange={(e) => setSelectedClass(e.target.value)}
-                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                            >
-                                <option value="Class 10/">Class 10/</option>
-                                <option value="Class 9/">Class 9/</option>
-                                <option value="Class 11/">Class 11/</option>
-                                <option value="Class 12/">Class 12/</option>
-                            </select>
-                        </div>
-
-                        {/* Subject Filter */}
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
-                            <select
-                                value={selectedSubject}
-                                onChange={(e) => setSelectedSubject(e.target.value)}
-                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                            >
-                                <option value="All Subjects">All Subjects</option>
-                                <option value="Mathematics">Mathematics</option>
-                                <option value="Physics">Physics</option>
-                                <option value="Chemistry">Chemistry</option>
-                                <option value="Biology">Biology</option>
-                                <option value="English">English</option>
-                            </select>
-                        </div>
-
-                        {/* Download Report Button */}
-                        <button
-                            onClick={handleDownloadReport}
-                            className="w-full bg-gray-900 text-white py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+            {/* Calendar View */}
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-8`}>
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        Attendance Calendar
+                    </h3>
+                    <div className="flex items-center space-x-4">
+                        <select
+                            value={selectedMonth}
+                            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                            className={`px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
                         >
-                            <Download className="w-5 h-5" />
-                            Download Report
-                        </button>
+                            {monthNames.map((month, index) => (
+                                <option key={index} value={index}>{month}</option>
+                            ))}
+                        </select>
+                        <select
+                            value={selectedYear}
+                            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                            className={`px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
+                        >
+                            {[2024, 2025, 2026].map(year => (
+                                <option key={year} value={year}>{year}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                {/* Calendar Grid */}
+                <div className="grid grid-cols-7 gap-2">
+                    {/* Day names */}
+                    {dayNames.map(day => (
+                        <div key={day} className={`text-center text-sm font-semibold ${darkMode ? 'text-gray-400' : 'text-gray-600'} py-2`}>
+                            {day}
+                        </div>
+                    ))}
+
+                    {/* Calendar days */}
+                    {calendarDays.map((dayData, index) => (
+                        <div
+                            key={index}
+                            className={`aspect-square flex items-center justify-center rounded-lg ${dayData
+                                ? dayData.status
+                                    ? `${getStatusColor(dayData.status)} text-white`
+                                    : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'
+                                : ''
+                                }`}
+                        >
+                            {dayData && (
+                                <div className="flex flex-col items-center justify-center">
+                                    <span className="text-sm font-medium">{dayData.day}</span>
+                                    {dayData.status && (
+                                        <div className="mt-1">
+                                            {getStatusIcon(dayData.status)}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Legend */}
+                <div className="flex items-center justify-center space-x-6 mt-6 pt-6 border-t border-gray-200">
+                    <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 rounded bg-green-500"></div>
+                        <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Present</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 rounded bg-red-500"></div>
+                        <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Absent</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 rounded bg-yellow-500"></div>
+                        <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Late</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <div className={`w-4 h-4 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}></div>
+                        <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Not Marked</span>
                     </div>
                 </div>
             </div>
 
-            {/* Attendance Records Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead className="bg-gray-50 border-b border-gray-200">
-                            <tr>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                    Student Name
-                                </th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                    Student ID
-                                </th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                    Class
-                                </th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                    Date
-                                </th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                    Status
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                            {attendanceData.attendanceRecords.map((record) => (
-                                <tr key={record.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className="text-sm font-medium text-gray-900">{record.studentName}</span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className="text-sm text-gray-600">{record.studentId}</span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className="text-sm text-gray-600">{record.class}</span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className="text-sm text-gray-600">{record.date}</span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(record.status)}`}>
-                                            {record.status}
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+            {/* Recent Attendance */}
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
+                    Recent Attendance
+                </h3>
+
+                {attendanceRecords.length === 0 ? (
+                    <div className="text-center py-12">
+                        <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <p className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                            No attendance records yet
+                        </p>
+                        <p className="text-sm text-gray-500 mt-2">
+                            Your teacher will mark attendance soon
+                        </p>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {attendanceRecords.slice(0, 10).reverse().map((record) => (
+                            <div key={record.id} className={`flex items-center justify-between p-4 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                                <div className="flex items-center space-x-4">
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getStatusColor(record.status)}`}>
+                                        {getStatusIcon(record.status)}
+                                    </div>
+                                    <div>
+                                        <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                            {new Date(record.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                        </p>
+                                        <p className="text-sm text-gray-500">
+                                            Marked by: {record.markedBy}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${record.status === 'Present' ? 'bg-green-100 text-green-800' :
+                                            record.status === 'Absent' ? 'bg-red-100 text-red-800' :
+                                                'bg-yellow-100 text-yellow-800'
+                                        }`}>
+                                        {record.status}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Info Note */}
+            <div className={`${darkMode ? 'bg-blue-900 border-blue-700' : 'bg-blue-50 border-blue-200'} border rounded-xl p-4 mt-6`}>
+                <div className="flex items-start space-x-3">
+                    <AlertCircle className={`w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'} mt-0.5`} />
+                    <div>
+                        <h4 className={`font-semibold text-sm ${darkMode ? 'text-blue-300' : 'text-blue-900'} mb-1`}>
+                            Real-time Sync
+                        </h4>
+                        <p className={`text-sm ${darkMode ? 'text-blue-200' : 'text-blue-700'}`}>
+                            Your attendance is marked by your teachers. Any changes made by teachers will appear here automatically without needing to refresh the page.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
