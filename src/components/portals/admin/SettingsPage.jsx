@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Settings as SettingsIcon,
     User,
@@ -11,11 +12,13 @@ import {
     Eye,
     EyeOff,
     Shield,
-    Database
+    Database,
+    LogOut
 } from 'lucide-react';
 import { getSettings, updateSettingsSection, changePassword, subscribeToSettingsUpdates } from '../../../utils/settingsStore';
 
 const SettingsPage = ({ darkMode }) => {
+    const navigate = useNavigate();
     const [activeSection, setActiveSection] = useState('general');
     const [showPassword, setShowPassword] = useState(false);
     const [saved, setSaved] = useState(false);
@@ -62,6 +65,15 @@ const SettingsPage = ({ darkMode }) => {
 
         return () => unsubscribe();
     }, []);
+
+    const handleLogout = () => {
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('token');
+        navigate('/login');
+    };
 
     const handleSave = () => {
         // Save general settings
@@ -413,6 +425,17 @@ const SettingsPage = ({ darkMode }) => {
                                 <span className="font-medium">{section.name}</span>
                             </button>
                         ))}
+
+                        {/* Logout Button */}
+                        <div className="pt-4 mt-4 border-t border-gray-200">
+                            <button
+                                onClick={handleLogout}
+                                className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all bg-red-50 text-red-600 hover:bg-red-100"
+                            >
+                                <LogOut className="w-5 h-5" />
+                                <span className="font-medium">Logout</span>
+                            </button>
+                        </div>
                     </nav>
                 </div>
 

@@ -208,7 +208,7 @@ const ParentDashboard = () => {
     return (
         <div className={`flex h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
             <aside className={`w-64 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r flex flex-col`}>
-                <div className="p-6 border-b border-gray-200">
+                <div className="px-6 py-3 border-b border-gray-200">
                     <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
                             <User className="w-6 h-6 text-white" />
@@ -221,7 +221,6 @@ const ParentDashboard = () => {
                 </div>
 
                 <nav className="flex-1 p-4 overflow-y-auto">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Navigation</p>
                     <ul className="space-y-1">
                         {menuItems.map((item, index) => (
                             <li key={index}>
@@ -239,25 +238,6 @@ const ParentDashboard = () => {
                         ))}
                     </ul>
                 </nav>
-
-                <div className={`p-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <div className="flex items-center space-x-3 mb-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-semibold">
-                            PU
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-semibold truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>{userName}</p>
-                            <p className="text-xs text-gray-500 truncate">{userRole}</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
-                    >
-                        <LogOut className="w-4 h-4" />
-                        <span className="text-sm font-medium">Logout</span>
-                    </button>
-                </div>
             </aside>
 
             <main className="flex-1 flex flex-col overflow-hidden">

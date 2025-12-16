@@ -1,7 +1,50 @@
 @import "tailwindcss";
 
+/* Mazzard Font Declarations */
+@font-face {
+    font-family: 'Mazzard';
+    src: url('/fonts/Mazzard Font/MazzardH-Regular.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Mazzard';
+    src: url('/fonts/Mazzard Font/MazzardH-Medium.otf') format('opentype');
+    font-weight: 500;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Mazzard';
+    src: url('/fonts/Mazzard Font/MazzardH-SemiBold.otf') format('opentype');
+    font-weight: 600;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Mazzard';
+    src: url('/fonts/Mazzard Font/MazzardH-Bold.otf') format('opentype');
+    font-weight: 700;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Mazzard';
+    src: url('/fonts/Mazzard Font/MazzardH-ExtraBold.otf') format('opentype');
+    font-weight: 800;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Mazzard';
+    src: url('/fonts/Mazzard Font/MazzardH-Light.otf') format('opentype');
+    font-weight: 300;
+    font-style: normal;
+}
+
 :root {
-    font-family: 'Poppins', system-ui, Avenir, Helvetica, Arial, sans-serif;
+    font-family: 'Mazzard', system-ui, Avenir, Helvetica, Arial, sans-serif;
     line-height: 1.5;
     font-weight: 400;
 
@@ -19,6 +62,39 @@ body {
     margin: 0;
     min-width: 320px;
     min-height: 100vh;
+    font-family: 'Mazzard', system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+/* Remove all focus rings globally */
+*,
+*:focus,
+*:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Remove focus ring from buttons, inputs, and all interactive elements */
+button:focus,
+input:focus,
+textarea:focus,
+select:focus,
+a:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Hide scrollbar for sidebar navigation */
+nav::-webkit-scrollbar,
+aside::-webkit-scrollbar {
+    display: none;
+}
+
+nav,
+aside {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
 }
 
 @keyframes slideIn {
