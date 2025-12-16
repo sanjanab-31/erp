@@ -328,6 +328,7 @@ const Students = ({ darkMode }) => {
                 class: formData.class,
                 rollNumber: formData.rollNo,
                 parentEmail: formData.parentEmail,
+                parentName: formData.parentName,
                 phone: formData.phone,
                 address: formData.address,
                 dateOfBirth: formData.dateOfBirth,
@@ -336,7 +337,19 @@ const Students = ({ darkMode }) => {
 
             setShowAddModal(false);
             resetForm();
-            alert('Student added successfully! Login credentials:\nEmail: ' + formData.email + '\nPassword: password');
+            // Show credentials for both student and parent
+            let message = 'Student added successfully!\n\n';
+            message += '📚 Student Login:\n';
+            message += 'Email: ' + formData.email + '\n';
+            message += 'Password: password\n';
+
+            if (formData.parentEmail && formData.parentEmail.trim()) {
+                message += '\n👨‍👩‍👧 Parent Login:\n';
+                message += 'Email: ' + formData.parentEmail + '\n';
+                message += 'Password: password';
+            }
+
+            alert(message);
         } catch (error) {
             alert('Error adding student: ' + error.message);
         }

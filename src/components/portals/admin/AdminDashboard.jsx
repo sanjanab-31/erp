@@ -38,6 +38,7 @@ import FeesAndFinancePage from './FeesAndFinancePage';
 import TimetablePage from './TimetablePage';
 import CommunicationPage from './CommunicationPage';
 import SettingsPage from './SettingsPage';
+import AdminExamSchedules from './AdminExamSchedules';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -105,7 +106,8 @@ const AdminDashboard = () => {
         { icon: Bus, label: 'Transport' },
         { icon: BarChart3, label: 'Reports' },
         { icon: UserCog, label: 'Staff' },
-        { icon: Settings, label: 'Settings' }
+        { icon: Settings, label: 'Settings' },
+        { icon: Calendar, label: 'Exam Schedules' }
     ];
 
     const quickActions = [
@@ -371,6 +373,8 @@ const AdminDashboard = () => {
                 return <AttendancePage darkMode={darkMode} />;
             case 'Exams & Grades':
                 return <ExamsAndGradesPage darkMode={darkMode} />;
+            case 'Exam Schedules':
+                return <AdminExamSchedules darkMode={darkMode} />;
             case 'Courses':
                 return <CoursesPage darkMode={darkMode} />;
             case 'Fees & Finance':

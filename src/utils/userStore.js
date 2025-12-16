@@ -101,6 +101,41 @@ export const addStudent = (studentData) => {
         };
 
         users.push(newStudent);
+
+        // Automatically create parent account if parent email is provided
+        if (studentData.parentEmail && studentData.parentEmail.trim()) {
+            const parentEmail = studentData.parentEmail.trim();
+
+            // Check if parent account already exists
+            const existingParent = getUserByEmail(parentEmail);
+
+            if (!existingParent) {
+                // Create new parent account
+                const newParent = {
+                    id: `parent_${Date.now()}`,
+                    email: parentEmail,
+                    password: DEFAULT_PASSWORD,
+                    name: studentData.parentName || `Parent of ${studentData.name}`,
+                    role: 'parent',
+                    studentId: newStudent.id,
+                    childName: studentData.name,
+                    childClass: studentData.class || '',
+                    relationship: 'Parent',
+                    phone: studentData.phone || '',
+                    address: studentData.address || '',
+                    createdAt: new Date().toISOString(),
+                    createdBy: studentData.createdBy || 'admin',
+                    active: true
+                };
+
+                users.push(newParent);
+            } else if (existingParent.role === 'parent') {
+                // If parent exists, link this student to them
+                // You can add multiple children support here if needed
+                console.log(`Parent account already exists for ${parentEmail}`);
+            }
+        }
+
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ users }));
         window.dispatchEvent(new Event('usersUpdated'));
 

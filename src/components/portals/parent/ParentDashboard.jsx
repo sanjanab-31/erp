@@ -27,6 +27,7 @@ import TimetablePage from './TimetablePage';
 import CommunicationPage from './CommunicationPage';
 import ReportsPage from './ReportsPage';
 import SettingsPage from './SettingsPage';
+import ParentChildAcademics from './ParentChildAcademics';
 
 const ParentDashboard = () => {
     const navigate = useNavigate();
@@ -76,7 +77,9 @@ const ParentDashboard = () => {
         { icon: Clock, label: 'Timetable' },
         { icon: MessageSquare, label: 'Communication' },
         { icon: FileText, label: 'Reports' },
-        { icon: Settings, label: 'Settings' }
+        { icon: Settings, label: 'Settings' },
+        { icon: TrendingUp, label: 'Child Academics' }
+
     ];
 
     const handleLogout = () => {
@@ -111,7 +114,7 @@ const ParentDashboard = () => {
         if (activeTab === 'Communication') return <CommunicationPage darkMode={darkMode} />;
         if (activeTab === 'Reports') return <ReportsPage darkMode={darkMode} />;
         if (activeTab === 'Settings') return <SettingsPage darkMode={darkMode} />;
-
+        if (activeTab === 'Child Academics') return <ParentChildAcademics darkMode={darkMode} />;
         // Default Dashboard
         return (
             <>
