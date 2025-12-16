@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Plus, MoreVertical, Mail, Phone, Edit, Trash2, X, Save, UserPlus } from 'lucide-react';
 import { getAllStudents, addStudent, updateStudent, deleteStudent, subscribeToUpdates, getStudentStats } from '../../../utils/studentStore';
+import { addStudent as addUserStudent } from '../../../utils/userStore';
 
 // Move modal components outside to prevent re-creation on every render
 const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, darkMode }) => {
@@ -317,10 +318,25 @@ const Students = ({ darkMode }) => {
     const handleAddStudent = useCallback((e) => {
         e.preventDefault();
         try {
+            // Add to studentStore (for student management)
             addStudent(formData);
+
+            // Add to userStore (for authentication) with default password
+            addUserStudent({
+                email: formData.email,
+                name: formData.name,
+                class: formData.class,
+                rollNumber: formData.rollNo,
+                parentEmail: formData.parentEmail,
+                phone: formData.phone,
+                address: formData.address,
+                dateOfBirth: formData.dateOfBirth,
+                createdBy: localStorage.getItem('userName') || 'admin'
+            });
+
             setShowAddModal(false);
             resetForm();
-            alert('Student added successfully!');
+            alert('Student added successfully! Login credentials:\nEmail: ' + formData.email + '\nPassword: password');
         } catch (error) {
             alert('Error adding student: ' + error.message);
         }

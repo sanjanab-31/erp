@@ -201,7 +201,7 @@ export const decodeToken = (token) => {
 
 /**
  * Mock login function (simulates backend authentication)
- * In production, this would be an API call to your backend
+ * Now uses userStore for dynamic user management
  * @param {String} email - User email
  * @param {String} password - User password
  * @param {String} role - User role
@@ -211,36 +211,32 @@ export const mockLogin = async (email, password, role, expiresIn = 'permanent') 
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Mock user database
-    const users = {
-        Student: { email: 'student@eshwar.com', password: 'student123', name: 'Mike Wilson' },
-        Teacher: { email: 'teacher@eshwar.com', password: 'teacher123', name: 'Sarah Johnson' },
-        Admin: { email: 'admin@eshwar.com', password: 'admin123', name: 'Admin User' },
-        Parent: { email: 'parent@eshwar.com', password: 'parent123', name: 'Parent User' }
-    };
+    // Import userStore
+    const { authenticateUser } = await import('./userStore');
 
-    const user = users[role];
+    try {
+        // Authenticate user using userStore
+        const user = authenticateUser(email, password, role);
 
-    // Validate credentials
-    if (!user || user.email !== email || user.password !== password) {
-        throw new Error('Invalid credentials');
-    }
-
-    // Generate JWT token with specified expiration
-    const token = generateToken({
-        email: user.email,
-        role: role,
-        name: user.name
-    }, expiresIn);
-
-    return {
-        token,
-        user: {
+        // Generate JWT token with specified expiration
+        const token = generateToken({
             email: user.email,
-            role: role,
+            role: user.role,
             name: user.name
-        }
-    };
+        }, expiresIn);
+
+        return {
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+                name: user.name
+            }
+        };
+    } catch (error) {
+        throw new Error(error.message || 'Invalid credentials');
+    }
 };
 
 export default {
