@@ -9,7 +9,7 @@ import CommunicationPage from './CommunicationPage';
 import LibraryPage from './LibraryPage';
 import ReportsPage from './ReportsPage';
 import SettingsPage from './SettingsPage';
-import {
+import AcademicManagement from './AcademicManagement';import {
     Home,
     Calendar,
     BookOpen,
@@ -66,7 +66,8 @@ const TeacherDashboard = () => {
         { icon: MessageSquare, label: 'Communication' },
         { icon: BookMarked, label: 'Library' },
         { icon: FileText, label: 'Reports' },
-        { icon: Settings, label: 'Settings' }
+        { icon: Settings, label: 'Settings' },
+        { icon: BookOpen, label: 'Academic Management' }
     ];
 
     const handleLogout = () => {
@@ -128,6 +129,9 @@ const TeacherDashboard = () => {
 
         if (activeTab === 'Settings') {
             return <SettingsPage darkMode={darkMode} />;
+        }
+        if (activeTab === 'Academic Management') {
+            return <AcademicManagement darkMode={darkMode} />;
         }
 
         // Default Dashboard Content

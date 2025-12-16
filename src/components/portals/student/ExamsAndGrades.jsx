@@ -4,90 +4,87 @@ import {
     TrendingUp,
     CheckCircle,
     Calendar,
-    Award
+    Award,
+    BookOpen,
+    Clock
 } from 'lucide-react';
+import {
+    getCoursesByClass,
+    calculateFinalMarks,
+    getStudentCourseMarks,
+    getExamSchedulesByClass,
+    getSubmissionsByStudent,
+    subscribeToAcademicUpdates
+} from '../../../utils/academicStore';
 
 const ExamsAndGrades = ({ darkMode }) => {
     const [activeTab, setActiveTab] = useState('My Grades');
-    const [selectedExamFilter, setSelectedExamFilter] = useState('All Exams');
-    const [selectedSubjectFilter, setSelectedSubjectFilter] = useState('All Subjects');
+    const [courses, setCourses] = useState([]);
+    const [examSchedules, setExamSchedules] = useState([]);
+    const [allMarks, setAllMarks] = useState([]);
 
-    // Real-time data state
-    const [gradesData, setGradesData] = useState({
-        overallGrade: 'A',
-        gradeAverage: 'average',
-        examsCompleted: 3,
-        examsCompletedText: 'This semester',
-        upcomingExams: 3,
-        upcomingExamsText: 'Next 30 days',
-        performance: 'Good',
-        performanceText: 'Improving trend',
-        grades: [
-            {
-                id: 1,
-                subject: 'Mathematics',
-                examType: 'Mid-term',
-                date: '11/15/2024',
-                marksObtained: 85,
-                totalMarks: 100,
-                percentage: 85,
-                grade: 'A'
-            },
-            {
-                id: 2,
-                subject: 'Mathematics',
-                examType: 'Mid-term',
-                date: '11/15/2024',
-                marksObtained: 92,
-                totalMarks: 100,
-                percentage: 92,
-                grade: 'A+'
-            },
-            {
-                id: 3,
-                subject: 'Physics',
-                examType: 'Mid-term',
-                date: '11/15/2024',
-                marksObtained: 78,
-                totalMarks: 100,
-                percentage: 78,
-                grade: 'B+'
-            },
-            {
-                id: 4,
-                subject: 'Chemistry',
-                examType: 'Mid-term',
-                date: '11/20/2024',
-                marksObtained: 88,
-                totalMarks: 100,
-                percentage: 88,
-                grade: 'A'
-            },
-            {
-                id: 5,
-                subject: 'English',
-                examType: 'Final',
-                date: '11/22/2024',
-                marksObtained: 90,
-                totalMarks: 100,
-                percentage: 90,
-                grade: 'A+'
-            }
-        ]
-    });
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    const studentId = currentUser.id || localStorage.getItem('userId') || 'student_1';
+    const studentClass = currentUser.class || 'Grade 10-A';
 
-    // Simulate real-time updates
     useEffect(() => {
-        const interval = setInterval(() => {
-            // You can add real-time data fetching logic here
-            setGradesData(prev => ({
-                ...prev,
-                // Update any real-time fields
-            }));
-        }, 5000);
-
-        return () => clearInterval(interval);
+        loadData();
+        const unsubscribe = subscribeToAcademicUpdates(() => {
+            loadData();
+        });
+        return unsubscribe;
     }, []);
+
+    const loadData = () => {
+        const classCourses = getCoursesByClass(studentClass);
+        setCourses(classCourses);
+
+        const classSchedules = getExamSchedulesByClass(studentClass);
+        setExamSchedules(classSchedules);
+
+        // Calculate all marks for all courses
+        const marksData = classCourses.map(course => {
+            const finalMarks = calculateFinalMarks(studentId, course.id);
+            const examMarks = getStudentCourseMarks(studentId, course.id);
+            return {
+                courseId: course.id,
+                courseName: course.name,
+                courseCode: course.code,
+                finalMarks,
+                examMarks
+            };
+        }).filter(m => m.finalMarks.finalTotal > 0);
+
+        setAllMarks(marksData);
+    };
+
+    // Calculate statistics
+    const calculateStats = () => {
+        const totalCourses = allMarks.length;
+        const totalMarks = allMarks.reduce((sum, m) => sum + m.finalMarks.finalTotal, 0);
+        const average = totalCourses > 0 ? (totalMarks / totalCourses).toFixed(2) : 0;
+
+        const upcomingExams = examSchedules.filter(s => new Date(s.examDate) > new Date()).length;
+
+        let overallGrade = 'N/A';
+        if (average >= 90) overallGrade = 'A+';
+        else if (average >= 85) overallGrade = 'A';
+        else if (average >= 75) overallGrade = 'B+';
+        else if (average >= 70) overallGrade = 'B';
+        else if (average >= 60) overallGrade = 'C+';
+        else if (average >= 50) overallGrade = 'C';
+        else if (average > 0) overallGrade = 'D';
+
+        return {
+            overallGrade,
+            average,
+            examsCompleted: totalCourses,
+            upcomingExams,
+            performance: average >= 75 ? 'Excellent' : average >= 60 ? 'Good' : average > 0 ? 'Fair' : 'N/A'
+        };
+    };
+
+    const stats = calculateStats();
 
     const getGradeColor = (grade) => {
         if (grade === 'A' || grade === 'A+') return 'text-green-600 bg-green-50';
@@ -96,11 +93,299 @@ const ExamsAndGrades = ({ darkMode }) => {
         return 'text-red-600 bg-red-50';
     };
 
-    const filteredGrades = gradesData.grades.filter(grade => {
-        const examMatch = selectedExamFilter === 'All Exams' || grade.examType === selectedExamFilter;
-        const subjectMatch = selectedSubjectFilter === 'All Subjects' || grade.subject === selectedSubjectFilter;
-        return examMatch && subjectMatch;
-    });
+    const renderMyGrades = () => (
+        <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        Grade Report
+                    </h3>
+                    <p className="text-sm text-gray-500">Your academic performance across all subjects</p>
+                </div>
+                <button className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <Download className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-700">Download Report</span>
+                </button>
+            </div>
+
+            {allMarks.length === 0 ? (
+                <div className="text-center py-12">
+                    <Award className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        No grades available yet
+                    </p>
+                    <p className="text-sm text-gray-500 mt-2">
+                        Grades will appear here once your teacher enters marks
+                    </p>
+                </div>
+            ) : (
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead>
+                            <tr className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                                <th className={`text-left py-3 px-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                    Subject
+                                </th>
+                                <th className={`text-left py-3 px-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                    Assignment Marks
+                                </th>
+                                <th className={`text-left py-3 px-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                    Exam Marks
+                                </th>
+                                <th className={`text-left py-3 px-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                    Final Total
+                                </th>
+                                <th className={`text-left py-3 px-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                    Percentage
+                                </th>
+                                <th className={`text-left py-3 px-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                    Grade
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {allMarks.map((mark) => {
+                                const percentage = mark.finalMarks.finalTotal;
+                                let grade = 'D';
+                                if (percentage >= 90) grade = 'A+';
+                                else if (percentage >= 85) grade = 'A';
+                                else if (percentage >= 75) grade = 'B+';
+                                else if (percentage >= 70) grade = 'B';
+                                else if (percentage >= 60) grade = 'C+';
+                                else if (percentage >= 50) grade = 'C';
+
+                                return (
+                                    <tr
+                                        key={mark.courseId}
+                                        className={`border-b ${darkMode ? 'border-gray-700 hover:bg-gray-750' : 'border-gray-100 hover:bg-gray-50'} transition-colors`}
+                                    >
+                                        <td className={`py-4 px-4 text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                            {mark.courseName}
+                                            <p className="text-xs text-gray-500">{mark.courseCode}</p>
+                                        </td>
+                                        <td className={`py-4 px-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                            {mark.finalMarks.assignmentMarks}/25
+                                            <p className="text-xs text-gray-500">
+                                                {mark.finalMarks.assignmentCount} assignment(s)
+                                            </p>
+                                        </td>
+                                        <td className={`py-4 px-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                            {mark.finalMarks.examMarks}/75
+                                            {mark.examMarks && (
+                                                <p className="text-xs text-gray-500">
+                                                    ({mark.examMarks.exam1}, {mark.examMarks.exam2}, {mark.examMarks.exam3})
+                                                </p>
+                                            )}
+                                        </td>
+                                        <td className={`py-4 px-4 text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                            {mark.finalMarks.finalTotal}/100
+                                        </td>
+                                        <td className="py-4 px-4">
+                                            <div className="flex items-center space-x-3">
+                                                <span className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                    {percentage}%
+                                                </span>
+                                                <div className="flex-1 w-20 bg-gray-200 rounded-full h-2">
+                                                    <div
+                                                        className={`h-2 rounded-full transition-all duration-500 ${percentage >= 75 ? 'bg-green-600' :
+                                                                percentage >= 60 ? 'bg-blue-600' :
+                                                                    percentage >= 50 ? 'bg-yellow-600' : 'bg-red-600'
+                                                            }`}
+                                                        style={{ width: `${percentage}%` }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="py-4 px-4">
+                                            <span className={`px-3 py-1 rounded-lg text-sm font-semibold ${getGradeColor(grade)}`}>
+                                                {grade}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+        </div>
+    );
+
+    const renderExamSchedule = () => (
+        <div className="p-6">
+            <div className="mb-6">
+                <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Upcoming Exam Schedule
+                </h3>
+                <p className="text-sm text-gray-500">View your scheduled exams</p>
+            </div>
+
+            {examSchedules.length === 0 ? (
+                <div className="text-center py-12">
+                    <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        No exam schedules yet
+                    </p>
+                    <p className="text-sm text-gray-500 mt-2">
+                        Exam schedules will appear here once created by admin
+                    </p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {examSchedules.map((schedule) => {
+                        const examDate = new Date(schedule.examDate);
+                        const isUpcoming = examDate > new Date();
+                        const isPast = examDate < new Date();
+                        const isToday = examDate.toDateString() === new Date().toDateString();
+
+                        return (
+                            <div
+                                key={schedule.id}
+                                className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl p-6 ${isToday ? 'ring-2 ring-blue-500' : ''
+                                    }`}
+                            >
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="flex-1">
+                                        <h4 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>
+                                            {schedule.examName}
+                                        </h4>
+                                        <p className="text-sm text-gray-500">{schedule.courseName}</p>
+                                    </div>
+                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${isToday ? 'bg-blue-100 text-blue-600' :
+                                            isUpcoming ? 'bg-green-100 text-green-600' :
+                                                'bg-gray-100 text-gray-600'
+                                        }`}>
+                                        {isToday ? 'Today' : isUpcoming ? 'Upcoming' : 'Past'}
+                                    </span>
+                                </div>
+                                <div className="space-y-2 text-sm">
+                                    <p className="flex items-center space-x-2 text-gray-500">
+                                        <Calendar className="w-4 h-4" />
+                                        <span>{examDate.toLocaleDateString()}</span>
+                                    </p>
+                                    <p className="flex items-center space-x-2 text-gray-500">
+                                        <Clock className="w-4 h-4" />
+                                        <span>{schedule.startTime} - {schedule.endTime}</span>
+                                    </p>
+                                    {schedule.venue && (
+                                        <p className="text-gray-500">Venue: {schedule.venue}</p>
+                                    )}
+                                </div>
+                                {schedule.instructions && (
+                                    <div className={`mt-4 p-3 ${darkMode ? 'bg-gray-600' : 'bg-white'} rounded-lg`}>
+                                        <p className="text-xs text-gray-500 mb-1">Instructions:</p>
+                                        <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                            {schedule.instructions}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+
+    const renderPerformanceAnalysis = () => (
+        <div className="p-6">
+            <div className="mb-6">
+                <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Performance Analysis
+                </h3>
+                <p className="text-sm text-gray-500">Detailed breakdown of your academic performance</p>
+            </div>
+
+            {allMarks.length === 0 ? (
+                <div className="text-center py-12">
+                    <TrendingUp className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        No performance data yet
+                    </p>
+                </div>
+            ) : (
+                <div className="space-y-6">
+                    {/* Overall Performance */}
+                    <div className={`${darkMode ? 'bg-gradient-to-r from-blue-900 to-purple-900' : 'bg-gradient-to-r from-blue-500 to-purple-600'} rounded-xl p-6 text-white`}>
+                        <h4 className="text-lg font-semibold mb-4">Overall Performance</h4>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div>
+                                <p className="text-sm opacity-90">Average Score</p>
+                                <p className="text-3xl font-bold">{stats.average}%</p>
+                            </div>
+                            <div>
+                                <p className="text-sm opacity-90">Overall Grade</p>
+                                <p className="text-3xl font-bold">{stats.overallGrade}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm opacity-90">Performance</p>
+                                <p className="text-3xl font-bold">{stats.performance}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Subject-wise Performance */}
+                    <div>
+                        <h4 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
+                            Subject-wise Performance
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {allMarks.map((mark) => (
+                                <div
+                                    key={mark.courseId}
+                                    className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl p-6`}
+                                >
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div>
+                                            <h5 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                {mark.courseName}
+                                            </h5>
+                                            <p className="text-sm text-gray-500">{mark.courseCode}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-2xl font-bold text-blue-600">
+                                                {mark.finalMarks.finalTotal}%
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <div className="flex justify-between text-sm mb-1">
+                                                <span className="text-gray-500">Assignments</span>
+                                                <span className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                    {mark.finalMarks.assignmentMarks}/25
+                                                </span>
+                                            </div>
+                                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                                <div
+                                                    className="bg-blue-600 h-2 rounded-full"
+                                                    style={{ width: `${(mark.finalMarks.assignmentMarks / 25) * 100}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="flex justify-between text-sm mb-1">
+                                                <span className="text-gray-500">Exams</span>
+                                                <span className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                    {mark.finalMarks.examMarks}/75
+                                                </span>
+                                            </div>
+                                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                                <div
+                                                    className="bg-green-600 h-2 rounded-full"
+                                                    style={{ width: `${(mark.finalMarks.examMarks / 75) * 100}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
@@ -124,26 +409,26 @@ const ExamsAndGrades = ({ darkMode }) => {
                     </div>
                     <div className="mb-2">
                         <p className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                            {gradesData.overallGrade}
+                            {stats.overallGrade}
                         </p>
                     </div>
-                    <p className="text-sm text-gray-500">{gradesData.gradeAverage}</p>
+                    <p className="text-sm text-gray-500">{stats.average}% average</p>
                 </div>
 
                 {/* Exams Completed Card */}
                 <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl p-6 shadow-sm border`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                            Exams Completed
+                            Courses Graded
                         </h3>
                         <CheckCircle className="w-5 h-5 text-gray-400" />
                     </div>
                     <div className="mb-2">
                         <p className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                            {gradesData.examsCompleted}
+                            {stats.examsCompleted}
                         </p>
                     </div>
-                    <p className="text-sm text-gray-500">{gradesData.examsCompletedText}</p>
+                    <p className="text-sm text-gray-500">Out of {courses.length} courses</p>
                 </div>
 
                 {/* Upcoming Exams Card */}
@@ -156,10 +441,10 @@ const ExamsAndGrades = ({ darkMode }) => {
                     </div>
                     <div className="mb-2">
                         <p className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                            {gradesData.upcomingExams}
+                            {stats.upcomingExams}
                         </p>
                     </div>
-                    <p className="text-sm text-gray-500">{gradesData.upcomingExamsText}</p>
+                    <p className="text-sm text-gray-500">Scheduled exams</p>
                 </div>
 
                 {/* Performance Card */}
@@ -171,11 +456,14 @@ const ExamsAndGrades = ({ darkMode }) => {
                         <TrendingUp className="w-5 h-5 text-gray-400" />
                     </div>
                     <div className="mb-2">
-                        <p className={`text-4xl font-bold text-green-600`}>
-                            {gradesData.performance}
+                        <p className={`text-4xl font-bold ${stats.performance === 'Excellent' ? 'text-green-600' :
+                                stats.performance === 'Good' ? 'text-blue-600' :
+                                    stats.performance === 'Fair' ? 'text-yellow-600' : 'text-gray-600'
+                            }`}>
+                            {stats.performance}
                         </p>
                     </div>
-                    <p className="text-sm text-gray-500">{gradesData.performanceText}</p>
+                    <p className="text-sm text-gray-500">Overall status</p>
                 </div>
             </div>
 
@@ -186,8 +474,8 @@ const ExamsAndGrades = ({ darkMode }) => {
                         <button
                             onClick={() => setActiveTab('My Grades')}
                             className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${activeTab === 'My Grades'
-                                    ? 'border-blue-600 text-blue-600'
-                                    : `border-transparent ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`
+                                ? 'border-blue-600 text-blue-600'
+                                : `border-transparent ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`
                                 }`}
                         >
                             My Grades
@@ -195,8 +483,8 @@ const ExamsAndGrades = ({ darkMode }) => {
                         <button
                             onClick={() => setActiveTab('Exam Schedule')}
                             className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${activeTab === 'Exam Schedule'
-                                    ? 'border-blue-600 text-blue-600'
-                                    : `border-transparent ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`
+                                ? 'border-blue-600 text-blue-600'
+                                : `border-transparent ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`
                                 }`}
                         >
                             Exam Schedule
@@ -204,8 +492,8 @@ const ExamsAndGrades = ({ darkMode }) => {
                         <button
                             onClick={() => setActiveTab('Performance Analysis')}
                             className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${activeTab === 'Performance Analysis'
-                                    ? 'border-blue-600 text-blue-600'
-                                    : `border-transparent ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`
+                                ? 'border-blue-600 text-blue-600'
+                                : `border-transparent ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`
                                 }`}
                         >
                             Performance Analysis
@@ -213,126 +501,10 @@ const ExamsAndGrades = ({ darkMode }) => {
                     </div>
                 </div>
 
-                {/* Grade Report Section */}
-                <div className="p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <div>
-                            <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                Grade Report
-                            </h3>
-                            <p className="text-sm text-gray-500">Your academic performance across all subjects</p>
-                        </div>
-                        <button className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                            <Download className="w-4 h-4 text-gray-600" />
-                            <span className="text-sm font-medium text-gray-700">Download Report</span>
-                        </button>
-                    </div>
-
-                    {/* Filters */}
-                    <div className="flex space-x-4 mb-6">
-                        <select
-                            value={selectedExamFilter}
-                            onChange={(e) => setSelectedExamFilter(e.target.value)}
-                            className={`px-4 py-2 rounded-lg border ${darkMode
-                                    ? 'bg-gray-700 border-gray-600 text-white'
-                                    : 'bg-white border-gray-300 text-gray-900'
-                                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                        >
-                            <option>All Exams</option>
-                            <option>Mid-term</option>
-                            <option>Final</option>
-                            <option>Quiz</option>
-                        </select>
-
-                        <select
-                            value={selectedSubjectFilter}
-                            onChange={(e) => setSelectedSubjectFilter(e.target.value)}
-                            className={`px-4 py-2 rounded-lg border ${darkMode
-                                    ? 'bg-gray-700 border-gray-600 text-white'
-                                    : 'bg-white border-gray-300 text-gray-900'
-                                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                        >
-                            <option>All Subjects</option>
-                            <option>Mathematics</option>
-                            <option>Physics</option>
-                            <option>Chemistry</option>
-                            <option>English</option>
-                        </select>
-                    </div>
-
-                    {/* Grades Table */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                                    <th className={`text-left py-3 px-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                        Subject
-                                    </th>
-                                    <th className={`text-left py-3 px-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                        Exam Type
-                                    </th>
-                                    <th className={`text-left py-3 px-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                        Date
-                                    </th>
-                                    <th className={`text-left py-3 px-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                        Marks Obtained
-                                    </th>
-                                    <th className={`text-left py-3 px-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                        Total Marks
-                                    </th>
-                                    <th className={`text-left py-3 px-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                        Percentage
-                                    </th>
-                                    <th className={`text-left py-3 px-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                        Grade
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredGrades.map((grade) => (
-                                    <tr
-                                        key={grade.id}
-                                        className={`border-b ${darkMode ? 'border-gray-700 hover:bg-gray-750' : 'border-gray-100 hover:bg-gray-50'} transition-colors`}
-                                    >
-                                        <td className={`py-4 px-4 text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                            {grade.subject}
-                                        </td>
-                                        <td className={`py-4 px-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                            {grade.examType}
-                                        </td>
-                                        <td className={`py-4 px-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                            {grade.date}
-                                        </td>
-                                        <td className={`py-4 px-4 text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                            {grade.marksObtained}
-                                        </td>
-                                        <td className={`py-4 px-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                            {grade.totalMarks}
-                                        </td>
-                                        <td className="py-4 px-4">
-                                            <div className="flex items-center space-x-3">
-                                                <span className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                    {grade.percentage}%
-                                                </span>
-                                                <div className="flex-1 w-20 bg-gray-200 rounded-full h-2">
-                                                    <div
-                                                        className="bg-gray-900 h-2 rounded-full transition-all duration-500"
-                                                        style={{ width: `${grade.percentage}%` }}
-                                                    ></div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="py-4 px-4">
-                                            <span className={`px-3 py-1 rounded-lg text-sm font-semibold ${getGradeColor(grade.grade)}`}>
-                                                {grade.grade}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                {/* Tab Content */}
+                {activeTab === 'My Grades' && renderMyGrades()}
+                {activeTab === 'Exam Schedule' && renderExamSchedule()}
+                {activeTab === 'Performance Analysis' && renderPerformanceAnalysis()}
             </div>
         </div>
     );

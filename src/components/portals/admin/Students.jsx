@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Plus, MoreVertical, Mail, Phone, Edit, Trash2, X, Save, UserPlus } from 'lucide-react';
 import { getAllStudents, addStudent, updateStudent, deleteStudent, subscribeToUpdates, getStudentStats } from '../../../utils/studentStore';
+import { addStudent as addUserStudent } from '../../../utils/userStore';
 
 // Move modal components outside to prevent re-creation on every render
 const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, darkMode }) => {
@@ -317,10 +318,38 @@ const Students = ({ darkMode }) => {
     const handleAddStudent = useCallback((e) => {
         e.preventDefault();
         try {
+            // Add to studentStore (for student management)
             addStudent(formData);
+
+            // Add to userStore (for authentication) with default password
+            addUserStudent({
+                email: formData.email,
+                name: formData.name,
+                class: formData.class,
+                rollNumber: formData.rollNo,
+                parentEmail: formData.parentEmail,
+                parentName: formData.parentName,
+                phone: formData.phone,
+                address: formData.address,
+                dateOfBirth: formData.dateOfBirth,
+                createdBy: localStorage.getItem('userName') || 'admin'
+            });
+
             setShowAddModal(false);
             resetForm();
-            alert('Student added successfully!');
+            // Show credentials for both student and parent
+            let message = 'Student added successfully!\n\n';
+            message += '📚 Student Login:\n';
+            message += 'Email: ' + formData.email + '\n';
+            message += 'Password: password\n';
+
+            if (formData.parentEmail && formData.parentEmail.trim()) {
+                message += '\n👨‍👩‍👧 Parent Login:\n';
+                message += 'Email: ' + formData.parentEmail + '\n';
+                message += 'Password: password';
+            }
+
+            alert(message);
         } catch (error) {
             alert('Error adding student: ' + error.message);
         }
