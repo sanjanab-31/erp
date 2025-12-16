@@ -6,7 +6,6 @@ import {
     GraduationCap,
     DollarSign,
     Calendar,
-    MessageSquare,
     FileText,
     Settings,
     Bell,
@@ -24,15 +23,19 @@ import AcademicProgressPage from './AcademicProgressPage';
 import AttendancePage from './AttendancePage';
 import FeeManagementPage from './FeeManagementPage';
 import TimetablePage from './TimetablePage';
-import CommunicationPage from './CommunicationPage';
 import ReportsPage from './ReportsPage';
 import SettingsPage from './SettingsPage';
 import ParentChildAcademics from './ParentChildAcademics';
+import { getChildrenByParentEmail } from '../../../utils/userStore';
+import { calculateAttendancePercentage, subscribeToUpdates as subscribeToAttendance } from '../../../utils/attendanceStore';
+import { getStudentFinalMarks, subscribeToAcademicUpdates } from '../../../utils/academicStore';
+import { getFeesByStudent, subscribeToUpdates as subscribeToFees } from '../../../utils/feeStore';
 
 const ParentDashboard = () => {
     const navigate = useNavigate();
     const userName = localStorage.getItem('userName') || 'Parent User';
     const userRole = localStorage.getItem('userRole') || 'Parent';
+    const userEmail = localStorage.getItem('userEmail') || '';
 
     const [activeTab, setActiveTab] = useState('Dashboard');
     const [darkMode, setDarkMode] = useState(false);
@@ -40,31 +43,14 @@ const ParentDashboard = () => {
     const [searchQuery, setSearchQuery] = useState('');
 
     const [dashboardData, setDashboardData] = useState({
-        children: [
-            {
-                id: 1,
-                name: 'Emma Wilson',
-                class: 'Grade 10-A',
-                attendance: 95,
-                currentGrade: 'A',
-                pendingFees: 0,
-                upcomingTests: 2
-            }
-        ],
-        recentActivities: [
-            { id: 1, child: 'Emma Wilson', activity: 'Submitted Math Assignment', time: '2 hours ago', type: 'assignment' },
-            { id: 2, child: 'Emma Wilson', activity: 'Attended Physics Class', time: '5 hours ago', type: 'attendance' },
-            { id: 3, child: 'Emma Wilson', activity: 'Scored A in Chemistry Quiz', time: '1 day ago', type: 'grade' }
-        ],
-        upcomingEvents: [
-            { id: 1, title: 'Parent-Teacher Meeting', date: 'Dec 20, 2025', time: '10:00 AM' },
-            { id: 2, title: 'Mid-term Exams', date: 'Dec 25, 2025', time: 'All Day' }
-        ],
+        children: [],
+        recentActivities: [],
+        upcomingEvents: [],
         feeStatus: {
-            total: 5000,
-            paid: 5000,
+            total: 0,
+            paid: 0,
             pending: 0,
-            nextDue: 'Jan 15, 2026'
+            nextDue: 'N/A'
         }
     });
 
@@ -75,7 +61,6 @@ const ParentDashboard = () => {
         { icon: Calendar, label: 'Attendance' },
         { icon: DollarSign, label: 'Fee Management' },
         { icon: Clock, label: 'Timetable' },
-        { icon: MessageSquare, label: 'Communication' },
         { icon: FileText, label: 'Reports' },
         { icon: Settings, label: 'Settings' },
         { icon: TrendingUp, label: 'Child Academics' }
@@ -92,11 +77,89 @@ const ParentDashboard = () => {
     };
 
     useEffect(() => {
-        const interval = setInterval(() => {
-            setDashboardData(prev => ({ ...prev }));
-        }, 5000);
-        return () => clearInterval(interval);
-    }, []);
+        const fetchDashboardData = () => {
+            // Get only this parent's children
+            const parentEmail = userEmail;
+            const myChildren = getChildrenByParentEmail(parentEmail);
+
+            // If no children found, show empty state
+            if (myChildren.length === 0) {
+                setDashboardData({
+                    children: [],
+                    recentActivities: [],
+                    upcomingEvents: [],
+                    feeStatus: {
+                        total: 0,
+                        paid: 0,
+                        pending: 0,
+                        nextDue: 'N/A'
+                    }
+                });
+                return;
+            }
+
+            // Map children to dashboard data
+            const childrenData = myChildren.map(student => {
+                const studentId = student.id;
+
+                // Get attendance
+                const attendance = calculateAttendancePercentage(studentId);
+
+                // Get grades
+                const finalMarks = getStudentFinalMarks(studentId);
+                const avgGrade = finalMarks.length > 0
+                    ? finalMarks.reduce((sum, m) => sum + m.finalTotal, 0) / finalMarks.length
+                    : 0;
+                const currentGrade = avgGrade >= 90 ? 'A' : avgGrade >= 80 ? 'B+' : avgGrade >= 70 ? 'B' : avgGrade >= 60 ? 'C' : 'D';
+
+                // Get fees
+                const fees = getFeesByStudent(studentId);
+                const pendingFees = fees.reduce((sum, f) => sum + f.remainingAmount, 0);
+
+                return {
+                    id: student.id,
+                    name: student.name,
+                    class: student.class,
+                    attendance: attendance,
+                    currentGrade: currentGrade,
+                    pendingFees: pendingFees,
+                    upcomingTests: finalMarks.length
+                };
+            });
+
+            // Calculate total fee status for all children
+            const allFees = myChildren.flatMap(s => getFeesByStudent(s.id));
+            const totalFees = allFees.reduce((sum, f) => sum + f.amount, 0);
+            const paidFees = allFees.reduce((sum, f) => sum + f.paidAmount, 0);
+            const pendingFees = allFees.reduce((sum, f) => sum + f.remainingAmount, 0);
+
+            setDashboardData({
+                children: childrenData,
+                recentActivities: [], // Would come from activity log
+                upcomingEvents: [], // Would come from calendar/events store
+                feeStatus: {
+                    total: totalFees,
+                    paid: paidFees,
+                    pending: pendingFees,
+                    nextDue: 'Check Fee Management'
+                }
+            });
+        };
+
+        // Initial fetch
+        fetchDashboardData();
+
+        // Subscribe to updates
+        const unsubscribeAttendance = subscribeToAttendance(fetchDashboardData);
+        const unsubscribeAcademic = subscribeToAcademicUpdates(fetchDashboardData);
+        const unsubscribeFees = subscribeToFees(fetchDashboardData);
+
+        return () => {
+            unsubscribeAttendance();
+            unsubscribeAcademic();
+            unsubscribeFees();
+        };
+    }, [userEmail]);
 
     const getGreeting = () => {
         const hour = new Date().getHours();
@@ -111,7 +174,6 @@ const ParentDashboard = () => {
         if (activeTab === 'Attendance') return <AttendancePage darkMode={darkMode} />;
         if (activeTab === 'Fee Management') return <FeeManagementPage darkMode={darkMode} />;
         if (activeTab === 'Timetable') return <TimetablePage darkMode={darkMode} />;
-        if (activeTab === 'Communication') return <CommunicationPage darkMode={darkMode} />;
         if (activeTab === 'Reports') return <ReportsPage darkMode={darkMode} />;
         if (activeTab === 'Settings') return <SettingsPage darkMode={darkMode} />;
         if (activeTab === 'Child Academics') return <ParentChildAcademics darkMode={darkMode} />;

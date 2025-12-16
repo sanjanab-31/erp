@@ -375,6 +375,37 @@ export const subscribeToUserUpdates = (callback) => {
     return () => window.removeEventListener('usersUpdated', handler);
 };
 
+// Get children by parent email
+export const getChildrenByParentEmail = (parentEmail) => {
+    const users = getAllUsers();
+    const parent = users.find(u => u.email.toLowerCase() === parentEmail.toLowerCase() && u.role === 'parent');
+
+    if (!parent) {
+        return [];
+    }
+
+    // Get all students whose parentEmail matches this parent's email
+    return users.filter(u =>
+        u.role === 'student' &&
+        u.parentEmail &&
+        u.parentEmail.toLowerCase() === parentEmail.toLowerCase()
+    );
+};
+
+// Get children by parent ID
+export const getChildrenByParentId = (parentId) => {
+    const parent = getUserById(parentId);
+    if (!parent || parent.role !== 'parent') {
+        return [];
+    }
+    return getChildrenByParentEmail(parent.email);
+};
+
+// Get students by parent email (alias for getChildrenByParentEmail)
+export const getStudentsByParentEmail = (parentEmail) => {
+    return getChildrenByParentEmail(parentEmail);
+};
+
 // Get statistics
 export const getUserStatistics = () => {
     const users = getAllUsers();
@@ -411,5 +442,8 @@ export default {
     getActiveUsersByRole,
     subscribeToUserUpdates,
     getUserStatistics,
+    getChildrenByParentEmail,
+    getChildrenByParentId,
+    getStudentsByParentEmail,
     DEFAULT_PASSWORD
 };

@@ -6,7 +6,6 @@ import ExamsAndGrades from './ExamsAndGrades';
 import StudentCoursesPage from './StudentCoursesPage';
 import CoursesPage from './CoursesPage';
 import TimetablePage from './TimetablePage';
-import CommunicationCenter from './CommunicationCenter';
 import LibraryPage from './LibraryPage';
 import TransportPage from './TransportPage';
 import SettingsPage from './SettingsPage';
@@ -17,7 +16,6 @@ import {
     GraduationCap,
     DollarSign,
     Clock,
-    MessageSquare,
     BookMarked,
     Bus,
     Settings,
@@ -30,11 +28,15 @@ import {
     Library,
     LogOut
 } from 'lucide-react';
+import { calculateAttendancePercentage, subscribeToUpdates as subscribeToAttendance } from '../../../utils/attendanceStore';
+import { getSubmissionsByStudent, getStudentFinalMarks, subscribeToAcademicUpdates } from '../../../utils/academicStore';
 
 const StudentPortal = () => {
     const navigate = useNavigate();
     const userName = localStorage.getItem('userName') || 'Mike Wilson';
     const userRole = localStorage.getItem('userRole') || 'Student';
+    const userEmail = localStorage.getItem('userEmail') || '';
+    const userId = localStorage.getItem('userId') || '';
 
     // State management
     const [activeTab, setActiveTab] = useState('Dashboard');
@@ -44,49 +46,19 @@ const StudentPortal = () => {
 
     // Real-time dashboard data
     const [dashboardData, setDashboardData] = useState({
-        attendance: 95,
-        currentGrade: 'A',
-        gradePerformance: 'Overall performance',
+        attendance: 0,
+        currentGrade: '-',
+        gradePerformance: 'Loading...',
         assignments: {
-            pending: 3,
-            total: 3
+            pending: 0,
+            total: 0
         },
         libraryBooks: {
-            issued: 2,
-            total: 2
+            issued: 0,
+            total: 0
         },
-        upcomingAssignments: [
-            {
-                id: 1,
-                title: 'Math Assignment',
-                description: 'Calculus problems',
-                dueDate: 'Due tomorrow',
-                status: 'urgent'
-            },
-            {
-                id: 2,
-                title: 'Physics Lab Report',
-                description: 'Experiment analysis',
-                dueDate: 'Due in 3 days',
-                status: 'normal'
-            }
-        ],
-        recentGrades: [
-            {
-                id: 1,
-                subject: 'Mathematics',
-                assessment: 'Mid-term exam',
-                grade: 'A',
-                color: 'green'
-            },
-            {
-                id: 2,
-                subject: 'Physics',
-                assessment: 'Quiz 3',
-                grade: 'B+',
-                color: 'blue'
-            }
-        ]
+        upcomingAssignments: [],
+        recentGrades: []
     });
 
     // Sidebar menu items
@@ -97,7 +69,6 @@ const StudentPortal = () => {
         { icon: BookOpen, label: 'Courses' },
         { icon: DollarSign, label: 'Fees & Finance' },
         { icon: Clock, label: 'Timetable' },
-        { icon: MessageSquare, label: 'Communication' },
         { icon: BookMarked, label: 'Library' },
         { icon: Bus, label: 'Transport' },
         { icon: Settings, label: 'Settings' },
@@ -114,16 +85,65 @@ const StudentPortal = () => {
         navigate('/login');
     };
 
-    // Simulate real-time updates
+    // Fetch and subscribe to real-time updates
     useEffect(() => {
-        const interval = setInterval(() => {
-            setDashboardData(prev => ({
-                ...prev,
-            }));
-        }, 5000);
+        const fetchDashboardData = () => {
+            const studentId = userId || userEmail;
 
-        return () => clearInterval(interval);
-    }, []);
+            // Get attendance percentage
+            const attendancePercentage = calculateAttendancePercentage(studentId);
+
+            // Get student's submissions and grades
+            const submissions = getSubmissionsByStudent(studentId);
+            const finalMarks = getStudentFinalMarks(studentId);
+
+            // Calculate pending assignments
+            const pendingSubmissions = submissions.filter(s => s.status === 'submitted' || !s.marks);
+
+            // Get recent grades
+            const recentGrades = finalMarks.slice(0, 2).map((mark, idx) => ({
+                id: idx + 1,
+                subject: mark.courseName,
+                assessment: 'Course Total',
+                grade: mark.finalTotal >= 90 ? 'A' : mark.finalTotal >= 80 ? 'B+' : mark.finalTotal >= 70 ? 'B' : 'C',
+                color: mark.finalTotal >= 90 ? 'green' : 'blue'
+            }));
+
+            // Calculate overall grade
+            const avgGrade = finalMarks.length > 0
+                ? finalMarks.reduce((sum, m) => sum + m.finalTotal, 0) / finalMarks.length
+                : 0;
+            const overallGrade = avgGrade >= 90 ? 'A' : avgGrade >= 80 ? 'B+' : avgGrade >= 70 ? 'B' : avgGrade >= 60 ? 'C' : 'D';
+
+            setDashboardData({
+                attendance: attendancePercentage,
+                currentGrade: overallGrade,
+                gradePerformance: finalMarks.length > 0 ? `Average: ${avgGrade.toFixed(1)}%` : 'No grades yet',
+                assignments: {
+                    pending: pendingSubmissions.length,
+                    total: submissions.length
+                },
+                libraryBooks: {
+                    issued: 0, // This would come from library store
+                    total: 0
+                },
+                upcomingAssignments: [], // This would need assignment due dates
+                recentGrades: recentGrades
+            });
+        };
+
+        // Initial fetch
+        fetchDashboardData();
+
+        // Subscribe to updates
+        const unsubscribeAttendance = subscribeToAttendance(fetchDashboardData);
+        const unsubscribeAcademic = subscribeToAcademicUpdates(fetchDashboardData);
+
+        return () => {
+            unsubscribeAttendance();
+            unsubscribeAcademic();
+        };
+    }, [userId, userEmail]);
 
     const getGreeting = () => {
         const hour = new Date().getHours();
@@ -152,10 +172,6 @@ const StudentPortal = () => {
 
         if (activeTab === 'Timetable') {
             return <TimetablePage darkMode={darkMode} />;
-        }
-
-        if (activeTab === 'Communication') {
-            return <CommunicationCenter darkMode={darkMode} />;
         }
 
         if (activeTab === 'Library') {

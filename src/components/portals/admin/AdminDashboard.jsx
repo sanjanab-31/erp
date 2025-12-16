@@ -8,7 +8,6 @@ import {
     BookOpen,
     DollarSign,
     Calendar,
-    MessageSquare,
     BookMarked,
     Bus,
     BarChart3,
@@ -36,9 +35,12 @@ import ExamsAndGradesPage from './ExamsAndGradesPage';
 import CoursesPage from './CoursesPage';
 import FeesAndFinancePage from './FeesAndFinancePage';
 import TimetablePage from './TimetablePage';
-import CommunicationPage from './CommunicationPage';
 import SettingsPage from './SettingsPage';
 import AdminExamSchedules from './AdminExamSchedules';
+import { getStudentStats, subscribeToUpdates as subscribeToStudents } from '../../../utils/studentStore';
+import { getTeacherStats, subscribeToUpdates as subscribeToTeachers } from '../../../utils/teacherStore';
+import { getFeeStats, subscribeToUpdates as subscribeToFees } from '../../../utils/feeStore';
+import { getOverallAttendanceStats, subscribeToUpdates as subscribeToAttendance } from '../../../utils/attendanceStore';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -55,14 +57,14 @@ const AdminDashboard = () => {
 
     // Real-time dashboard data with live updates
     const [dashboardData, setDashboardData] = useState({
-        totalStudents: 3,
-        totalTeachers: 3,
-        revenue: 125000,
-        attendanceRate: 92,
-        studentsChange: '+2 from last month',
-        teachersChange: 'Active staff members',
-        revenueChange: '+12% from last month',
-        attendanceChange: 'Overall attendance rate'
+        totalStudents: 0,
+        totalTeachers: 0,
+        revenue: 0,
+        attendanceRate: 0,
+        studentsChange: 'Loading...',
+        teachersChange: 'Loading...',
+        revenueChange: 'Loading...',
+        attendanceChange: 'Loading...'
     });
 
     const [recentActivities, setRecentActivities] = useState([
@@ -101,7 +103,6 @@ const AdminDashboard = () => {
         { icon: BookMarked, label: 'Courses' },
         { icon: DollarSign, label: 'Fees & Finance' },
         { icon: Calendar, label: 'Timetable' },
-        { icon: MessageSquare, label: 'Communication' },
         { icon: BookMarked, label: 'Library' },
         { icon: Bus, label: 'Transport' },
         { icon: BarChart3, label: 'Reports' },
@@ -117,18 +118,54 @@ const AdminDashboard = () => {
         { icon: FileText, label: 'Generate Report', color: 'bg-orange-500', action: 'generateReport' }
     ];
 
-    // Simulate real-time data updates
+    // Fetch and subscribe to real-time data updates
     useEffect(() => {
-        const interval = setInterval(() => {
-            // Simulate random small changes in data
-            setDashboardData(prev => ({
-                ...prev,
-                totalStudents: prev.totalStudents + Math.floor(Math.random() * 2),
-                attendanceRate: Math.min(100, prev.attendanceRate + (Math.random() > 0.5 ? 0.1 : -0.1))
-            }));
-        }, 10000); // Update every 10 seconds
+        const fetchDashboardData = () => {
+            // Get student stats
+            const studentStats = getStudentStats();
 
-        return () => clearInterval(interval);
+            // Get teacher stats
+            const teacherStats = getTeacherStats();
+
+            // Get fee stats
+            const feeStats = getFeeStats();
+
+            // Get attendance stats
+            const attendanceStats = getOverallAttendanceStats();
+
+            // Calculate attendance rate
+            const attendanceRate = attendanceStats.totalRecords > 0
+                ? Math.round(((attendanceStats.present + attendanceStats.late) / attendanceStats.totalRecords) * 100)
+                : 0;
+
+            setDashboardData({
+                totalStudents: studentStats.total,
+                totalTeachers: teacherStats.total,
+                revenue: feeStats.paidAmount || 0,
+                attendanceRate: attendanceRate,
+                studentsChange: `${studentStats.active} active students`,
+                teachersChange: `${teacherStats.active} active staff members`,
+                revenueChange: `${feeStats.collectionRate}% collection rate`,
+                attendanceChange: 'Overall attendance rate'
+            });
+        };
+
+        // Initial fetch
+        fetchDashboardData();
+
+        // Subscribe to updates
+        const unsubscribeStudents = subscribeToStudents(fetchDashboardData);
+        const unsubscribeTeachers = subscribeToTeachers(fetchDashboardData);
+        const unsubscribeFees = subscribeToFees(fetchDashboardData);
+        const unsubscribeAttendance = subscribeToAttendance(fetchDashboardData);
+
+        // Cleanup subscriptions
+        return () => {
+            unsubscribeStudents();
+            unsubscribeTeachers();
+            unsubscribeFees();
+            unsubscribeAttendance();
+        };
     }, []);
 
     const getGreeting = () => {
@@ -381,8 +418,6 @@ const AdminDashboard = () => {
                 return <FeesAndFinancePage darkMode={darkMode} />;
             case 'Timetable':
                 return <TimetablePage darkMode={darkMode} />;
-            case 'Communication':
-                return <CommunicationPage darkMode={darkMode} />;
             case 'Settings':
                 return <SettingsPage darkMode={darkMode} />;
             case 'Dashboard':

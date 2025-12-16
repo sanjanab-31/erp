@@ -5,18 +5,17 @@ import AttendancePage from './AttendancePage';
 import ExamsAndGradesPage from './ExamsAndGradesPage';
 import CoursesPage from './CoursesPage';
 import TimetablePage from './TimetablePage';
-import CommunicationPage from './CommunicationPage';
 import LibraryPage from './LibraryPage';
 import ReportsPage from './ReportsPage';
 import SettingsPage from './SettingsPage';
-import AcademicManagement from './AcademicManagement';import {
+import AcademicManagement from './AcademicManagement';
+import {
     Home,
     Calendar,
     BookOpen,
     GraduationCap,
     Users,
     Clock,
-    MessageSquare,
     BookMarked,
     FileText,
     Settings,
@@ -29,11 +28,14 @@ import AcademicManagement from './AcademicManagement';import {
     UserCheck,
     LogOut
 } from 'lucide-react';
+import { getCoursesByTeacher, getSubmissionsByAssignment, getAssignmentsByCourse, subscribeToAcademicUpdates } from '../../../utils/academicStore';
+import { getAllStudents } from '../../../utils/studentStore';
 
 const TeacherDashboard = () => {
     const navigate = useNavigate();
     const userName = localStorage.getItem('userName') || 'Sarah Johnson';
     const userRole = localStorage.getItem('userRole') || 'Teacher';
+    const userEmail = localStorage.getItem('userEmail') || '';
 
     const [activeTab, setActiveTab] = useState('Dashboard');
     const [darkMode, setDarkMode] = useState(false);
@@ -41,19 +43,12 @@ const TeacherDashboard = () => {
     const [searchQuery, setSearchQuery] = useState('');
 
     const [dashboardData, setDashboardData] = useState({
-        totalClasses: 5,
-        totalStudents: 120,
-        pendingAssignments: 8,
-        upcomingClasses: 3,
-        todayClasses: [
-            { id: 1, subject: 'Mathematics', class: 'Grade 10-A', time: '09:00 AM', room: 'Room 201' },
-            { id: 2, subject: 'Physics', class: 'Grade 11-B', time: '11:00 AM', room: 'Lab 3' },
-            { id: 3, subject: 'Mathematics', class: 'Grade 10-B', time: '02:00 PM', room: 'Room 201' }
-        ],
-        recentSubmissions: [
-            { id: 1, student: 'John Doe', assignment: 'Calculus Problems', subject: 'Math', status: 'pending' },
-            { id: 2, student: 'Jane Smith', assignment: 'Physics Lab Report', subject: 'Physics', status: 'graded' }
-        ]
+        totalClasses: 0,
+        totalStudents: 0,
+        pendingAssignments: 0,
+        upcomingClasses: 0,
+        todayClasses: [],
+        recentSubmissions: []
     });
 
     const menuItems = [
@@ -63,7 +58,6 @@ const TeacherDashboard = () => {
         { icon: GraduationCap, label: 'Exams & Grades' },
         { icon: BookOpen, label: 'Courses' },
         { icon: Clock, label: 'Timetable' },
-        { icon: MessageSquare, label: 'Communication' },
         { icon: BookMarked, label: 'Library' },
         { icon: FileText, label: 'Reports' },
         { icon: Settings, label: 'Settings' },
@@ -80,11 +74,63 @@ const TeacherDashboard = () => {
     };
 
     useEffect(() => {
-        const interval = setInterval(() => {
-            setDashboardData(prev => ({ ...prev }));
-        }, 5000);
-        return () => clearInterval(interval);
-    }, []);
+        const fetchDashboardData = () => {
+            // Get teacher's courses (using email as teacherId for now)
+            const teacherId = userEmail;
+            const allStudents = getAllStudents();
+
+            // For now, show all courses since we don't have teacher-course mapping
+            // In production, you'd filter by teacherId
+            const teacherCourses = getCoursesByTeacher(teacherId);
+
+            // Get all assignments for teacher's courses
+            let totalPendingSubmissions = 0;
+            const recentSubs = [];
+
+            teacherCourses.forEach(course => {
+                const assignments = getAssignmentsByCourse(course.id);
+                assignments.forEach(assignment => {
+                    const submissions = getSubmissionsByAssignment(assignment.id);
+                    const pending = submissions.filter(s => s.status === 'submitted');
+                    totalPendingSubmissions += pending.length;
+
+                    // Add to recent submissions
+                    pending.slice(0, 2).forEach(sub => {
+                        recentSubs.push({
+                            id: sub.id,
+                            student: sub.studentName,
+                            assignment: assignment.title,
+                            subject: course.name,
+                            status: 'pending'
+                        });
+                    });
+                });
+            });
+
+            setDashboardData({
+                totalClasses: teacherCourses.length,
+                totalStudents: allStudents.length,
+                pendingAssignments: totalPendingSubmissions,
+                upcomingClasses: teacherCourses.length,
+                todayClasses: teacherCourses.slice(0, 3).map((course, idx) => ({
+                    id: idx + 1,
+                    subject: course.name,
+                    class: course.class,
+                    time: ['09:00 AM', '11:00 AM', '02:00 PM'][idx] || '09:00 AM',
+                    room: `Room ${201 + idx}`
+                })),
+                recentSubmissions: recentSubs.slice(0, 2)
+            });
+        };
+
+        // Initial fetch
+        fetchDashboardData();
+
+        // Subscribe to academic updates
+        const unsubscribe = subscribeToAcademicUpdates(fetchDashboardData);
+
+        return () => unsubscribe();
+    }, [userEmail]);
 
     const getGreeting = () => {
         const hour = new Date().getHours();
@@ -113,10 +159,6 @@ const TeacherDashboard = () => {
 
         if (activeTab === 'Timetable') {
             return <TimetablePage darkMode={darkMode} />;
-        }
-
-        if (activeTab === 'Communication') {
-            return <CommunicationPage darkMode={darkMode} />;
         }
 
         if (activeTab === 'Library') {
