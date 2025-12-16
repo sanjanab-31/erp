@@ -1,54 +1,77 @@
-import { getFirestore } from '../config/firebase.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const db = getFirestore();
-const usersCollection = db.collection('users');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const DATA_FILE = path.join(__dirname, '../../data/users.json');
+
+// Ensure data directory exists
+const ensureDataDir = () => {
+    const dir = path.dirname(DATA_FILE);
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+    if (!fs.existsSync(DATA_FILE)) {
+        fs.writeFileSync(DATA_FILE, JSON.stringify([], null, 2));
+    }
+};
 
 class User {
     constructor(data) {
+        this.id = data.id;
         this.email = data.email;
+        this.password = data.password;
         this.role = data.role;
         this.name = data.name || '';
-        this.createdAt = data.createdAt || new Date();
-        this.updatedAt = new Date();
+        this.createdAt = data.createdAt || new Date().toISOString();
+        this.updatedAt = new Date().toISOString();
     }
 
-    // Create a new user in Firestore
-    static async create(uid, userData) {
+    // Helper to read users
+    static _readUsers() {
+        ensureDataDir();
         try {
-            const user = new User(userData);
-            await usersCollection.doc(uid).set({
-                ...user,
-                createdAt: user.createdAt,
-                updatedAt: user.updatedAt
-            });
-            return { uid, ...user };
+            const data = fs.readFileSync(DATA_FILE, 'utf8');
+            return JSON.parse(data);
         } catch (error) {
-            throw error;
+            return [];
         }
+    }
+
+    // Helper to write users
+    static _writeUsers(users) {
+        ensureDataDir();
+        fs.writeFileSync(DATA_FILE, JSON.stringify(users, null, 2));
+    }
+
+    // Create a new user
+    static async create(userData) {
+        const users = this._readUsers();
+        // Simulate ID generation
+        const id = userData.id || Math.random().toString(36).substr(2, 9);
+        const newUser = new User({ ...userData, id });
+
+        users.push(newUser);
+        this._writeUsers(users);
+
+        return newUser;
+    }
+
+    // Find user by Email
+    static findOne(query) {
+        const users = this._readUsers();
+        // Simple query support for email
+        if (query.email) {
+            return users.find(u => u.email === query.email);
+        }
+        return null;
     }
 
     // Find user by ID
-    static async findById(uid) {
-        try {
-            const doc = await usersCollection.doc(uid).get();
-            if (!doc.exists) return null;
-            return { uid: doc.id, ...doc.data() };
-        } catch (error) {
-            throw error;
-        }
-    }
-
-    // Update user
-    static async update(uid, data) {
-        try {
-            await usersCollection.doc(uid).update({
-                ...data,
-                updatedAt: new Date()
-            });
-            return await this.findById(uid);
-        } catch (error) {
-            throw error;
-        }
+    static async findById(id) {
+        const users = this._readUsers();
+        return users.find(u => u.id === id);
     }
 }
 

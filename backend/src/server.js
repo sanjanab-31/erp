@@ -1,14 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { initializeFirebase } from './config/firebase.js';
-import authRoutes from './routes/auth.js';
-
 // Load environment variables
 dotenv.config();
 
-// Initialize Firebase Admin
-initializeFirebase();
+import authRoutes from './routes/auth.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
