@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Calendar,
     Plus,
@@ -8,42 +8,37 @@ import {
     Clock,
     MapPin,
     FileText,
-    BookOpen
+    BookOpen,
+    ChevronDown,
+    ChevronUp,
+    Search
 } from 'lucide-react';
 import {
-    createExamSchedule,
+    createBulkExamSchedules,
     getExamSchedulesByClass,
     getAllAcademicData,
-    updateExamSchedule,
     deleteExamSchedule,
+    updateExamSchedule,
     subscribeToAcademicUpdates
 } from '../../../utils/academicStore';
 
 const AdminExamSchedules = ({ darkMode }) => {
+    const [selectedClass, setSelectedClass] = useState('Grade 10-A'); // Default class
     const [schedules, setSchedules] = useState([]);
-    const [courses, setCourses] = useState([]);
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [showEditModal, setShowEditModal] = useState(false);
-    const [selectedSchedule, setSelectedSchedule] = useState(null);
-    const [filterClass, setFilterClass] = useState('All Classes');
+    const [editData, setEditData] = useState(null);
+
+    // Grouped schedules state
+    const [groupedSchedules, setGroupedSchedules] = useState({});
+    const [expandedExam, setExpandedExam] = useState(null);
 
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
     const adminId = currentUser.id || 'admin_1';
-    const adminName = currentUser.name || 'Admin';
 
-    const [scheduleForm, setScheduleForm] = useState({
-        courseId: '',
-        courseName: '',
-        class: '',
-        examName: '',
-        examDate: '',
-        startTime: '',
-        endTime: '',
-        venue: '',
-        instructions: ''
-    });
+    const classes = ['Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
 
-    const classes = ['All Classes', 'Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
+    // Subjects list for suggestions (could be fetched from courses)
+    const [subjects, setSubjects] = useState([]);
 
     useEffect(() => {
         loadData();
@@ -51,103 +46,63 @@ const AdminExamSchedules = ({ darkMode }) => {
             loadData();
         });
         return unsubscribe;
-    }, []);
+    }, [selectedClass]);
 
     const loadData = () => {
         const data = getAllAcademicData();
-        setSchedules(data.examSchedules);
-        setCourses(data.courses.filter(c => c.active));
-    };
+        const classSchedules = getExamSchedulesByClass(selectedClass);
+        setSchedules(classSchedules);
 
-    const resetForm = () => {
-        setScheduleForm({
-            courseId: '',
-            courseName: '',
-            class: '',
-            examName: '',
-            examDate: '',
-            startTime: '',
-            endTime: '',
-            venue: '',
-            instructions: ''
-        });
-    };
-
-    const handleCourseSelect = (e) => {
-        const courseId = e.target.value;
-        const course = courses.find(c => c.id === courseId);
-        if (course) {
-            setScheduleForm({
-                ...scheduleForm,
-                courseId: course.id,
-                courseName: course.name,
-                class: course.class
-            });
-        }
-    };
-
-    const handleCreateSchedule = (e) => {
-        e.preventDefault();
-        try {
-            createExamSchedule({
-                ...scheduleForm,
-                createdBy: adminId
-            });
-            setShowCreateModal(false);
-            resetForm();
-            alert('Exam schedule created successfully!');
-        } catch (error) {
-            alert('Error creating exam schedule: ' + error.message);
-        }
-    };
-
-    const handleUpdateSchedule = (e) => {
-        e.preventDefault();
-        try {
-            updateExamSchedule(selectedSchedule.id, scheduleForm);
-            setShowEditModal(false);
-            setSelectedSchedule(null);
-            resetForm();
-            alert('Exam schedule updated successfully!');
-        } catch (error) {
-            alert('Error updating exam schedule: ' + error.message);
-        }
-    };
-
-    const handleDeleteSchedule = (scheduleId) => {
-        if (confirm('Are you sure you want to delete this exam schedule?')) {
-            try {
-                deleteExamSchedule(scheduleId);
-                alert('Exam schedule deleted successfully!');
-            } catch (error) {
-                alert('Error deleting exam schedule: ' + error.message);
+        // Group by Exam Name
+        const groups = {};
+        classSchedules.forEach(schedule => {
+            if (!groups[schedule.examName]) {
+                groups[schedule.examName] = [];
             }
+            groups[schedule.examName].push(schedule);
+        });
+        setGroupedSchedules(groups);
+
+        // Extract subjects from courses for this class
+        const classCourses = data.courses.filter(c => c.class === selectedClass && c.active);
+        setSubjects(classCourses.map(c => c.name));
+    };
+
+    const handleEditExam = (examName, e) => {
+        e.stopPropagation();
+        const papers = groupedSchedules[examName];
+        if (!papers) return;
+
+        setEditData({
+            examName: examName,
+            rows: papers.map(p => ({
+                id: p.id,
+                subject: p.subject || p.courseName,
+                date: p.examDate,
+                startTime: p.startTime,
+                endTime: p.endTime,
+                venue: p.venue || ''
+            })),
+            originalIds: papers.map(p => p.id)
+        });
+        setShowCreateModal(true);
+    };
+
+    const handleDeleteExam = (examName) => {
+        if (confirm(`Are you sure you want to delete all schedules for "${examName}"?`)) {
+            const schedulesToDelete = groupedSchedules[examName];
+            schedulesToDelete.forEach(schedule => {
+                deleteExamSchedule(schedule.id);
+            });
+            alert('Exam deleted successfully!');
         }
     };
 
-    const openEditModal = (schedule) => {
-        setSelectedSchedule(schedule);
-        setScheduleForm({
-            courseId: schedule.courseId,
-            courseName: schedule.courseName,
-            class: schedule.class,
-            examName: schedule.examName,
-            examDate: schedule.examDate,
-            startTime: schedule.startTime,
-            endTime: schedule.endTime,
-            venue: schedule.venue || '',
-            instructions: schedule.instructions || ''
-        });
-        setShowEditModal(true);
+    const handleDeletePaper = (scheduleId) => {
+        if (confirm('Are you sure you want to delete this paper?')) {
+            deleteExamSchedule(scheduleId);
+        }
     };
-
-    const filteredSchedules = filterClass === 'All Classes'
-        ? schedules
-        : schedules.filter(s => s.class === filterClass);
-
-    const sortedSchedules = [...filteredSchedules].sort((a, b) =>
-        new Date(a.examDate) - new Date(b.examDate)
-    );
 
     return (
         <div className="space-y-6">
@@ -156,395 +111,424 @@ const AdminExamSchedules = ({ darkMode }) => {
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Exam Schedule Management
                 </h1>
-                <p className="text-sm text-gray-500">Create and manage exam schedules for all classes</p>
+                <p className="text-sm text-gray-500">Create and manage exam schedules for students</p>
             </div>
 
             {/* Controls */}
-            <div className="flex justify-between items-center">
-                <select
-                    value={filterClass}
-                    onChange={(e) => setFilterClass(e.target.value)}
-                    className={`px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                >
-                    {classes.map(cls => (
-                        <option key={cls} value={cls}>{cls}</option>
-                    ))}
-                </select>
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="w-full md:w-auto">
+                    <label className={`block text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-700'} mb-1`}>
+                        Select Class
+                    </label>
+                    <select
+                        value={selectedClass}
+                        onChange={(e) => setSelectedClass(e.target.value)}
+                        className={`w-full md:w-64 px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    >
+                        {classes.map(cls => (
+                            <option key={cls} value={cls}>{cls}</option>
+                        ))}
+                    </select>
+                </div>
                 <button
                     onClick={() => {
-                        resetForm();
+                        setEditData(null);
                         setShowCreateModal(true);
                     }}
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    className="w-full md:w-auto flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                     <Plus className="w-5 h-5" />
-                    <span>Create Schedule</span>
+                    <span>Create Multiple Exams</span>
                 </button>
             </div>
 
             {/* Statistics */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <p className="text-sm text-gray-500">Total Schedules</p>
-                    <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {schedules.length}
-                    </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 border ${darkMode ? 'border-gray-700' : 'border-gray-200'} shadow-sm`}>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-gray-500">Total Exams</p>
+                            <h3 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                {Object.keys(groupedSchedules).length}
+                            </h3>
+                        </div>
+                        <div className={`p-3 rounded-full ${darkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
+                            <FileText className="w-6 h-6" />
+                        </div>
+                    </div>
                 </div>
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <p className="text-sm text-gray-500">This Week</p>
-                    <p className="text-2xl font-bold text-blue-600">
-                        {schedules.filter(s => {
-                            const examDate = new Date(s.examDate);
-                            const today = new Date();
-                            const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-                            return examDate >= today && examDate <= weekFromNow;
-                        }).length}
-                    </p>
+
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 border ${darkMode ? 'border-gray-700' : 'border-gray-200'} shadow-sm`}>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-gray-500">Total Papers</p>
+                            <h3 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                {schedules.length}
+                            </h3>
+                        </div>
+                        <div className={`p-3 rounded-full ${darkMode ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-600'}`}>
+                            <BookOpen className="w-6 h-6" />
+                        </div>
+                    </div>
                 </div>
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <p className="text-sm text-gray-500">This Month</p>
-                    <p className="text-2xl font-bold text-green-600">
-                        {schedules.filter(s => {
-                            const examDate = new Date(s.examDate);
-                            const today = new Date();
-                            return examDate.getMonth() === today.getMonth() &&
-                                examDate.getFullYear() === today.getFullYear();
-                        }).length}
-                    </p>
-                </div>
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <p className="text-sm text-gray-500">Upcoming</p>
-                    <p className="text-2xl font-bold text-purple-600">
-                        {schedules.filter(s => new Date(s.examDate) > new Date()).length}
-                    </p>
+
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 border ${darkMode ? 'border-gray-700' : 'border-gray-200'} shadow-sm`}>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-gray-500">Upcoming Papers</p>
+                            <h3 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                {schedules.filter(s => new Date(s.examDate) >= new Date()).length}
+                            </h3>
+                        </div>
+                        <div className={`p-3 rounded-full ${darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-600'}`}>
+                            <Calendar className="w-6 h-6" />
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Schedules List */}
-            {sortedSchedules.length === 0 ? (
+            {/* Exam Groups List */}
+            {Object.keys(groupedSchedules).length === 0 ? (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 text-center border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <p className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                        No exam schedules yet
+                        No exams scheduled for {selectedClass}
                     </p>
                     <p className="text-sm text-gray-500 mt-2">
-                        Create your first exam schedule to get started
+                        Select a class and click "Create Multiple Exams" to get started
                     </p>
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {sortedSchedules.map((schedule) => {
-                        const examDate = new Date(schedule.examDate);
-                        const isUpcoming = examDate > new Date();
-                        const isPast = examDate < new Date();
-                        const isToday = examDate.toDateString() === new Date().toDateString();
-
-                        return (
+                    {Object.entries(groupedSchedules).map(([examName, papers]) => (
+                        <div key={examName} className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden shadow-sm`}>
+                            {/* Exam Header */}
                             <div
-                                key={schedule.id}
-                                className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border p-6 ${isToday ? 'ring-2 ring-blue-500' : ''
-                                    }`}
+                                className={`p-4 flex items-center justify-between cursor-pointer ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
+                                onClick={() => setExpandedExam(expandedExam === examName ? null : examName)}
                             >
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="flex-1">
-                                        <div className="flex items-center space-x-3 mb-2">
-                                            <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                {schedule.examName}
-                                            </h3>
-                                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${isToday ? 'bg-blue-100 text-blue-600' :
-                                                    isUpcoming ? 'bg-green-100 text-green-600' :
-                                                        'bg-gray-100 text-gray-600'
-                                                }`}>
-                                                {isToday ? 'Today' : isUpcoming ? 'Upcoming' : 'Past'}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
-                                            <span className="flex items-center space-x-1">
-                                                <BookOpen className="w-4 h-4" />
-                                                <span>{schedule.courseName}</span>
-                                            </span>
-                                            <span className="px-2 py-1 bg-purple-100 text-purple-600 rounded-full text-xs font-semibold">
-                                                {schedule.class}
-                                            </span>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                            <div className="flex items-center space-x-2 text-gray-500">
-                                                <Calendar className="w-4 h-4" />
-                                                <span>{examDate.toLocaleDateString()}</span>
-                                            </div>
-                                            <div className="flex items-center space-x-2 text-gray-500">
-                                                <Clock className="w-4 h-4" />
-                                                <span>{schedule.startTime} - {schedule.endTime}</span>
-                                            </div>
-                                            {schedule.venue && (
-                                                <div className="flex items-center space-x-2 text-gray-500">
-                                                    <MapPin className="w-4 h-4" />
-                                                    <span>{schedule.venue}</span>
-                                                </div>
-                                            )}
-                                        </div>
+                                <div className="flex items-center space-x-4">
+                                    <div className={`p-2 rounded-lg ${darkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
+                                        <FileText className="w-6 h-6" />
                                     </div>
-                                    <div className="flex items-center space-x-2">
-                                        <button
-                                            onClick={() => openEditModal(schedule)}
-                                            className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700 text-blue-400' : 'hover:bg-gray-50 text-blue-600'}`}
-                                        >
-                                            <Edit className="w-5 h-5" />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteSchedule(schedule.id)}
-                                            className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700 text-red-400' : 'hover:bg-gray-50 text-red-600'}`}
-                                        >
-                                            <Trash2 className="w-5 h-5" />
-                                        </button>
+                                    <div>
+                                        <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                            {examName}
+                                        </h3>
+                                        <p className="text-sm text-gray-500">
+                                            {papers.length} Papers Scheduled • {selectedClass}
+                                        </p>
                                     </div>
                                 </div>
-                                {schedule.instructions && (
-                                    <div className={`mt-4 p-4 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg`}>
-                                        <p className="text-xs text-gray-500 mb-1 flex items-center space-x-1">
-                                            <FileText className="w-3 h-3" />
-                                            <span>Instructions:</span>
-                                        </p>
-                                        <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                            {schedule.instructions}
-                                        </p>
-                                    </div>
-                                )}
+                                <div className="flex items-center space-x-3">
+                                    <button
+                                        onClick={(e) => handleEditExam(examName, e)}
+                                        className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-600 text-blue-400' : 'hover:bg-white text-blue-600'}`}
+                                        title="Edit exam"
+                                    >
+                                        <Edit className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleDeleteExam(examName); }}
+                                        className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-600 text-red-400' : 'hover:bg-white text-red-600'}`}
+                                        title="Delete entire exam"
+                                    >
+                                        <Trash2 className="w-5 h-5" />
+                                    </button>
+                                    {expandedExam === examName ? (
+                                        <ChevronUp className="w-5 h-5 text-gray-400" />
+                                    ) : (
+                                        <ChevronDown className="w-5 h-5 text-gray-400" />
+                                    )}
+                                </div>
                             </div>
-                        );
-                    })}
+
+                            {/* Papers Table */}
+                            {expandedExam === examName && (
+                                <div className={`border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left">
+                                            <thead>
+                                                <tr className={`${darkMode ? 'bg-gray-750 text-gray-400' : 'bg-gray-50 text-gray-600'} text-sm`}>
+                                                    <th className="p-4 font-medium">Subject</th>
+                                                    <th className="p-4 font-medium">Date</th>
+                                                    <th className="p-4 font-medium">Time</th>
+                                                    <th className="p-4 font-medium">Venue</th>
+                                                    <th className="p-4 font-medium text-right">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                                                {papers.sort((a, b) => new Date(a.examDate) - new Date(b.examDate)).map(paper => (
+                                                    <tr key={paper.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
+                                                        <td className={`p-4 font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                            {paper.subject}
+                                                        </td>
+                                                        <td className={`p-4 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                            {new Date(paper.examDate).toLocaleDateString()}
+                                                        </td>
+                                                        <td className={`p-4 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                            {paper.startTime} - {paper.endTime}
+                                                        </td>
+                                                        <td className={`p-4 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                            {paper.venue || '-'}
+                                                        </td>
+                                                        <td className="p-4 text-right">
+                                                            <button
+                                                                onClick={() => handleDeletePaper(paper.id)}
+                                                                className="text-red-500 hover:text-red-700"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ))}
                 </div>
             )}
 
-            {/* Create Schedule Modal */}
+            {/* Create/Edit Schedule Modal */}
             {showCreateModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto`}>
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                Create Exam Schedule
-                            </h3>
-                            <button onClick={() => setShowCreateModal(false)}>
-                                <X className="w-5 h-5 text-gray-500" />
-                            </button>
-                        </div>
-                        <form onSubmit={handleCreateSchedule} className="space-y-4">
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Select Course *
-                                </label>
-                                <select
-                                    required
-                                    value={scheduleForm.courseId}
-                                    onChange={handleCourseSelect}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                >
-                                    <option value="">Select a course</option>
-                                    {courses.map(course => (
-                                        <option key={course.id} value={course.id}>
-                                            {course.name} ({course.code}) - {course.class}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Exam Name *
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={scheduleForm.examName}
-                                    onChange={(e) => setScheduleForm({ ...scheduleForm, examName: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                    placeholder="e.g., Mid-term Exam, Final Exam"
-                                />
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                        Exam Date *
-                                    </label>
-                                    <input
-                                        type="date"
-                                        required
-                                        value={scheduleForm.examDate}
-                                        onChange={(e) => setScheduleForm({ ...scheduleForm, examDate: e.target.value })}
-                                        className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                    />
-                                </div>
-                                <div>
-                                    <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                        Venue
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={scheduleForm.venue}
-                                        onChange={(e) => setScheduleForm({ ...scheduleForm, venue: e.target.value })}
-                                        className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                        placeholder="e.g., Room 101"
-                                    />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                        Start Time *
-                                    </label>
-                                    <input
-                                        type="time"
-                                        required
-                                        value={scheduleForm.startTime}
-                                        onChange={(e) => setScheduleForm({ ...scheduleForm, startTime: e.target.value })}
-                                        className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                    />
-                                </div>
-                                <div>
-                                    <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                        End Time *
-                                    </label>
-                                    <input
-                                        type="time"
-                                        required
-                                        value={scheduleForm.endTime}
-                                        onChange={(e) => setScheduleForm({ ...scheduleForm, endTime: e.target.value })}
-                                        className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Instructions
-                                </label>
-                                <textarea
-                                    value={scheduleForm.instructions}
-                                    onChange={(e) => setScheduleForm({ ...scheduleForm, instructions: e.target.value })}
-                                    rows="3"
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                    placeholder="Any special instructions for students..."
-                                />
-                            </div>
-                            <button
-                                type="submit"
-                                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                            >
-                                Create Schedule
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Edit Schedule Modal */}
-            {showEditModal && selectedSchedule && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto`}>
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                Edit Exam Schedule
-                            </h3>
-                            <button onClick={() => setShowEditModal(false)}>
-                                <X className="w-5 h-5 text-gray-500" />
-                            </button>
-                        </div>
-                        <form onSubmit={handleUpdateSchedule} className="space-y-4">
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Course
-                                </label>
-                                <input
-                                    type="text"
-                                    disabled
-                                    value={`${scheduleForm.courseName} - ${scheduleForm.class}`}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-gray-400' : 'bg-gray-100 border-gray-300 text-gray-600'}`}
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Exam Name *
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={scheduleForm.examName}
-                                    onChange={(e) => setScheduleForm({ ...scheduleForm, examName: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                />
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                        Exam Date *
-                                    </label>
-                                    <input
-                                        type="date"
-                                        required
-                                        value={scheduleForm.examDate}
-                                        onChange={(e) => setScheduleForm({ ...scheduleForm, examDate: e.target.value })}
-                                        className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                    />
-                                </div>
-                                <div>
-                                    <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                        Venue
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={scheduleForm.venue}
-                                        onChange={(e) => setScheduleForm({ ...scheduleForm, venue: e.target.value })}
-                                        className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                    />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                        Start Time *
-                                    </label>
-                                    <input
-                                        type="time"
-                                        required
-                                        value={scheduleForm.startTime}
-                                        onChange={(e) => setScheduleForm({ ...scheduleForm, startTime: e.target.value })}
-                                        className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                    />
-                                </div>
-                                <div>
-                                    <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                        End Time *
-                                    </label>
-                                    <input
-                                        type="time"
-                                        required
-                                        value={scheduleForm.endTime}
-                                        onChange={(e) => setScheduleForm({ ...scheduleForm, endTime: e.target.value })}
-                                        className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Instructions
-                                </label>
-                                <textarea
-                                    value={scheduleForm.instructions}
-                                    onChange={(e) => setScheduleForm({ ...scheduleForm, instructions: e.target.value })}
-                                    rows="3"
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                                />
-                            </div>
-                            <button
-                                type="submit"
-                                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                            >
-                                Update Schedule
-                            </button>
-                        </form>
-                    </div>
-                </div>
+                <CreateExamModal
+                    darkMode={darkMode}
+                    selectedClass={selectedClass}
+                    subjects={subjects}
+                    editData={editData}
+                    onClose={() => setShowCreateModal(false)}
+                    onSave={() => {
+                        setShowCreateModal(false);
+                        loadData();
+                    }}
+                    adminId={adminId}
+                />
             )}
         </div>
     );
 };
 
+const CreateExamModal = ({ darkMode, selectedClass, subjects, editData, onClose, onSave, adminId }) => {
+    const [examName, setExamName] = useState(editData ? editData.examName : '');
+    const [rows, setRows] = useState(editData ? editData.rows : [
+        { id: 1, subject: '', date: '', startTime: '', endTime: '', venue: '' }
+    ]);
+
+    const addRow = () => {
+        setRows([...rows, { id: Date.now(), subject: '', date: '', startTime: '', endTime: '', venue: '' }]);
+    };
+
+    const removeRow = (id) => {
+        if (rows.length > 1) {
+            setRows(rows.filter(r => r.id !== id));
+        }
+    };
+
+    const updateRow = (id, field, value) => {
+        setRows(rows.map(r => r.id === id ? { ...r, [field]: value } : r));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        // Validation
+        if (!examName) {
+            alert('Please enter an exam name');
+            return;
+        }
+
+        const validRows = rows.filter(r => r.subject && r.date && r.startTime && r.endTime);
+        if (validRows.length === 0) {
+            alert('Please add at least one complete exam paper');
+            return;
+        }
+
+        try {
+            if (editData) {
+                // EDIT MODE
+                const originalIds = new Set(editData.originalIds);
+                const currentIds = new Set(rows.map(r => r.id));
+
+                // 1. Identify Deletions
+                const idsToDelete = editData.originalIds.filter(id => !currentIds.has(id));
+                idsToDelete.forEach(id => deleteExamSchedule(id));
+
+                // 2. Identify Updates (Existing IDs)
+                const rowsToUpdate = rows.filter(r => typeof r.id === 'string' && originalIds.has(r.id));
+                rowsToUpdate.forEach(row => {
+                    updateExamSchedule(row.id, {
+                        examName: examName,
+                        subject: row.subject,
+                        examDate: row.date,
+                        startTime: row.startTime,
+                        endTime: row.endTime,
+                        venue: row.venue
+                    });
+                });
+
+                // 3. Identify Creates (New IDs - numbers)
+                const rowsToCreate = rows.filter(r => typeof r.id !== 'string');
+                if (rowsToCreate.length > 0) {
+                    const newSchedules = rowsToCreate.map(row => ({
+                        class: selectedClass,
+                        examName: examName,
+                        subject: row.subject,
+                        examDate: row.date,
+                        startTime: row.startTime,
+                        endTime: row.endTime,
+                        venue: row.venue,
+                        createdBy: adminId,
+                        courseName: row.subject
+                    }));
+                    createBulkExamSchedules(newSchedules);
+                }
+
+                alert('Exam schedule updated successfully!');
+            } else {
+                // CREATE MODE
+                const schedulesData = validRows.map(row => ({
+                    class: selectedClass,
+                    examName: examName,
+                    subject: row.subject,
+                    examDate: row.date,
+                    startTime: row.startTime,
+                    endTime: row.endTime,
+                    venue: row.venue,
+                    createdBy: adminId,
+                    courseName: row.subject // Fallback
+                }));
+
+                createBulkExamSchedules(schedulesData);
+                alert('Exam schedules created successfully!');
+            }
+            onSave();
+        } catch (error) {
+            alert('Error creating/updating schedules: ' + error.message);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl`}>
+                <div className={`p-6 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} flex justify-between items-center`}>
+                    <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {editData ? 'Edit Exam Group' : 'Create Exam Schedule'} for {selectedClass}
+                    </h3>
+                    <button onClick={onClose}>
+                        <X className="w-6 h-6 text-gray-500" />
+                    </button>
+                </div>
+
+                <div className="p-6 overflow-y-auto flex-1">
+                    <div className="mb-6">
+                        <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                            Exam Name (e.g., Mid-Term Exam 2024, Unit Test 1) *
+                        </label>
+                        <input
+                            type="text"
+                            value={examName}
+                            onChange={(e) => setExamName(e.target.value)}
+                            placeholder="Enter Exam Name"
+                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        />
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h4 className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Exam Papers</h4>
+                            <button
+                                type="button"
+                                onClick={addRow}
+                                className="text-sm text-blue-500 hover:text-blue-600 font-medium flex items-center"
+                            >
+                                <Plus className="w-4 h-4 mr-1" /> Add Paper
+                            </button>
+                        </div>
+
+                        {rows.map((row, index) => (
+                            <div key={row.id} className={`p-4 rounded-lg border ${darkMode ? 'bg-gray-750 border-gray-600' : 'bg-gray-50 border-gray-200'} grid grid-cols-1 md:grid-cols-12 gap-4 items-end`}>
+                                <div className="md:col-span-3">
+                                    <label className="block text-xs font-medium text-gray-500 mb-1">Subject *</label>
+                                    <input
+                                        type="text"
+                                        list={`subjects-${row.id}`}
+                                        value={row.subject}
+                                        onChange={(e) => updateRow(row.id, 'subject', e.target.value)}
+                                        placeholder="Subject"
+                                        className={`w-full px-3 py-2 text-sm rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-1 focus:ring-blue-500`}
+                                    />
+                                    <datalist id={`subjects-${row.id}`}>
+                                        {subjects.map(s => <option key={s} value={s} />)}
+                                    </datalist>
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-xs font-medium text-gray-500 mb-1">Date *</label>
+                                    <input
+                                        type="date"
+                                        value={row.date}
+                                        onChange={(e) => updateRow(row.id, 'date', e.target.value)}
+                                        className={`w-full px-3 py-2 text-sm rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-1 focus:ring-blue-500`}
+                                    />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-xs font-medium text-gray-500 mb-1">Start Time *</label>
+                                    <input
+                                        type="time"
+                                        value={row.startTime}
+                                        onChange={(e) => updateRow(row.id, 'startTime', e.target.value)}
+                                        className={`w-full px-3 py-2 text-sm rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-1 focus:ring-blue-500`}
+                                    />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-xs font-medium text-gray-500 mb-1">End Time *</label>
+                                    <input
+                                        type="time"
+                                        value={row.endTime}
+                                        onChange={(e) => updateRow(row.id, 'endTime', e.target.value)}
+                                        className={`w-full px-3 py-2 text-sm rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-1 focus:ring-blue-500`}
+                                    />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-xs font-medium text-gray-500 mb-1">Venue</label>
+                                    <input
+                                        type="text"
+                                        value={row.venue}
+                                        onChange={(e) => updateRow(row.id, 'venue', e.target.value)}
+                                        placeholder="Room"
+                                        className={`w-full px-3 py-2 text-sm rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-1 focus:ring-blue-500`}
+                                    />
+                                </div>
+                                <div className="md:col-span-1 flex justify-center pb-2">
+                                    {rows.length > 1 && (
+                                        <button onClick={() => removeRow(row.id)} className="text-red-500 hover:text-red-700">
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className={`p-6 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'} flex justify-end gap-3 bg-opacity-50`}>
+                    <button
+                        onClick={onClose}
+                        className={`px-6 py-2 rounded-lg border ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                    >
+                        {editData ? 'Update Schedule' : 'Save Schedule'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 export default AdminExamSchedules;

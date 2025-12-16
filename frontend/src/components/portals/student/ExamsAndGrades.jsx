@@ -188,8 +188,8 @@ const ExamsAndGrades = ({ darkMode }) => {
                                                 <div className="flex-1 w-20 bg-gray-200 rounded-full h-2">
                                                     <div
                                                         className={`h-2 rounded-full transition-all duration-500 ${percentage >= 75 ? 'bg-green-600' :
-                                                                percentage >= 60 ? 'bg-blue-600' :
-                                                                    percentage >= 50 ? 'bg-yellow-600' : 'bg-red-600'
+                                                            percentage >= 60 ? 'bg-blue-600' :
+                                                                percentage >= 50 ? 'bg-yellow-600' : 'bg-red-600'
                                                             }`}
                                                         style={{ width: `${percentage}%` }}
                                                     ></div>
@@ -211,81 +211,96 @@ const ExamsAndGrades = ({ darkMode }) => {
         </div>
     );
 
-    const renderExamSchedule = () => (
-        <div className="p-6">
-            <div className="mb-6">
-                <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    Upcoming Exam Schedule
-                </h3>
-                <p className="text-sm text-gray-500">View your scheduled exams</p>
-            </div>
+    const renderExamSchedule = () => {
+        // Group schedules by Exam Name
+        const groupedSchedules = {};
+        examSchedules.forEach(schedule => {
+            if (!groupedSchedules[schedule.examName]) {
+                groupedSchedules[schedule.examName] = [];
+            }
+            groupedSchedules[schedule.examName].push(schedule);
+        });
 
-            {examSchedules.length === 0 ? (
-                <div className="text-center py-12">
-                    <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <p className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                        No exam schedules yet
-                    </p>
-                    <p className="text-sm text-gray-500 mt-2">
-                        Exam schedules will appear here once created by admin
-                    </p>
+        return (
+            <div className="p-6">
+                <div className="mb-6">
+                    <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        Upcoming Exam Schedule
+                    </h3>
+                    <p className="text-sm text-gray-500">View your scheduled exams</p>
                 </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {examSchedules.map((schedule) => {
-                        const examDate = new Date(schedule.examDate);
-                        const isUpcoming = examDate > new Date();
-                        const isPast = examDate < new Date();
-                        const isToday = examDate.toDateString() === new Date().toDateString();
 
-                        return (
-                            <div
-                                key={schedule.id}
-                                className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl p-6 ${isToday ? 'ring-2 ring-blue-500' : ''
-                                    }`}
-                            >
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="flex-1">
-                                        <h4 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>
-                                            {schedule.examName}
+                {examSchedules.length === 0 ? (
+                    <div className="text-center py-12">
+                        <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <p className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                            No exam schedules yet
+                        </p>
+                        <p className="text-sm text-gray-500 mt-2">
+                            Exam schedules will appear here once created by admin
+                        </p>
+                    </div>
+                ) : (
+                    <div className="space-y-6">
+                        {Object.entries(groupedSchedules).map(([examName, papers]) => (
+                            <div key={examName} className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border overflow-hidden`}>
+                                <div className={`p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} bg-opacity-50 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+                                    <div className="flex items-center justify-between">
+                                        <h4 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                            {examName}
                                         </h4>
-                                        <p className="text-sm text-gray-500">{schedule.courseName}</p>
+                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${darkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
+                                            {papers.length} Papers
+                                        </span>
                                     </div>
-                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${isToday ? 'bg-blue-100 text-blue-600' :
-                                            isUpcoming ? 'bg-green-100 text-green-600' :
-                                                'bg-gray-100 text-gray-600'
-                                        }`}>
-                                        {isToday ? 'Today' : isUpcoming ? 'Upcoming' : 'Past'}
-                                    </span>
                                 </div>
-                                <div className="space-y-2 text-sm">
-                                    <p className="flex items-center space-x-2 text-gray-500">
-                                        <Calendar className="w-4 h-4" />
-                                        <span>{examDate.toLocaleDateString()}</span>
-                                    </p>
-                                    <p className="flex items-center space-x-2 text-gray-500">
-                                        <Clock className="w-4 h-4" />
-                                        <span>{schedule.startTime} - {schedule.endTime}</span>
-                                    </p>
-                                    {schedule.venue && (
-                                        <p className="text-gray-500">Venue: {schedule.venue}</p>
-                                    )}
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead>
+                                            <tr className={`border-b ${darkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-100 bg-white'}`}>
+                                                <th className={`p-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Subject</th>
+                                                <th className={`p-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Date</th>
+                                                <th className={`p-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Time</th>
+                                                <th className={`p-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Venue</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-100'}`}>
+                                            {papers.sort((a, b) => new Date(a.examDate) - new Date(b.examDate)).map(paper => {
+                                                const isToday = new Date(paper.examDate).toDateString() === new Date().toDateString();
+                                                return (
+                                                    <tr key={paper.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} ${isToday ? (darkMode ? 'bg-blue-900/10' : 'bg-blue-50') : ''}`}>
+                                                        <td className={`p-4 text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                            {paper.subject || paper.courseName}
+                                                        </td>
+                                                        <td className={`p-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                                            <div className="flex items-center space-x-2">
+                                                                <Calendar className="w-4 h-4 text-gray-400" />
+                                                                <span>{new Date(paper.examDate).toLocaleDateString()}</span>
+                                                                {isToday && <span className="text-xs text-blue-600 font-bold ml-2">Today</span>}
+                                                            </div>
+                                                        </td>
+                                                        <td className={`p-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                                            <div className="flex items-center space-x-2">
+                                                                <Clock className="w-4 h-4 text-gray-400" />
+                                                                <span>{paper.startTime} - {paper.endTime}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className={`p-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                                            {paper.venue || '-'}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
                                 </div>
-                                {schedule.instructions && (
-                                    <div className={`mt-4 p-3 ${darkMode ? 'bg-gray-600' : 'bg-white'} rounded-lg`}>
-                                        <p className="text-xs text-gray-500 mb-1">Instructions:</p>
-                                        <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                            {schedule.instructions}
-                                        </p>
-                                    </div>
-                                )}
                             </div>
-                        );
-                    })}
-                </div>
-            )}
-        </div>
-    );
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     const renderPerformanceAnalysis = () => (
         <div className="p-6">
@@ -457,8 +472,8 @@ const ExamsAndGrades = ({ darkMode }) => {
                     </div>
                     <div className="mb-2">
                         <p className={`text-4xl font-bold ${stats.performance === 'Excellent' ? 'text-green-600' :
-                                stats.performance === 'Good' ? 'text-blue-600' :
-                                    stats.performance === 'Fair' ? 'text-yellow-600' : 'text-gray-600'
+                            stats.performance === 'Good' ? 'text-blue-600' :
+                                stats.performance === 'Fair' ? 'text-yellow-600' : 'text-gray-600'
                             }`}>
                             {stats.performance}
                         </p>

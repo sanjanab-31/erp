@@ -131,7 +131,7 @@ const TeacherFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex justify-end gap-3 pt-6 mt-2 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex justify-end gap-3 pt-6 mt-2  border-gray-200 dark:border-gray-700">
                         <button
                             type="button"
                             onClick={onClose}
