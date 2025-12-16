@@ -36,6 +36,7 @@ import ExamsAndGradesPage from './ExamsAndGradesPage';
 import CoursesPage from './CoursesPage';
 import FeesAndFinancePage from './FeesAndFinancePage';
 import TimetablePage from './TimetablePage';
+import CommunicationPage from './CommunicationPage';
 import SettingsPage from './SettingsPage';
 
 const AdminDashboard = () => {
@@ -376,6 +377,8 @@ const AdminDashboard = () => {
                 return <FeesAndFinancePage darkMode={darkMode} />;
             case 'Timetable':
                 return <TimetablePage darkMode={darkMode} />;
+            case 'Communication':
+                return <CommunicationPage darkMode={darkMode} />;
             case 'Settings':
                 return <SettingsPage darkMode={darkMode} />;
             case 'Dashboard':
