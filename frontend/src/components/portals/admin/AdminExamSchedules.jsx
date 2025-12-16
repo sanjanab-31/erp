@@ -1,9 +1,5 @@
-<<<<<<< HEAD
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useToast } from '../../../context/ToastContext';
-=======
-import React, { useState, useEffect, useMemo } from 'react';
->>>>>>> 832b7427035ef742e64ee15337b7082ba901e175
 import {
     Calendar,
     Plus,
@@ -28,11 +24,8 @@ import {
 } from '../../../utils/academicStore';
 
 const AdminExamSchedules = ({ darkMode }) => {
-<<<<<<< HEAD
-    const { showSuccess, showError, showWarning, showInfo } = useToast();
-=======
+    const { showSuccess, showError, showWarning } = useToast();
     const [selectedClass, setSelectedClass] = useState('Grade 10-A'); // Default class
->>>>>>> 832b7427035ef742e64ee15337b7082ba901e175
     const [schedules, setSchedules] = useState([]);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editData, setEditData] = useState(null);
@@ -62,76 +55,11 @@ const AdminExamSchedules = ({ darkMode }) => {
         const classSchedules = getExamSchedulesByClass(selectedClass);
         setSchedules(classSchedules);
 
-<<<<<<< HEAD
-    const resetForm = () => {
-        setScheduleForm({
-            courseId: '',
-            courseName: '',
-            class: '',
-            examName: '',
-            examDate: '',
-            startTime: '',
-            endTime: '',
-            venue: '',
-            instructions: ''
-        });
-    };
-
-    const handleCourseSelect = (e) => {
-        const courseId = e.target.value;
-        const course = courses.find(c => c.id === courseId);
-        if (course) {
-            setScheduleForm({
-                ...scheduleForm,
-                courseId: course.id,
-                courseName: course.name,
-                class: course.class
-            });
-        }
-    };
-
-    const handleCreateSchedule = (e) => {
-        e.preventDefault();
-        try {
-            createExamSchedule({
-                ...scheduleForm,
-                createdBy: adminId
-            });
-            setShowCreateModal(false);
-            resetForm();
-            showSuccess('Exam schedule created successfully!');
-        } catch (error) {
-            showError('Error creating exam schedule: ' + error.message);
-        }
-    };
-
-    const handleUpdateSchedule = (e) => {
-        e.preventDefault();
-        try {
-            updateExamSchedule(selectedSchedule.id, scheduleForm);
-            setShowEditModal(false);
-            setSelectedSchedule(null);
-            resetForm();
-            showSuccess('Exam schedule updated successfully!');
-        } catch (error) {
-            showError('Error updating exam schedule: ' + error.message);
-        }
-    };
-
-    const handleDeleteSchedule = (scheduleId) => {
-        if (confirm('Are you sure you want to delete this exam schedule?')) {
-            try {
-                deleteExamSchedule(scheduleId);
-                showSuccess('Exam schedule deleted successfully!');
-            } catch (error) {
-                showError('Error deleting exam schedule: ' + error.message);
-=======
         // Group by Exam Name
         const groups = {};
         classSchedules.forEach(schedule => {
             if (!groups[schedule.examName]) {
                 groups[schedule.examName] = [];
->>>>>>> 832b7427035ef742e64ee15337b7082ba901e175
             }
             groups[schedule.examName].push(schedule);
         });
@@ -290,7 +218,7 @@ const AdminExamSchedules = ({ darkMode }) => {
                                             {examName}
                                         </h3>
                                         <p className="text-sm text-gray-500">
-                                            {papers.length} Papers Scheduled • {selectedClass}
+                                            {papers.length} Papers Scheduled ΓÇó {selectedClass}
                                         </p>
                                     </div>
                                 </div>

@@ -219,12 +219,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
             setEditMode(false);
             loadCourseData(selectedCourse.id); // Reload to show updated marks
         } catch (error) {
-<<<<<<< HEAD
             showError('Error saving marks: ' + error.message);
-=======
-            console.error('Error saving marks:', error);
-            alert('Error saving marks: ' + error.message);
->>>>>>> 832b7427035ef742e64ee15337b7082ba901e175
         } finally {
             setSaving(false);
         }
