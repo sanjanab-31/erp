@@ -67,6 +67,7 @@ const SettingsPage = ({ darkMode }) => {
     }, []);
 
     const handleLogout = () => {
+        localStorage.removeItem('authToken'); // JWT token
         localStorage.removeItem('isAuthenticated');
         localStorage.removeItem('userRole');
         localStorage.removeItem('userEmail');

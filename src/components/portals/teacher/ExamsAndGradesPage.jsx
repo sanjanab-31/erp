@@ -1,75 +1,224 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     BookOpen,
     Edit,
     Save,
     Download,
-    Filter,
     Search,
     Award,
     TrendingUp,
     Users,
     FileText,
-    Plus,
-    X
+    CheckCircle,
+    AlertCircle
 } from 'lucide-react';
+import {
+    getCoursesByTeacher,
+    enterExamMarks,
+    gradeSubmission,
+    getExamMarksByCourse,
+    getSubmissionsByAssignment,
+    getAssignmentsByCourse,
+    calculateFinalMarks,
+    subscribeToAcademicUpdates
+} from '../../../utils/academicStore';
+import { getAllStudents } from '../../../utils/studentStore';
 
 const ExamsAndGradesPage = ({ darkMode }) => {
-    const [selectedClass, setSelectedClass] = useState('Grade 10-A');
-    const [selectedExam, setSelectedExam] = useState('Mid-term Exam');
+    const [courses, setCourses] = useState([]);
+    const [selectedCourse, setSelectedCourse] = useState(null);
+    const [students, setStudents] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [editMode, setEditMode] = useState(false);
-    const [showAddExam, setShowAddExam] = useState(false);
+    const [marksData, setMarksData] = useState({});
+    const [saving, setSaving] = useState(false);
 
-    const classes = ['Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B'];
-    const exams = ['Mid-term Exam', 'Final Exam', 'Quiz 1', 'Quiz 2', 'Assignment 1'];
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    const teacherId = currentUser.id || localStorage.getItem('userId') || 'teacher_1';
 
-    const [grades, setGrades] = useState([
-        { id: 1, name: 'John Doe', rollNo: '10A-001', videoMark: 45, assignment1: 20, assignment2: 22, quiz1: 8, quiz2: 9, quiz3: 7, totalMarks: 111, grade: 'A' },
-        { id: 2, name: 'Jane Smith', rollNo: '10A-002', videoMark: 42, assignment1: 18, assignment2: 20, quiz1: 7, quiz2: 8, quiz3: 8, totalMarks: 103, grade: 'A-' },
-        { id: 3, name: 'Mike Wilson', rollNo: '10A-003', videoMark: 48, assignment1: 22, assignment2: 23, quiz1: 9, quiz2: 9, quiz3: 8, totalMarks: 119, grade: 'A+' },
-        { id: 4, name: 'Sarah Johnson', rollNo: '10A-004', videoMark: 38, assignment1: 15, assignment2: 17, quiz1: 6, quiz2: 7, quiz3: 6, totalMarks: 89, grade: 'B+' },
-        { id: 5, name: 'David Brown', rollNo: '10A-005', videoMark: 40, assignment1: 19, assignment2: 18, quiz1: 7, quiz2: 8, quiz3: 7, totalMarks: 99, grade: 'A-' }
-    ]);
-
-    const updateGrade = (studentId, field, value) => {
-        setGrades(grades.map(student => {
-            if (student.id === studentId) {
-                const updated = { ...student, [field]: parseInt(value) || 0 };
-                // Recalculate totals
-                const assignmentTotal = (updated.assignment1 || 0) + (updated.assignment2 || 0);
-                const quizTotal = (updated.quiz1 || 0) + (updated.quiz2 || 0) + (updated.quiz3 || 0);
-                updated.totalMarks = (updated.videoMark || 0) + assignmentTotal + quizTotal;
-
-                // Calculate grade
-                if (updated.totalMarks >= 110) updated.grade = 'A+';
-                else if (updated.totalMarks >= 100) updated.grade = 'A';
-                else if (updated.totalMarks >= 90) updated.grade = 'A-';
-                else if (updated.totalMarks >= 80) updated.grade = 'B+';
-                else if (updated.totalMarks >= 70) updated.grade = 'B';
-                else if (updated.totalMarks >= 60) updated.grade = 'C';
-                else updated.grade = 'F';
-
-                return updated;
+    useEffect(() => {
+        loadCourses();
+        const unsubscribe = subscribeToAcademicUpdates(() => {
+            loadCourses();
+            if (selectedCourse) {
+                loadCourseData(selectedCourse.id);
             }
-            return student;
+        });
+        return unsubscribe;
+    }, []);
+
+    useEffect(() => {
+        if (selectedCourse) {
+            loadCourseData(selectedCourse.id);
+        }
+    }, [selectedCourse]);
+
+    const loadCourses = () => {
+        const teacherCourses = getCoursesByTeacher(teacherId);
+        setCourses(teacherCourses);
+        if (teacherCourses.length > 0 && !selectedCourse) {
+            setSelectedCourse(teacherCourses[0]);
+        }
+    };
+
+    const loadCourseData = (courseId) => {
+        // Get all students from the course's class
+        const course = courses.find(c => c.id === courseId) || selectedCourse;
+        if (!course) return;
+
+        const allStudents = getAllStudents();
+        const classStudents = allStudents.filter(s => s.class === course.class);
+        setStudents(classStudents);
+
+        // Load existing marks for each student
+        const marksMap = {};
+        classStudents.forEach(student => {
+            const examMarks = getExamMarksByCourse(courseId).find(m => m.studentId === student.id);
+            const assignments = getAssignmentsByCourse(courseId);
+
+            // Get assignment marks
+            let assignment1 = 0;
+            let assignment2 = 0;
+
+            if (assignments.length > 0) {
+                const sub1 = getSubmissionsByAssignment(assignments[0].id).find(s => s.studentId === student.id);
+                assignment1 = sub1 && sub1.status === 'graded' ? sub1.marks : 0;
+            }
+            if (assignments.length > 1) {
+                const sub2 = getSubmissionsByAssignment(assignments[1].id).find(s => s.studentId === student.id);
+                assignment2 = sub2 && sub2.status === 'graded' ? sub2.marks : 0;
+            }
+
+            marksMap[student.id] = {
+                exam1: examMarks?.exam1 || 0,
+                exam2: examMarks?.exam2 || 0,
+                exam3: examMarks?.exam3 || 0,
+                assignment1,
+                assignment2
+            };
+        });
+
+        setMarksData(marksMap);
+    };
+
+    const updateMarks = (studentId, field, value) => {
+        const numValue = Math.max(0, Math.min(100, parseInt(value) || 0));
+        setMarksData(prev => ({
+            ...prev,
+            [studentId]: {
+                ...prev[studentId],
+                [field]: numValue
+            }
         }));
     };
 
-    const filteredGrades = grades.filter(student =>
+    const calculateTotals = (studentId) => {
+        const marks = marksData[studentId] || {};
+
+        // Exam Total: Sum of 3 exams, scaled to 75
+        const examTotal = ((marks.exam1 || 0) + (marks.exam2 || 0) + (marks.exam3 || 0)) / 300 * 75;
+
+        // Assignment Total: Sum of 2 assignments, scaled to 25
+        const assignmentTotal = ((marks.assignment1 || 0) + (marks.assignment2 || 0)) / 200 * 25;
+
+        // Final Total: Exam (75) + Assignment (25) = 100
+        const finalTotal = examTotal + assignmentTotal;
+
+        return {
+            examTotal: examTotal.toFixed(2),
+            assignmentTotal: assignmentTotal.toFixed(2),
+            finalTotal: finalTotal.toFixed(2)
+        };
+    };
+
+    const getGrade = (finalTotal) => {
+        const score = parseFloat(finalTotal);
+        if (score >= 90) return { grade: 'A+', color: 'text-green-600 bg-green-100' };
+        if (score >= 85) return { grade: 'A', color: 'text-green-600 bg-green-100' };
+        if (score >= 75) return { grade: 'B+', color: 'text-blue-600 bg-blue-100' };
+        if (score >= 70) return { grade: 'B', color: 'text-blue-600 bg-blue-100' };
+        if (score >= 60) return { grade: 'C+', color: 'text-yellow-600 bg-yellow-100' };
+        if (score >= 50) return { grade: 'C', color: 'text-yellow-600 bg-yellow-100' };
+        return { grade: 'D', color: 'text-red-600 bg-red-100' };
+    };
+
+    const handleSave = async () => {
+        if (!selectedCourse) return;
+
+        setSaving(true);
+        try {
+            const assignments = getAssignmentsByCourse(selectedCourse.id);
+
+            // Save marks for each student
+            for (const student of students) {
+                const marks = marksData[student.id];
+                if (marks) {
+                    // Save exam marks
+                    await enterExamMarks({
+                        courseId: selectedCourse.id,
+                        studentId: student.id,
+                        studentName: student.name,
+                        exam1: marks.exam1 || 0,
+                        exam2: marks.exam2 || 0,
+                        exam3: marks.exam3 || 0,
+                        enteredBy: teacherId
+                    });
+
+                    // Save assignment marks
+                    if (assignments.length > 0) {
+                        const submissions1 = getSubmissionsByAssignment(assignments[0].id);
+                        const existingSub1 = submissions1.find(s => s.studentId === student.id);
+
+                        if (existingSub1) {
+                            // Update existing submission
+                            gradeSubmission(existingSub1.id, marks.assignment1 || 0, 'graded');
+                        }
+                    }
+
+                    if (assignments.length > 1) {
+                        const submissions2 = getSubmissionsByAssignment(assignments[1].id);
+                        const existingSub2 = submissions2.find(s => s.studentId === student.id);
+
+                        if (existingSub2) {
+                            // Update existing submission
+                            gradeSubmission(existingSub2.id, marks.assignment2 || 0, 'graded');
+                        }
+                    }
+                }
+            }
+
+            alert('Marks saved successfully!');
+            setEditMode(false);
+            loadCourseData(selectedCourse.id); // Reload to show updated marks
+        } catch (error) {
+            alert('Error saving marks: ' + error.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const filteredStudents = students.filter(student =>
         student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        student.rollNo.toLowerCase().includes(searchQuery.toLowerCase())
+        student.rollNo?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const averageMarks = Math.round(grades.reduce((acc, s) => acc + s.totalMarks, 0) / grades.length);
-    const topPerformer = grades.reduce((max, s) => s.totalMarks > max.totalMarks ? s : max, grades[0]);
+    // Calculate statistics
+    const calculateStats = () => {
+        if (filteredStudents.length === 0) return { average: 0, topScore: 0, passRate: 0 };
 
-    const getGradeColor = (grade) => {
-        if (grade.startsWith('A')) return 'text-green-600 bg-green-100';
-        if (grade.startsWith('B')) return 'text-blue-600 bg-blue-100';
-        if (grade.startsWith('C')) return 'text-yellow-600 bg-yellow-100';
-        return 'text-red-600 bg-red-100';
+        const totals = filteredStudents.map(s => parseFloat(calculateTotals(s.id).finalTotal));
+        const average = totals.reduce((a, b) => a + b, 0) / totals.length;
+        const topScore = Math.max(...totals);
+        const passRate = (totals.filter(t => t >= 50).length / totals.length) * 100;
+
+        return {
+            average: average.toFixed(2),
+            topScore: topScore.toFixed(2),
+            passRate: passRate.toFixed(0)
+        };
     };
+
+    const stats = calculateStats();
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
@@ -78,7 +227,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Exams & Grades
                 </h1>
-                <p className="text-sm text-gray-500">Manage student grades and assessments</p>
+                <p className="text-sm text-gray-500">Manage student marks and assessments</p>
             </div>
 
             {/* Stats Cards */}
@@ -88,7 +237,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Students</h3>
                         <Users className="w-5 h-5 text-blue-500" />
                     </div>
-                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{grades.length}</p>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{students.length}</p>
                 </div>
 
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -96,16 +245,15 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Average Score</h3>
                         <TrendingUp className="w-5 h-5 text-green-500" />
                     </div>
-                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{averageMarks}/120</p>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.average}/100</p>
                 </div>
 
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Top Performer</h3>
+                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Top Score</h3>
                         <Award className="w-5 h-5 text-yellow-500" />
                     </div>
-                    <p className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{topPerformer.name}</p>
-                    <p className="text-sm text-gray-500">{topPerformer.totalMarks}/120</p>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.topScore}/100</p>
                 </div>
 
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -113,9 +261,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Pass Rate</h3>
                         <FileText className="w-5 h-5 text-purple-500" />
                     </div>
-                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {Math.round((grades.filter(s => s.totalMarks >= 60).length / grades.length) * 100)}%
-                    </p>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.passRate}%</p>
                 </div>
             </div>
 
@@ -123,28 +269,20 @@ const ExamsAndGradesPage = ({ darkMode }) => {
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6`}>
                 <div className="flex flex-col md:flex-row gap-4 mb-4">
                     <select
-                        value={selectedClass}
-                        onChange={(e) => setSelectedClass(e.target.value)}
+                        value={selectedCourse?.id || ''}
+                        onChange={(e) => {
+                            const course = courses.find(c => c.id === e.target.value);
+                            setSelectedCourse(course);
+                        }}
                         className={`px-4 py-2 rounded-lg border ${darkMode
                             ? 'bg-gray-700 border-gray-600 text-white'
                             : 'bg-gray-50 border-gray-300 text-gray-900'
                             } focus:outline-none focus:ring-2 focus:ring-green-500`}
                     >
-                        {classes.map((cls) => (
-                            <option key={cls} value={cls}>{cls}</option>
-                        ))}
-                    </select>
-
-                    <select
-                        value={selectedExam}
-                        onChange={(e) => setSelectedExam(e.target.value)}
-                        className={`px-4 py-2 rounded-lg border ${darkMode
-                            ? 'bg-gray-700 border-gray-600 text-white'
-                            : 'bg-gray-50 border-gray-300 text-gray-900'
-                            } focus:outline-none focus:ring-2 focus:ring-green-500`}
-                    >
-                        {exams.map((exam) => (
-                            <option key={exam} value={exam}>{exam}</option>
+                        {courses.map((course) => (
+                            <option key={course.id} value={course.id}>
+                                {course.name} - {course.class}
+                            </option>
                         ))}
                     </select>
 
@@ -164,162 +302,303 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 </div>
 
                 <div className="flex flex-wrap gap-3">
-                    <button
-                        onClick={() => setEditMode(!editMode)}
-                        className={`px-4 py-2 ${editMode ? 'bg-green-600' : 'bg-blue-600'} text-white rounded-lg hover:opacity-90 transition-colors flex items-center space-x-2`}
-                    >
-                        <Edit className="w-5 h-5" />
-                        <span>{editMode ? 'Save Changes' : 'Edit Grades'}</span>
-                    </button>
+                    {editMode ? (
+                        <button
+                            onClick={handleSave}
+                            disabled={saving}
+                            className={`px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            <Save className="w-5 h-5" />
+                            <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => setEditMode(true)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                        >
+                            <Edit className="w-5 h-5" />
+                            <span>Edit Grades</span>
+                        </button>
+                    )}
+
+                    {editMode && (
+                        <button
+                            onClick={() => {
+                                setEditMode(false);
+                                loadCourseData(selectedCourse.id);
+                            }}
+                            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                    )}
 
                     <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2">
                         <Download className="w-5 h-5" />
                         <span>Export Report</span>
                     </button>
-
-                    <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2">
-                        <Plus className="w-5 h-5" />
-                        <span>Add Exam</span>
-                    </button>
                 </div>
             </div>
 
-            {/* Gradebook Table */}
-            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead className={darkMode ? 'bg-gray-700' : 'bg-gray-50'}>
-                            <tr>
-                                <th className={`px-4 py-3 text-left text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider sticky left-0 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                                    Student
-                                </th>
-                                <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                    Video (50)
-                                </th>
-                                <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                    Assign 1
-                                </th>
-                                <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                    Assign 2
-                                </th>
-                                <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                    Total Assign (25)
-                                </th>
-                                <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                    Quiz 1
-                                </th>
-                                <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                    Quiz 2
-                                </th>
-                                <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                    Quiz 3
-                                </th>
-                                <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                    Total Quiz (25)
-                                </th>
-                                <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                    Final (100)
-                                </th>
-                                <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                    Grade
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
-                            {filteredGrades.map((student) => {
-                                const assignmentTotal = (student.assignment1 || 0) + (student.assignment2 || 0);
-                                const quizTotal = (student.quiz1 || 0) + (student.quiz2 || 0) + (student.quiz3 || 0);
+            {/* Info Alert */}
+            {editMode && (
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start space-x-3">
+                    <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                    <div>
+                        <p className="text-sm text-blue-800 font-medium">Edit Mode Active</p>
+                        <p className="text-sm text-blue-600 mt-1">
+                            Enter marks for Exam 1, Exam 2, Exam 3, Assignment 1, and Assignment 2 (each out of 100).
+                            Totals will be calculated automatically: Exam Total (75) + Assignment Total (25) = Final Total (100).
+                        </p>
+                    </div>
+                </div>
+            )}
 
-                                return (
-                                    <tr key={student.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}>
-                                        <td className={`px-4 py-3 whitespace-nowrap sticky left-0 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                                            <div className="flex items-center">
-                                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">
-                                                    {student.name.split(' ').map(n => n[0]).join('')}
-                                                </div>
-                                                <div className="ml-3">
-                                                    <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                        {student.name}
+            {/* Gradebook Table */}
+            {!selectedCourse ? (
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 text-center border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                    <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        No courses available
+                    </p>
+                    <p className="text-sm text-gray-500 mt-2">
+                        Create a course first to start entering marks
+                    </p>
+                </div>
+            ) : (
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead className={darkMode ? 'bg-gray-700' : 'bg-gray-50'}>
+                                <tr>
+                                    <th className={`px-4 py-3 text-left text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider sticky left-0 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} z-10`}>
+                                        Student Name
+                                    </th>
+                                    <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
+                                        Student ID
+                                    </th>
+                                    <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider bg-blue-50`}>
+                                        Exam 1
+                                    </th>
+                                    <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider bg-blue-50`}>
+                                        Exam 2
+                                    </th>
+                                    <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider bg-blue-50`}>
+                                        Exam 3
+                                    </th>
+                                    <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider bg-blue-100`}>
+                                        Exam Total (75)
+                                    </th>
+                                    <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider bg-green-50`}>
+                                        Assignment 1
+                                    </th>
+                                    <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider bg-green-50`}>
+                                        Assignment 2
+                                    </th>
+                                    <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider bg-green-100`}>
+                                        Assignment Total (25)
+                                    </th>
+                                    <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider bg-purple-100`}>
+                                        Final Total (100)
+                                    </th>
+                                    <th className={`px-4 py-3 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
+                                        Grade
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                                {filteredStudents.map((student) => {
+                                    const marks = marksData[student.id] || {};
+                                    const totals = calculateTotals(student.id);
+                                    const gradeInfo = getGrade(totals.finalTotal);
+
+                                    return (
+                                        <tr key={student.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}>
+                                            {/* Student Name */}
+                                            <td className={`px-4 py-3 whitespace-nowrap sticky left-0 ${darkMode ? 'bg-gray-800' : 'bg-white'} z-10`}>
+                                                <div className="flex items-center">
+                                                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                                        {student.name.split(' ').map(n => n[0]).join('')}
                                                     </div>
-                                                    <div className="text-xs text-gray-500">{student.rollNo}</div>
+                                                    <div className="ml-3">
+                                                        <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                            {student.name}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                                {student.videoMark}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            {editMode ? (
-                                                <input
-                                                    type="number"
-                                                    value={student.assignment1}
-                                                    onChange={(e) => updateGrade(student.id, 'assignment1', e.target.value)}
-                                                    className={`w-16 px-2 py-1 text-center rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
-                                                    max="25"
-                                                />
-                                            ) : (
-                                                <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                                    {student.assignment1}
+                                            </td>
+
+                                            {/* Student ID */}
+                                            <td className="px-4 py-3 text-center">
+                                                <span className="text-xs text-gray-500">{student.rollNo || student.id}</span>
+                                            </td>
+
+                                            {/* Exam 1 */}
+                                            <td className="px-4 py-3 text-center bg-blue-50">
+                                                {editMode ? (
+                                                    <input
+                                                        type="number"
+                                                        value={marks.exam1 || ''}
+                                                        onChange={(e) => updateMarks(student.id, 'exam1', e.target.value)}
+                                                        className="w-16 px-2 py-1 text-center rounded border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        min="0"
+                                                        max="100"
+                                                        placeholder="0"
+                                                    />
+                                                ) : (
+                                                    <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                        {marks.exam1 || 0}
+                                                    </span>
+                                                )}
+                                            </td>
+
+                                            {/* Exam 2 */}
+                                            <td className="px-4 py-3 text-center bg-blue-50">
+                                                {editMode ? (
+                                                    <input
+                                                        type="number"
+                                                        value={marks.exam2 || ''}
+                                                        onChange={(e) => updateMarks(student.id, 'exam2', e.target.value)}
+                                                        className="w-16 px-2 py-1 text-center rounded border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        min="0"
+                                                        max="100"
+                                                        placeholder="0"
+                                                    />
+                                                ) : (
+                                                    <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                        {marks.exam2 || 0}
+                                                    </span>
+                                                )}
+                                            </td>
+
+                                            {/* Exam 3 */}
+                                            <td className="px-4 py-3 text-center bg-blue-50">
+                                                {editMode ? (
+                                                    <input
+                                                        type="number"
+                                                        value={marks.exam3 || ''}
+                                                        onChange={(e) => updateMarks(student.id, 'exam3', e.target.value)}
+                                                        className="w-16 px-2 py-1 text-center rounded border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        min="0"
+                                                        max="100"
+                                                        placeholder="0"
+                                                    />
+                                                ) : (
+                                                    <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                        {marks.exam3 || 0}
+                                                    </span>
+                                                )}
+                                            </td>
+
+                                            {/* Exam Total (75) */}
+                                            <td className="px-4 py-3 text-center bg-blue-100">
+                                                <span className="text-sm font-bold text-blue-700">
+                                                    {totals.examTotal}
                                                 </span>
-                                            )}
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            {editMode ? (
-                                                <input
-                                                    type="number"
-                                                    value={student.assignment2}
-                                                    onChange={(e) => updateGrade(student.id, 'assignment2', e.target.value)}
-                                                    className={`w-16 px-2 py-1 text-center rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
-                                                    max="25"
-                                                />
-                                            ) : (
-                                                <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                                    {student.assignment2}
+                                            </td>
+
+                                            {/* Assignment 1 */}
+                                            <td className="px-4 py-3 text-center bg-green-50">
+                                                {editMode ? (
+                                                    <input
+                                                        type="number"
+                                                        value={marks.assignment1 || ''}
+                                                        onChange={(e) => updateMarks(student.id, 'assignment1', e.target.value)}
+                                                        className="w-16 px-2 py-1 text-center rounded border border-green-300 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                        min="0"
+                                                        max="100"
+                                                        placeholder="0"
+                                                    />
+                                                ) : (
+                                                    <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                        {marks.assignment1 || 0}
+                                                    </span>
+                                                )}
+                                            </td>
+
+                                            {/* Assignment 2 */}
+                                            <td className="px-4 py-3 text-center bg-green-50">
+                                                {editMode ? (
+                                                    <input
+                                                        type="number"
+                                                        value={marks.assignment2 || ''}
+                                                        onChange={(e) => updateMarks(student.id, 'assignment2', e.target.value)}
+                                                        className="w-16 px-2 py-1 text-center rounded border border-green-300 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                        min="0"
+                                                        max="100"
+                                                        placeholder="0"
+                                                    />
+                                                ) : (
+                                                    <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                        {marks.assignment2 || 0}
+                                                    </span>
+                                                )}
+                                            </td>
+
+                                            {/* Assignment Total (25) */}
+                                            <td className="px-4 py-3 text-center bg-green-100">
+                                                <span className="text-sm font-bold text-green-700">
+                                                    {totals.assignmentTotal}
                                                 </span>
-                                            )}
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                {assignmentTotal}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                                {student.quiz1}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                                {student.quiz2}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                                {student.quiz3}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                {quizTotal}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                {student.totalMarks}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className={`px-3 py-1 rounded-full text-sm font-bold ${getGradeColor(student.grade)}`}>
-                                                {student.grade}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                                            </td>
+
+                                            {/* Final Total (100) */}
+                                            <td className="px-4 py-3 text-center bg-purple-100">
+                                                <span className="text-lg font-bold text-purple-700">
+                                                    {totals.finalTotal}
+                                                </span>
+                                            </td>
+
+                                            {/* Grade */}
+                                            <td className="px-4 py-3 text-center">
+                                                <span className={`px-3 py-1 rounded-full text-sm font-bold ${gradeInfo.color}`}>
+                                                    {gradeInfo.grade}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {filteredStudents.length === 0 && (
+                        <div className="p-12 text-center">
+                            <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                            <p className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                No students found
+                            </p>
+                            <p className="text-sm text-gray-500 mt-2">
+                                {searchQuery ? 'Try a different search term' : 'No students enrolled in this class'}
+                            </p>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Legend */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">How to Use:</h4>
+                <div className="space-y-2 text-sm text-gray-600 mb-4">
+                    <p>1. Click <strong>"Edit Grades"</strong> to enter marks</p>
+                    <p>2. Enter marks for <strong>Exam 1, Exam 2, Exam 3, Assignment 1, and Assignment 2</strong> (each out of 100)</p>
+                    <p>3. Totals calculate automatically</p>
+                    <p>4. Click <strong>"Save Changes"</strong> to save all marks</p>
+                </div>
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Calculation Formula:</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                    <div>
+                        <span className="font-medium">Exam Total (75):</span>
+                        <p className="text-xs mt-1">(Exam1 + Exam2 + Exam3) / 300 × 75</p>
+                    </div>
+                    <div>
+                        <span className="font-medium">Assignment Total (25):</span>
+                        <p className="text-xs mt-1">(Assignment1 + Assignment2) / 200 × 25</p>
+                    </div>
+                    <div>
+                        <span className="font-medium">Final Total (100):</span>
+                        <p className="text-xs mt-1">Exam Total (75) + Assignment Total (25)</p>
+                    </div>
                 </div>
             </div>
         </div>

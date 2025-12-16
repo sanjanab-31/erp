@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { User, Bell, Lock, Palette, Settings as SettingsIcon, Camera, Mail, Phone, MapPin, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { User, Bell, Lock, Palette, Settings as SettingsIcon, Camera, Mail, Phone, MapPin, FileText, LogOut } from 'lucide-react';
 import { getSettings, updateSettingsSection, changePassword, subscribeToSettingsUpdates } from '../../../utils/settingsStore';
 
 const SettingsPage = ({ darkMode }) => {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('Profile');
     const [saveMessage, setSaveMessage] = useState('');
     const [profileData, setProfileData] = useState({
@@ -43,6 +45,17 @@ const SettingsPage = ({ darkMode }) => {
         dateFormat: 'MM/DD/YYYY',
         timeFormat: '12-hour'
     });
+
+    const handleLogout = () => {
+        localStorage.removeItem('authToken'); // JWT token
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('token');
+        navigate('/login');
+    };
+
 
     // Load settings from store on component mount
     useEffect(() => {
@@ -689,23 +702,33 @@ const SettingsPage = ({ darkMode }) => {
 
             {/* Tabs */}
             <div className="mb-6">
-                <div className="flex space-x-1 border-b border-gray-200 overflow-x-auto">
-                    {tabs.map((tab) => {
-                        const Icon = tab.icon;
-                        return (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center space-x-2 px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab.id
-                                    ? 'border-b-2 border-blue-600 text-blue-600'
-                                    : `${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'}`
-                                    }`}
-                            >
-                                <Icon className="w-4 h-4" />
-                                <span>{tab.label}</span>
-                            </button>
-                        );
-                    })}
+                <div className="flex items-center justify-between border-b border-gray-200">
+                    <div className="flex space-x-1 overflow-x-auto">
+                        {tabs.map((tab) => {
+                            const Icon = tab.icon;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex items-center space-x-2 px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab.id
+                                        ? 'border-b-2 border-blue-600 text-blue-600'
+                                        : `${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'}`
+                                        }`}
+                                >
+                                    <Icon className="w-4 h-4" />
+                                    <span>{tab.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                    {/* Logout Button */}
+                    <button
+                        onClick={handleLogout}
+                        className="flex items-center space-x-2 px-6 py-3 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors whitespace-nowrap ml-4"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        <span>Logout</span>
+                    </button>
                 </div>
             </div>
 
