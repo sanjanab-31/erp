@@ -29,10 +29,13 @@ import ParentChildAcademics from './ParentChildAcademics';
 import { getChildrenByParentEmail } from '../../../utils/userStore';
 import { calculateAttendancePercentage, subscribeToUpdates as subscribeToAttendance } from '../../../utils/attendanceStore';
 import { getStudentFinalMarks, subscribeToAcademicUpdates } from '../../../utils/academicStore';
-import { getFeesByStudent, subscribeToUpdates as subscribeToFees } from '../../../utils/feeStore';
+import { getFeesByStudent, makePayment, subscribeToUpdates as subscribeToFees } from '../../../utils/feeStore';
+import { getCheckoutSession } from '../../../utils/stripeConfig';
+import { useToast } from '../../../context/ToastContext';
 
 const ParentDashboard = () => {
     const navigate = useNavigate();
+    const { showSuccess, showError } = useToast();
     const userName = localStorage.getItem('userName') || 'Parent User';
     const userRole = localStorage.getItem('userRole') || 'Parent';
     const userEmail = localStorage.getItem('userEmail') || '';
@@ -161,6 +164,77 @@ const ParentDashboard = () => {
         };
     }, [userEmail]);
 
+    // Handle payment return from Stripe
+    useEffect(() => {
+        const handlePaymentReturn = async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const paymentStatus = urlParams.get('payment');
+            const sessionId = urlParams.get('session_id');
+
+            if (paymentStatus === 'success' && sessionId) {
+                // Check if this session was already processed
+                const processedSessions = JSON.parse(sessionStorage.getItem('processedSessions') || '[]');
+                if (processedSessions.includes(sessionId)) {
+                    console.log('Session already processed, skipping...');
+                    // Clean up URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    return;
+                }
+
+                // Get pending payment info from sessionStorage
+                const pendingPaymentStr = sessionStorage.getItem('pendingPayment');
+
+                if (pendingPaymentStr) {
+                    try {
+                        const pendingPayment = JSON.parse(pendingPaymentStr);
+
+                        // Verify the payment with Stripe
+                        const session = await getCheckoutSession(sessionId);
+
+                        if (session.status === 'paid') {
+                            // Record the payment
+                            makePayment(pendingPayment.feeId, {
+                                amount: pendingPayment.amount,
+                                paymentMethod: 'Stripe (Card)',
+                                transactionId: session.paymentIntentId || sessionId,
+                                paidBy: 'Parent',
+                                stripeSessionId: sessionId,
+                            });
+
+                            // Mark this session as processed
+                            processedSessions.push(sessionId);
+                            sessionStorage.setItem('processedSessions', JSON.stringify(processedSessions));
+
+                            // Clear pending payment
+                            sessionStorage.removeItem('pendingPayment');
+
+                            // Show success message
+                            showSuccess('Payment successful! Your fee has been updated.');
+
+                            // Navigate to Fee Management to see the update
+                            setActiveTab('Fee Management');
+                        }
+                    } catch (err) {
+                        console.error('Error processing payment return:', err);
+                        showError('Error processing payment: ' + err.message);
+                    }
+                }
+
+                // Clean up URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else if (paymentStatus === 'cancelled') {
+                // Clear pending payment
+                sessionStorage.removeItem('pendingPayment');
+                showError('Payment was cancelled. You can try again anytime.');
+
+                // Clean up URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        };
+
+        handlePaymentReturn();
+    }, []);
+
     const getGreeting = () => {
         const hour = new Date().getHours();
         if (hour < 12) return 'Good morning';
@@ -213,7 +287,7 @@ const ParentDashboard = () => {
                                     <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Pending Fees</h3>
                                     <DollarSign className="w-5 h-5 text-gray-400" />
                                 </div>
-                                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>${child.pendingFees}</p>
+                                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>₹{child.pendingFees}</p>
                                 <p className="text-sm text-green-500 mt-2">All paid up!</p>
                             </div>
                             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>

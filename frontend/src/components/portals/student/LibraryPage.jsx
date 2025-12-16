@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Clock, AlertCircle, CheckCircle, Search, Plus } from 'lucide-react';
+import { useToast } from '../../../context/ToastContext';
 
 const LibraryPage = ({ darkMode }) => {
+    const { showSuccess, showError, showWarning, showInfo } = useToast();
     const [activeTab, setActiveTab] = useState('Browse Books');
     const [searchQuery, setSearchQuery] = useState('');
     const [issuedBooks, setIssuedBooks] = useState([
@@ -149,7 +151,7 @@ const LibraryPage = ({ darkMode }) => {
             };
 
             setMyBooks([...myBooks, newIssuedBook]);
-            alert(`Book "${book.title}" has been issued successfully!`);
+            showSuccess(`Book "${book.title}" has been issued successfully!`);
         }
     };
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Clock, Plus, Edit, Trash2, Save, X, Calendar as CalendarIcon, Users, GraduationCap } from 'lucide-react';
 import { getAllTeachers } from '../../../utils/teacherStore';
+import { useToast } from '../../../context/ToastContext';
 import {
     saveTeacherTimetable,
     saveClassTimetable,
@@ -27,6 +28,7 @@ const classNames = ['Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade
 
 // Move modal component outside to prevent re-creation
 const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onClose, onSave }) => {
+    const { showSuccess, showError, showWarning, showInfo } = useToast();
     const [selectedEntity, setSelectedEntity] = useState('');
     const [timetableGrid, setTimetableGrid] = useState({});
 
@@ -78,7 +80,7 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
         e.preventDefault();
 
         if (!selectedEntity) {
-            alert('Please select a ' + (activeView === 'teacher' ? 'teacher' : 'class'));
+            showWarning('Please select a ' + (activeView === 'teacher' ? 'teacher' : 'class'));
             return;
         }
 
@@ -113,10 +115,10 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
                 saveClassTimetable(selectedEntity, { schedule });
             }
 
-            alert('Timetable saved successfully!');
+            showSuccess('Timetable saved successfully!');
             onSave();
         } catch (error) {
-            alert('Error saving timetable: ' + error.message);
+            showError('Error saving timetable: ' + error.message);
         }
     }, [selectedEntity, timetableGrid, activeView, teachers, onSave]);
 
@@ -243,6 +245,7 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
 };
 
 const TimetablePage = ({ darkMode }) => {
+    const { showSuccess, showError, showWarning } = useToast();
     const [activeView, setActiveView] = useState('teacher'); // 'teacher' or 'student'
     const [teachers, setTeachers] = useState([]);
     const [teacherTimetables, setTeacherTimetables] = useState([]);
@@ -291,9 +294,9 @@ const TimetablePage = ({ darkMode }) => {
                 } else {
                     deleteClassTimetable(id);
                 }
-                alert('Timetable deleted successfully!');
+                showSuccess('Timetable deleted successfully!');
             } catch (error) {
-                alert('Error deleting timetable: ' + error.message);
+                showError('Error deleting timetable: ' + error.message);
             }
         }
     }, []);
@@ -468,3 +471,4 @@ const TimetablePage = ({ darkMode }) => {
 };
 
 export default TimetablePage;
+

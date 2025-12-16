@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../../../context/ToastContext';
 import {
     Calendar,
     Plus,
@@ -20,6 +21,7 @@ import {
 } from '../../../utils/academicStore';
 
 const AdminExamSchedules = ({ darkMode }) => {
+    const { showSuccess, showError, showWarning, showInfo } = useToast();
     const [schedules, setSchedules] = useState([]);
     const [courses, setCourses] = useState([]);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -95,9 +97,9 @@ const AdminExamSchedules = ({ darkMode }) => {
             });
             setShowCreateModal(false);
             resetForm();
-            alert('Exam schedule created successfully!');
+            showSuccess('Exam schedule created successfully!');
         } catch (error) {
-            alert('Error creating exam schedule: ' + error.message);
+            showError('Error creating exam schedule: ' + error.message);
         }
     };
 
@@ -108,9 +110,9 @@ const AdminExamSchedules = ({ darkMode }) => {
             setShowEditModal(false);
             setSelectedSchedule(null);
             resetForm();
-            alert('Exam schedule updated successfully!');
+            showSuccess('Exam schedule updated successfully!');
         } catch (error) {
-            alert('Error updating exam schedule: ' + error.message);
+            showError('Error updating exam schedule: ' + error.message);
         }
     };
 
@@ -118,9 +120,9 @@ const AdminExamSchedules = ({ darkMode }) => {
         if (confirm('Are you sure you want to delete this exam schedule?')) {
             try {
                 deleteExamSchedule(scheduleId);
-                alert('Exam schedule deleted successfully!');
+                showSuccess('Exam schedule deleted successfully!');
             } catch (error) {
-                alert('Error deleting exam schedule: ' + error.message);
+                showError('Error deleting exam schedule: ' + error.message);
             }
         }
     };

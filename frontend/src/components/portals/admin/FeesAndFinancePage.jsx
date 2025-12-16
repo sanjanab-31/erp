@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit, Trash2, Save, X, DollarSign, Users, AlertCircle, TrendingUp, Calendar, Search } from 'lucide-react';
 import { getAllStudents } from '../../../utils/studentStore';
+import { useToast } from '../../../context/ToastContext';
 import {
     getAllFees,
     addFee,
@@ -12,6 +13,7 @@ import {
 } from '../../../utils/feeStore';
 
 const FeeModal = ({ darkMode, onClose, onSave, editingFee, students }) => {
+    const { showSuccess, showError, showWarning, showInfo } = useToast();
     const [formData, setFormData] = useState({
         studentId: '',
         feeType: '',
@@ -34,14 +36,14 @@ const FeeModal = ({ darkMode, onClose, onSave, editingFee, students }) => {
         e.preventDefault();
 
         if (!formData.studentId || !formData.feeType || !formData.amount || !formData.dueDate) {
-            alert('Please fill all fields');
+            showWarning('Please fill all fields');
             return;
         }
 
         const student = students.find(s => s.id.toString() === formData.studentId.toString());
 
         if (!student) {
-            alert('Student not found');
+            showInfo('Student not found');
             return;
         }
 
@@ -202,9 +204,9 @@ const FeesAndFinancePage = ({ darkMode }) => {
         try {
             addFee(feeData);
             setShowAddModal(false);
-            alert('Fee added successfully!');
+            showSuccess('Fee added successfully!');
         } catch (error) {
-            alert('Error adding fee: ' + error.message);
+            showError('Error adding fee: ' + error.message);
         }
     }, []);
 
@@ -212,9 +214,9 @@ const FeesAndFinancePage = ({ darkMode }) => {
         if (window.confirm('Are you sure you want to delete this fee?')) {
             try {
                 deleteFee(feeId);
-                alert('Fee deleted successfully!');
+                showSuccess('Fee deleted successfully!');
             } catch (error) {
-                alert('Error deleting fee: ' + error.message);
+                showError('Error deleting fee: ' + error.message);
             }
         }
     }, []);

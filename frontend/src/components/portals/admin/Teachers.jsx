@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Plus, MoreVertical, Mail, Phone, Edit, Trash2, X, Save, UserPlus, BookOpen, Calendar, Award } from 'lucide-react';
 import { getAllTeachers, addTeacher, updateTeacher, deleteTeacher, subscribeToUpdates, getTeacherStats } from '../../../utils/teacherStore';
 import { addTeacher as addUserTeacher } from '../../../utils/userStore';
+import { useToast } from '../../../context/ToastContext';
 
 // Move modal components outside to prevent re-creation on every render
 const TeacherFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, darkMode }) => {
@@ -153,6 +154,7 @@ const TeacherFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
     );
 };
 
+
 const DeleteConfirmModal = ({ darkMode, selectedTeacher, onClose, onConfirm }) => (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>
@@ -181,6 +183,7 @@ const DeleteConfirmModal = ({ darkMode, selectedTeacher, onClose, onConfirm }) =
 );
 
 const Teachers = ({ darkMode }) => {
+    const { showSuccess, showError, showWarning } = useToast();
     const [teachers, setTeachers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterDepartment, setFilterDepartment] = useState('All Departments');
@@ -261,9 +264,9 @@ const Teachers = ({ darkMode }) => {
 
             setShowAddModal(false);
             resetForm();
-            alert('Teacher added successfully! Login credentials:\nEmail: ' + formData.email + '\nPassword: password');
+            showSuccess('Teacher added successfully! Login credentials:\nEmail: ' + formData.email + '\nPassword: password');
         } catch (error) {
-            alert('Error adding teacher: ' + error.message);
+            showError('Error adding teacher: ' + error.message);
         }
     }, [formData, resetForm]);
 
@@ -274,9 +277,9 @@ const Teachers = ({ darkMode }) => {
             setShowEditModal(false);
             setSelectedTeacher(null);
             resetForm();
-            alert('Teacher updated successfully!');
+            showSuccess('Teacher updated successfully!');
         } catch (error) {
-            alert('Error updating teacher: ' + error.message);
+            showError('Error updating teacher: ' + error.message);
         }
     }, [formData, selectedTeacher, resetForm]);
 
@@ -285,9 +288,9 @@ const Teachers = ({ darkMode }) => {
             deleteTeacher(selectedTeacher.id);
             setShowDeleteConfirm(false);
             setSelectedTeacher(null);
-            alert('Teacher deleted successfully!');
+            showSuccess('Teacher deleted successfully!');
         } catch (error) {
-            alert('Error deleting teacher: ' + error.message);
+            showError('Error deleting teacher: ' + error.message);
         }
     }, [selectedTeacher]);
 
@@ -527,3 +530,4 @@ const Teachers = ({ darkMode }) => {
 };
 
 export default Teachers;
+

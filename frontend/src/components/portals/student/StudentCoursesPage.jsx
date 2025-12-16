@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../../../context/ToastContext';
 import {
     BookOpen,
     Upload,
@@ -25,6 +26,7 @@ import {
 } from '../../../utils/academicStore';
 
 const StudentCoursesPage = ({ darkMode }) => {
+    const { showSuccess, showError, showWarning, showInfo } = useToast();
     const [courses, setCourses] = useState([]);
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [assignments, setAssignments] = useState([]);
@@ -77,9 +79,9 @@ const StudentCoursesPage = ({ darkMode }) => {
             setShowSubmitModal(false);
             setDriveLink('');
             setSelectedAssignment(null);
-            alert('Assignment submitted successfully!');
+            showSuccess('Assignment submitted successfully!');
         } catch (error) {
-            alert('Error submitting assignment: ' + error.message);
+            showError('Error submitting assignment: ' + error.message);
         }
     };
 

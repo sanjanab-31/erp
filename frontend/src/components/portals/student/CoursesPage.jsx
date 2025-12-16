@@ -2,15 +2,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { BookOpen, FileText, Link as LinkIcon, Calendar, Upload, CheckCircle, X, Save } from 'lucide-react';
 import { getAllStudents } from '../../../utils/studentStore';
 import { getCoursesForStudent, getCoursesByClass, submitAssignment, subscribeToUpdates } from '../../../utils/courseStore';
+import { useToast } from '../../../context/ToastContext';
 
 const SubmissionModal = ({ darkMode, onClose, onSubmit, assignment, courseName }) => {
+    const { showSuccess, showError, showWarning, showInfo } = useToast();
     const [link, setLink] = useState('');
 
     const handleSubmit = (e) => {
         e.preventDefault();
 
         if (!link.trim()) {
-            alert('Please enter a link');
+            showWarning('Please enter a link');
             return;
         }
 
@@ -152,9 +154,9 @@ const CoursesPage = ({ darkMode }) => {
             });
             setShowSubmissionModal(false);
             setSelectedAssignment(null);
-            alert('Assignment submitted successfully!');
+            showSuccess('Assignment submitted successfully!');
         } catch (error) {
-            alert('Error submitting assignment: ' + error.message);
+            showError('Error submitting assignment: ' + error.message);
         }
     }, [selectedCourse, selectedAssignment, studentId, studentName]);
 

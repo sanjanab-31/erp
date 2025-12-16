@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, BookOpen, FileText, Link as LinkIcon, Trash2, Calendar, Users, Upload, X, Save } from 'lucide-react';
 import { getAllStudents } from '../../../utils/studentStore';
 import { getAllTeachers } from '../../../utils/teacherStore';
+import { useToast } from '../../../context/ToastContext';
 import {
     getCoursesByTeacher,
     addCourse,
@@ -14,6 +15,7 @@ import {
 } from '../../../utils/courseStore';
 
 const CourseModal = ({ darkMode, onClose, onSave, teacherId, teacherName }) => {
+    const { showSuccess, showError, showWarning, showInfo } = useToast();
     const [formData, setFormData] = useState({
         courseName: '',
         subject: '',
@@ -31,7 +33,7 @@ const CourseModal = ({ darkMode, onClose, onSave, teacherId, teacherName }) => {
         e.preventDefault();
 
         if (!formData.courseName || !formData.subject || !formData.class) {
-            alert('Please fill all required fields');
+            showWarning('Please fill all required fields');
             return;
         }
 
@@ -170,7 +172,7 @@ const MaterialModal = ({ darkMode, onClose, onSave }) => {
         e.preventDefault();
 
         if (!formData.title || !formData.link) {
-            alert('Please fill all required fields');
+            showWarning('Please fill all required fields');
             return;
         }
 
@@ -282,7 +284,7 @@ const AssignmentModal = ({ darkMode, onClose, onSave }) => {
         e.preventDefault();
 
         if (!formData.title || !formData.dueDate) {
-            alert('Please fill all required fields');
+            showWarning('Please fill all required fields');
             return;
         }
 
@@ -432,9 +434,9 @@ const CoursesPage = ({ darkMode }) => {
         try {
             addCourse(courseData);
             setShowCourseModal(false);
-            alert('Course created successfully!');
+            showSuccess('Course created successfully!');
         } catch (error) {
-            alert('Error creating course: ' + error.message);
+            showError('Error creating course: ' + error.message);
         }
     }, []);
 
@@ -443,9 +445,9 @@ const CoursesPage = ({ darkMode }) => {
             try {
                 deleteCourse(courseId);
                 setSelectedCourse(null);
-                alert('Course deleted successfully!');
+                showSuccess('Course deleted successfully!');
             } catch (error) {
-                alert('Error deleting course: ' + error.message);
+                showError('Error deleting course: ' + error.message);
             }
         }
     }, []);
@@ -454,9 +456,9 @@ const CoursesPage = ({ darkMode }) => {
         try {
             addCourseMaterial(selectedCourse.id, materialData);
             setShowMaterialModal(false);
-            alert('Material added successfully!');
+            showSuccess('Material added successfully!');
         } catch (error) {
-            alert('Error adding material: ' + error.message);
+            showError('Error adding material: ' + error.message);
         }
     }, [selectedCourse]);
 
@@ -464,9 +466,9 @@ const CoursesPage = ({ darkMode }) => {
         if (window.confirm('Are you sure you want to delete this material?')) {
             try {
                 deleteCourseMaterial(selectedCourse.id, materialId);
-                alert('Material deleted successfully!');
+                showSuccess('Material deleted successfully!');
             } catch (error) {
-                alert('Error deleting material: ' + error.message);
+                showError('Error deleting material: ' + error.message);
             }
         }
     }, [selectedCourse]);
@@ -475,9 +477,9 @@ const CoursesPage = ({ darkMode }) => {
         try {
             addAssignment(selectedCourse.id, assignmentData);
             setShowAssignmentModal(false);
-            alert('Assignment created successfully!');
+            showSuccess('Assignment created successfully!');
         } catch (error) {
-            alert('Error creating assignment: ' + error.message);
+            showError('Error creating assignment: ' + error.message);
         }
     }, [selectedCourse]);
 
@@ -485,9 +487,9 @@ const CoursesPage = ({ darkMode }) => {
         if (window.confirm('Are you sure you want to delete this assignment?')) {
             try {
                 deleteAssignment(selectedCourse.id, assignmentId);
-                alert('Assignment deleted successfully!');
+                showSuccess('Assignment deleted successfully!');
             } catch (error) {
-                alert('Error deleting assignment: ' + error.message);
+                showError('Error deleting assignment: ' + error.message);
             }
         }
     }, [selectedCourse]);

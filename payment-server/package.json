@@ -1,0 +1,24 @@
+{
+    "name": "payment-server",
+    "version": "1.0.0",
+    "description": "Stripe Payment Server for ERP System",
+    "main": "index.js",
+    "type": "module",
+    "scripts": {
+        "start": "node index.js",
+        "dev": "node index.js"
+    },
+    "keywords": [
+        "stripe",
+        "payment",
+        "erp"
+    ],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "express": "^4.18.2",
+        "cors": "^2.8.5",
+        "dotenv": "^16.3.1",
+        "stripe": "^14.10.0"
+    }
+}

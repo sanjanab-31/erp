@@ -23,8 +23,10 @@ import {
     subscribeToAcademicUpdates
 } from '../../../utils/academicStore';
 import { getAllStudents } from '../../../utils/studentStore';
+import { useToast } from '../../../context/ToastContext';
 
 const ExamsAndGradesPage = ({ darkMode }) => {
+    const { showSuccess, showError, showWarning, showInfo } = useToast();
     const [courses, setCourses] = useState([]);
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [students, setStudents] = useState([]);
@@ -187,11 +189,11 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 }
             }
 
-            alert('Marks saved successfully!');
+            showSuccess('Marks saved successfully!');
             setEditMode(false);
             loadCourseData(selectedCourse.id); // Reload to show updated marks
         } catch (error) {
-            alert('Error saving marks: ' + error.message);
+            showError('Error saving marks: ' + error.message);
         } finally {
             setSaving(false);
         }

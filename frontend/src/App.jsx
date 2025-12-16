@@ -8,6 +8,8 @@ import TeacherDashboard from './components/portals/teacher/TeacherDashboard';
 import AdminDashboard from './components/portals/admin/AdminDashboard';
 import ParentDashboard from './components/portals/parent/ParentDashboard';
 import { isAuthenticated, getUserRole } from './utils/jwt';
+import { ToastProvider } from './context/ToastContext';
+import ToastContainer from './components/common/ToastContainer';
 import './App.css';
 
 // Protected Route Component - Uses JWT token verification
@@ -43,51 +45,54 @@ const DashboardRouter = () => {
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Public Routes */}
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/signup"
-          element={
-            <PublicRoute>
-              <Signup />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/forgot-password"
-          element={
-            <PublicRoute>
-              <ForgotPassword />
-            </PublicRoute>
-          }
-        />
+    <ToastProvider>
+      <Router>
+        <ToastContainer />
+        <Routes>
+          {/* Public Routes */}
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+              <PublicRoute>
+                <Signup />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <PublicRoute>
+                <ForgotPassword />
+              </PublicRoute>
+            }
+          />
 
-        {/* Protected Routes */}
-        <Route
-          path="/dashboard/:role"
-          element={
-            <ProtectedRoute>
-              <DashboardRouter />
-            </ProtectedRoute>
-          }
-        />
+          {/* Protected Routes */}
+          <Route
+            path="/dashboard/:role"
+            element={
+              <ProtectedRoute>
+                <DashboardRouter />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Default Route */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* Default Route */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* Catch all - redirect to login */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </Router>
+          {/* Catch all - redirect to login */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </Router>
+    </ToastProvider>
   );
 }
 

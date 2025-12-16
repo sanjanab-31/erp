@@ -4,10 +4,11 @@
     "description": "Root package for ERP System",
     "private": true,
     "scripts": {
-        "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
-        "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+        "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install && cd ../payment-server && npm install",
+        "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\" \"npm run dev:payment\"",
         "dev:frontend": "cd frontend && npm run dev",
         "dev:backend": "cd backend && npm run dev",
+        "dev:payment": "cd payment-server && npm run dev",
         "build": "cd frontend && npm run build"
     },
     "devDependencies": {
@@ -15,6 +16,7 @@
     },
     "workspaces": [
         "frontend",
-        "backend"
+        "backend",
+        "payment-server"
     ]
 }

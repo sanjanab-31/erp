@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Plus, MoreVertical, Mail, Phone, Edit, Trash2, X, Save, UserPlus } from 'lucide-react';
 import { getAllStudents, addStudent, updateStudent, deleteStudent, subscribeToUpdates, getStudentStats } from '../../../utils/studentStore';
 import { addStudent as addUserStudent } from '../../../utils/userStore';
+import { useToast } from '../../../context/ToastContext';
 
 // Move modal components outside to prevent re-creation on every render
 const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, darkMode }) => {
@@ -167,6 +168,7 @@ const DeleteConfirmModal = ({ darkMode, selectedStudent, onClose, onConfirm }) =
 );
 
 const Students = ({ darkMode }) => {
+    const { showSuccess, showError, showWarning } = useToast();
     const [students, setStudents] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterClass, setFilterClass] = useState('All Classes');
@@ -260,9 +262,9 @@ const Students = ({ darkMode }) => {
                 message += 'Password: password';
             }
 
-            alert(message);
+            showSuccess(message);
         } catch (error) {
-            alert('Error adding student: ' + error.message);
+            showError('Error adding student: ' + error.message);
         }
     }, [formData, resetForm]);
 
@@ -273,9 +275,9 @@ const Students = ({ darkMode }) => {
             setShowEditModal(false);
             setSelectedStudent(null);
             resetForm();
-            alert('Student updated successfully!');
+            showSuccess('Student updated successfully!');
         } catch (error) {
-            alert('Error updating student: ' + error.message);
+            showError('Error updating student: ' + error.message);
         }
     }, [formData, selectedStudent, resetForm]);
 
@@ -284,9 +286,9 @@ const Students = ({ darkMode }) => {
             deleteStudent(selectedStudent.id);
             setShowDeleteConfirm(false);
             setSelectedStudent(null);
-            alert('Student deleted successfully!');
+            showSuccess('Student deleted successfully!');
         } catch (error) {
-            alert('Error deleting student: ' + error.message);
+            showError('Error deleting student: ' + error.message);
         }
     }, [selectedStudent]);
 
@@ -543,3 +545,5 @@ const Students = ({ darkMode }) => {
 };
 
 export default Students;
+
+

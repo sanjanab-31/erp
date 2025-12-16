@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../../../context/ToastContext';
 import {
     BookOpen,
     Plus,
@@ -34,6 +35,7 @@ import {
 } from '../../../utils/academicStore';
 
 const AcademicManagement = ({ darkMode }) => {
+    const { showSuccess, showError, showWarning, showInfo } = useToast();
     const [activeTab, setActiveTab] = useState('courses');
     const [courses, setCourses] = useState([]);
     const [selectedCourse, setSelectedCourse] = useState(null);
@@ -136,9 +138,9 @@ const AcademicManagement = ({ darkMode }) => {
             });
             setShowCreateCourseModal(false);
             setCourseForm({ name: '', code: '', class: '', description: '' });
-            alert('Course created successfully!');
+            showSuccess('Course created successfully!');
         } catch (error) {
-            alert('Error creating course: ' + error.message);
+            showError('Error creating course: ' + error.message);
         }
     };
 
@@ -152,9 +154,9 @@ const AcademicManagement = ({ darkMode }) => {
             });
             setShowAddAssignmentModal(false);
             setAssignmentForm({ title: '', description: '', dueDate: '', maxMarks: 100 });
-            alert('Assignment added successfully!');
+            showSuccess('Assignment added successfully!');
         } catch (error) {
-            alert('Error adding assignment: ' + error.message);
+            showError('Error adding assignment: ' + error.message);
         }
     };
 
@@ -169,9 +171,9 @@ const AcademicManagement = ({ darkMode }) => {
             setShowGradingModal(false);
             setGradingForm({ marks: '', feedback: '' });
             setSelectedSubmission(null);
-            alert('Submission graded successfully!');
+            showSuccess('Submission graded successfully!');
         } catch (error) {
-            alert('Error grading submission: ' + error.message);
+            showError('Error grading submission: ' + error.message);
         }
     };
 
@@ -189,9 +191,9 @@ const AcademicManagement = ({ darkMode }) => {
             });
             setShowExamMarksModal(false);
             setExamMarksForm({ studentId: '', studentName: '', exam1: '', exam2: '', exam3: '' });
-            alert('Exam marks entered successfully!');
+            showSuccess('Exam marks entered successfully!');
         } catch (error) {
-            alert('Error entering exam marks: ' + error.message);
+            showError('Error entering exam marks: ' + error.message);
         }
     };
 
@@ -205,9 +207,9 @@ const AcademicManagement = ({ darkMode }) => {
             });
             setShowMaterialModal(false);
             setMaterialForm({ title: '', description: '', link: '', type: 'link' });
-            alert('Material uploaded successfully!');
+            showSuccess('Material uploaded successfully!');
         } catch (error) {
-            alert('Error uploading material: ' + error.message);
+            showError('Error uploading material: ' + error.message);
         }
     };
 

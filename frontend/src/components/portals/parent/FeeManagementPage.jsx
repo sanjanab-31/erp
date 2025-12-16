@@ -2,8 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { DollarSign, CreditCard, Calendar, AlertCircle, CheckCircle, Clock, X } from 'lucide-react';
 import { getAllStudents } from '../../../utils/studentStore';
 import { getFeesByStudent, makePayment, subscribeToUpdates } from '../../../utils/feeStore';
+import StripePaymentModal from './StripePaymentModal';
+import { useToast } from '../../../context/ToastContext';
 
 const PaymentModal = ({ darkMode, fee, onClose, onPaymentSuccess }) => {
+    const { showSuccess, showError, showWarning } = useToast();
     const [paymentData, setPaymentData] = useState({
         amount: fee.remainingAmount,
         paymentMethod: 'UPI',
@@ -21,17 +24,17 @@ const PaymentModal = ({ darkMode, fee, onClose, onPaymentSuccess }) => {
         e.preventDefault();
 
         if (!paymentData.transactionId.trim()) {
-            alert('Please enter transaction ID');
+            showWarning('Please enter transaction ID');
             return;
         }
 
         if (parseFloat(paymentData.amount) <= 0) {
-            alert('Amount must be greater than 0');
+            showWarning('Amount must be greater than 0');
             return;
         }
 
         if (parseFloat(paymentData.amount) > fee.remainingAmount) {
-            alert('Amount cannot be greater than remaining amount');
+            showWarning('Amount cannot be greater than remaining amount');
             return;
         }
 
@@ -40,10 +43,10 @@ const PaymentModal = ({ darkMode, fee, onClose, onPaymentSuccess }) => {
                 ...paymentData,
                 paidBy: 'Parent'
             });
-            alert('Payment successful!');
+            showSuccess('Payment successful!');
             onPaymentSuccess();
         } catch (error) {
-            alert('Error processing payment: ' + error.message);
+            showError('Error processing payment: ' + error.message);
         }
     };
 
@@ -196,6 +199,7 @@ const FeeManagementPage = ({ darkMode }) => {
     const [childName, setChildName] = useState('');
     const [selectedFee, setSelectedFee] = useState(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [showStripeModal, setShowStripeModal] = useState(false);
 
     const parentEmail = localStorage.getItem('userEmail');
 
@@ -236,13 +240,18 @@ const FeeManagementPage = ({ darkMode }) => {
         setLoading(false);
     }, [parentEmail]);
 
-    const handlePayment = (fee) => {
+    const handlePayment = (fee, method = 'manual') => {
         setSelectedFee(fee);
-        setShowPaymentModal(true);
+        if (method === 'stripe') {
+            setShowStripeModal(true);
+        } else {
+            setShowPaymentModal(true);
+        }
     };
 
     const handlePaymentSuccess = () => {
         setShowPaymentModal(false);
+        setShowStripeModal(false);
         setSelectedFee(null);
         loadFees();
     };
@@ -388,8 +397,8 @@ const FeeManagementPage = ({ darkMode }) => {
                                 {fee.status !== 'Paid' && (
                                     <div>
                                         <button
-                                            onClick={() => handlePayment(fee)}
-                                            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2"
+                                            onClick={() => handlePayment(fee, 'stripe')}
+                                            className="w-full px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center justify-center space-x-2"
                                         >
                                             <CreditCard className="w-5 h-5" />
                                             <span>Pay Now</span>
@@ -409,6 +418,16 @@ const FeeManagementPage = ({ darkMode }) => {
                     fee={selectedFee}
                     onClose={() => { setShowPaymentModal(false); setSelectedFee(null); }}
                     onPaymentSuccess={handlePaymentSuccess}
+                />
+            )}
+
+            {/* Stripe Payment Modal */}
+            {showStripeModal && selectedFee && (
+                <StripePaymentModal
+                    darkMode={darkMode}
+                    fee={selectedFee}
+                    studentName={childName}
+                    onClose={() => { setShowStripeModal(false); setSelectedFee(null); }}
                 />
             )}
         </div>
