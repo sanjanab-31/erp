@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+    import React, { useState, useEffect, useCallback } from 'react';
 import {
     Calendar,
     MapPin,
@@ -267,20 +267,7 @@ const TimetablePage = ({ darkMode }) => {
                         </div>
                     )}
 
-                    {/* Info Note */}
-                    <div className={`${darkMode ? 'bg-blue-900 border-blue-700' : 'bg-blue-50 border-blue-200'} border rounded-xl p-4`}>
-                        <div className="flex items-start space-x-3">
-                            <AlertCircle className={`w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'} mt-0.5`} />
-                            <div>
-                                <h4 className={`font-semibold text-sm ${darkMode ? 'text-blue-300' : 'text-blue-900'} mb-1`}>
-                                    Real-time Sync
-                                </h4>
-                                <p className={`text-sm ${darkMode ? 'text-blue-200' : 'text-blue-700'}`}>
-                                    Your timetable is managed by the admin. Any changes made by the admin will appear here automatically without needing to refresh the page.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                    
                 </>
             )}
         </div>

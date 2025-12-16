@@ -16,6 +16,7 @@ import {
     getCoursesByTeacher,
     enterExamMarks,
     gradeSubmission,
+    createSubmission,
     getExamMarksByCourse,
     getSubmissionsByAssignment,
     getAssignmentsByCourse,
@@ -164,24 +165,49 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                         enteredBy: teacherId
                     });
 
-                    // Save assignment marks
+                    // Save assignment 1 marks
                     if (assignments.length > 0) {
                         const submissions1 = getSubmissionsByAssignment(assignments[0].id);
                         const existingSub1 = submissions1.find(s => s.studentId === student.id);
 
                         if (existingSub1) {
                             // Update existing submission
-                            gradeSubmission(existingSub1.id, marks.assignment1 || 0, 'graded');
+                            gradeSubmission(existingSub1.id, marks.assignment1 || 0, 'Graded by teacher');
+                        } else {
+                            // Create new submission if it doesn't exist
+                            const newSub = await createSubmission({
+                                assignmentId: assignments[0].id,
+                                courseId: selectedCourse.id,
+                                studentId: student.id,
+                                studentName: student.name,
+                                link: '',
+                                submittedBy: student.id
+                            });
+                            // Grade the newly created submission
+                            gradeSubmission(newSub.id, marks.assignment1 || 0, 'Graded by teacher');
                         }
                     }
 
+                    // Save assignment 2 marks
                     if (assignments.length > 1) {
                         const submissions2 = getSubmissionsByAssignment(assignments[1].id);
                         const existingSub2 = submissions2.find(s => s.studentId === student.id);
 
                         if (existingSub2) {
                             // Update existing submission
-                            gradeSubmission(existingSub2.id, marks.assignment2 || 0, 'graded');
+                            gradeSubmission(existingSub2.id, marks.assignment2 || 0, 'Graded by teacher');
+                        } else {
+                            // Create new submission if it doesn't exist
+                            const newSub = await createSubmission({
+                                assignmentId: assignments[1].id,
+                                courseId: selectedCourse.id,
+                                studentId: student.id,
+                                studentName: student.name,
+                                link: '',
+                                submittedBy: student.id
+                            });
+                            // Grade the newly created submission
+                            gradeSubmission(newSub.id, marks.assignment2 || 0, 'Graded by teacher');
                         }
                     }
                 }
@@ -191,6 +217,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
             setEditMode(false);
             loadCourseData(selectedCourse.id); // Reload to show updated marks
         } catch (error) {
+            console.error('Error saving marks:', error);
             alert('Error saving marks: ' + error.message);
         } finally {
             setSaving(false);
@@ -576,10 +603,9 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 </div>
             )}
 
-            
+
         </div>
     );
 };
 
 export default ExamsAndGradesPage;
-

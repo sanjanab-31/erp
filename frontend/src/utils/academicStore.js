@@ -266,6 +266,34 @@ export const getSubmission = (studentId, assignmentId) => {
     return data.submissions.find(s => s.studentId === studentId && s.assignmentId === assignmentId);
 };
 
+// Create submission (for teacher grading when student hasn't submitted)
+export const createSubmission = (submissionData) => {
+    try {
+        const data = getAllAcademicData();
+
+        const newSubmission = {
+            id: `submission_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            assignmentId: submissionData.assignmentId,
+            courseId: submissionData.courseId,
+            studentId: submissionData.studentId,
+            studentName: submissionData.studentName,
+            driveLink: submissionData.link || '',
+            submittedAt: new Date().toISOString(),
+            status: 'pending',
+            marks: null,
+            feedback: ''
+        };
+
+        data.submissions.push(newSubmission);
+        saveAcademicData(data);
+
+        return newSubmission;
+    } catch (error) {
+        console.error('Error creating submission:', error);
+        throw error;
+    }
+};
+
 // Grade submission (Teacher)
 export const gradeSubmission = (submissionId, marks, feedback = '') => {
     try {
