@@ -8,7 +8,6 @@ import TimetablePage from './TimetablePage';
 import LibraryPage from './LibraryPage';
 import ReportsPage from './ReportsPage';
 import SettingsPage from './SettingsPage';
-import AcademicManagement from './AcademicManagement';
 import {
     Home,
     Calendar,
@@ -60,8 +59,7 @@ const TeacherDashboard = () => {
         { icon: Clock, label: 'Timetable' },
         { icon: BookMarked, label: 'Library' },
         { icon: FileText, label: 'Reports' },
-        { icon: Settings, label: 'Settings' },
-        { icon: BookOpen, label: 'Academic Management' }
+        { icon: Settings, label: 'Settings' }
     ];
 
     const handleLogout = () => {
@@ -171,9 +169,6 @@ const TeacherDashboard = () => {
 
         if (activeTab === 'Settings') {
             return <SettingsPage darkMode={darkMode} />;
-        }
-        if (activeTab === 'Academic Management') {
-            return <AcademicManagement darkMode={darkMode} />;
         }
 
         // Default Dashboard Content
