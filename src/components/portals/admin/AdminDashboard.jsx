@@ -5,13 +5,11 @@ import {
     Users,
     GraduationCap,
     UserCheck,
-    BookOpen,
     DollarSign,
     Calendar,
     BookMarked,
     Bus,
     BarChart3,
-    UserCog,
     Settings,
     Bell,
     Search,
@@ -31,7 +29,6 @@ import {
 import Students from './Students';
 import Teachers from './Teachers';
 import AttendancePage from './AttendancePage';
-import ExamsAndGradesPage from './ExamsAndGradesPage';
 import CoursesPage from './CoursesPage';
 import FeesAndFinancePage from './FeesAndFinancePage';
 import TimetablePage from './TimetablePage';
@@ -99,14 +96,12 @@ const AdminDashboard = () => {
         { icon: Users, label: 'Students' },
         { icon: GraduationCap, label: 'Teachers' },
         { icon: UserCheck, label: 'Attendance' },
-        { icon: BookOpen, label: 'Exams & Grades' },
         { icon: BookMarked, label: 'Courses' },
         { icon: DollarSign, label: 'Fees & Finance' },
         { icon: Calendar, label: 'Timetable' },
         { icon: BookMarked, label: 'Library' },
         { icon: Bus, label: 'Transport' },
         { icon: BarChart3, label: 'Reports' },
-        { icon: UserCog, label: 'Staff' },
         { icon: Settings, label: 'Settings' },
         { icon: Calendar, label: 'Exam Schedules' }
     ];
@@ -408,8 +403,6 @@ const AdminDashboard = () => {
                 return <Teachers darkMode={darkMode} />;
             case 'Attendance':
                 return <AttendancePage darkMode={darkMode} />;
-            case 'Exams & Grades':
-                return <ExamsAndGradesPage darkMode={darkMode} />;
             case 'Exam Schedules':
                 return <AdminExamSchedules darkMode={darkMode} />;
             case 'Courses':
