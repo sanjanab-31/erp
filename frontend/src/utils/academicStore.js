@@ -132,7 +132,7 @@ export const createAssignment = (assignmentData) => {
     try {
         const data = getAllAcademicData();
 
-        
+
         const courseAssignments = data.assignments.filter(a => a.courseId === assignmentData.courseId);
         if (courseAssignments.length >= 2) {
             throw new Error('Maximum 2 assignments per course allowed');
@@ -212,18 +212,18 @@ export const submitAssignment = (submissionData) => {
     try {
         const data = getAllAcademicData();
 
-        
+
         const existingSubmission = data.submissions.find(
             s => s.assignmentId === submissionData.assignmentId && s.studentId === submissionData.studentId
         );
 
         if (existingSubmission) {
-            
+
             existingSubmission.driveLink = submissionData.driveLink;
             existingSubmission.submittedAt = new Date().toISOString();
             existingSubmission.status = 'submitted';
         } else {
-            
+
             const newSubmission = {
                 id: `submission_${Date.now()}`,
                 assignmentId: submissionData.assignmentId,
@@ -337,7 +337,7 @@ export const enterExamMarks = (marksData) => {
             enteredAt: new Date().toISOString()
         };
 
-        
+
         const existingMarksIndex = data.marks.findIndex(
             m => m.courseId === marksData.courseId && m.studentId === marksData.studentId
         );
@@ -381,13 +381,12 @@ export const getStudentCourseMarks = (studentId, courseId) => {
 export const calculateFinalMarks = (studentId, courseId) => {
     const data = getAllAcademicData();
 
-    
-    const courseAssignments = data.assignments.filter(a => a.courseId === courseId);
+    // 1. Assignment Marks
+    // Only graded assignments count
     const submissions = data.submissions.filter(
         s => s.studentId === studentId && s.courseId === courseId && s.marks !== null && s.marks !== undefined && s.status === 'graded'
     );
 
-    
     let assignmentTotal = 0;
     let assignmentCount = 0;
 
@@ -398,20 +397,34 @@ export const calculateFinalMarks = (studentId, courseId) => {
         }
     });
 
-    
+    // 25% weight for assignments (Average of assignments * 0.25)
+    // If no assignments, it's 0. If assignments exist, we average them to 100 scale then take 25%.
+    // Actually, usually it's (TotalObtained / TotalMax) * Weighing. 
+    // Assuming each assignment is max 100.
     const assignmentMarks = assignmentCount > 0 ? (assignmentTotal / assignmentCount) * 0.25 : 0;
 
-    
+    // 2. Exam Marks
+    // We might have multiple mark entries if they are entered separately, but usually it's one object per student-course.
+    // However, the previous implementation used .find() which returns the first match.
+    // We should ensure we get the correct one.
     const examMarks = data.marks.find(m => m.studentId === studentId && m.courseId === courseId);
 
-    
+    // 75% weight for exams
     let examTotal = 0;
+    let examScores = { exam1: 0, exam2: 0, exam3: 0 };
+
     if (examMarks) {
-        const totalExamMarks = (examMarks.exam1 || 0) + (examMarks.exam2 || 0) + (examMarks.exam3 || 0);
-        examTotal = (totalExamMarks / 300) * 75; 
+        // Check if marks are stored as strings or numbers and handle accordingly
+        examScores = {
+            exam1: parseFloat(examMarks.exam1 || 0),
+            exam2: parseFloat(examMarks.exam2 || 0),
+            exam3: parseFloat(examMarks.exam3 || 0)
+        };
+        const totalExamMarks = examScores.exam1 + examScores.exam2 + examScores.exam3;
+        // Assuming 3 exams max 100 each -> Total 300.
+        examTotal = (totalExamMarks / 300) * 75;
     }
 
-    
     const finalTotal = assignmentMarks + examTotal;
 
     return {
@@ -421,11 +434,7 @@ export const calculateFinalMarks = (studentId, courseId) => {
         examMarks: parseFloat(examTotal.toFixed(2)),
         finalTotal: parseFloat(finalTotal.toFixed(2)),
         assignmentCount,
-        examScores: examMarks ? {
-            exam1: examMarks.exam1 || 0,
-            exam2: examMarks.exam2 || 0,
-            exam3: examMarks.exam3 || 0
-        } : null
+        examScores: examScores
     };
 };
 
@@ -434,7 +443,7 @@ export const getStudentFinalMarks = (studentId) => {
     const data = getAllAcademicData();
     const studentCourses = new Set();
 
-    
+
     data.submissions.filter(s => s.studentId === studentId).forEach(s => studentCourses.add(s.courseId));
     data.marks.filter(m => m.studentId === studentId).forEach(m => studentCourses.add(m.courseId));
 
@@ -465,7 +474,7 @@ export const createExamSchedule = (scheduleData) => {
             id: `schedule_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             courseId: scheduleData.courseId || '',
             courseName: scheduleData.courseName || '',
-            subject: scheduleData.subject || scheduleData.courseName || '', 
+            subject: scheduleData.subject || scheduleData.courseName || '',
             class: scheduleData.class,
             examName: scheduleData.examName,
             examDate: scheduleData.examDate,
@@ -584,7 +593,7 @@ export const uploadCourseMaterial = (materialData) => {
             title: materialData.title,
             description: materialData.description || '',
             link: materialData.link,
-            type: materialData.type || 'link', 
+            type: materialData.type || 'link',
             uploadedBy: materialData.uploadedBy,
             uploadedAt: new Date().toISOString()
         };
@@ -652,7 +661,7 @@ export const getAcademicStatistics = () => {
 };
 
 export default {
-    
+
     createCourse,
     getCoursesByTeacher,
     getCoursesByClass,
@@ -660,30 +669,30 @@ export default {
     updateCourse,
     deleteCourse,
 
-    
+
     createAssignment,
     getAssignmentsByCourse,
     updateAssignment,
     deleteAssignment,
 
-    
+
     submitAssignment,
     getSubmissionsByAssignment,
     getSubmissionsByStudent,
     getSubmission,
     gradeSubmission,
 
-    
+
     enterExamMarks,
     getExamMarksByCourse,
     getExamMarksByStudent,
     getStudentCourseMarks,
 
-    
+
     calculateFinalMarks,
     getStudentFinalMarks,
 
-    
+
     createExamSchedule,
     createBulkExamSchedules,
     getExamSchedulesByClass,
@@ -691,12 +700,12 @@ export default {
     updateExamSchedule,
     deleteExamSchedule,
 
-    
+
     uploadCourseMaterial,
     getCourseMaterials,
     deleteCourseMaterial,
 
-    
+
     subscribeToAcademicUpdates,
     getAcademicStatistics,
     getAllAcademicData

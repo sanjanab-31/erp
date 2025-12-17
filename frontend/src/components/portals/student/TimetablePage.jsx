@@ -14,7 +14,7 @@ const TimetablePage = ({ darkMode }) => {
     const [timetable, setTimetable] = useState(null);
     const [loading, setLoading] = useState(true);
     const [studentClass, setStudentClass] = useState('');
-
+    const [childClass, setChildClass] = useState('');
     
     const studentEmail = localStorage.getItem('userEmail');
 
