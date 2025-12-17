@@ -6,7 +6,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DATA_FILE = path.join(__dirname, '../../data/users.json');
 
-
 const ensureDataDir = () => {
     const dir = path.dirname(DATA_FILE);
     if (!fs.existsSync(dir)) {
@@ -28,7 +27,6 @@ class User {
         this.updatedAt = new Date().toISOString();
     }
 
-    
     static _readUsers() {
         ensureDataDir();
         try {
@@ -39,13 +37,11 @@ class User {
         }
     }
 
-    
     static _writeUsers(users) {
         ensureDataDir();
         fs.writeFileSync(DATA_FILE, JSON.stringify(users, null, 2));
     }
 
-    
     static async create(userData) {
         const users = this._readUsers();
         
@@ -58,7 +54,6 @@ class User {
         return newUser;
     }
 
-    
     static findOne(query) {
         const users = this._readUsers();
         
@@ -68,7 +63,6 @@ class User {
         return null;
     }
 
-    
     static async findById(id) {
         const users = this._readUsers();
         return users.find(u => u.id === id);

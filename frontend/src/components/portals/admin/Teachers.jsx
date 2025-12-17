@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Plus, MoreVertical, Mail, Phone, Edit, Trash2, X, Save, UserPlus, BookOpen, Calendar, Award } from 'lucide-react';
-import { getAllTeachers, addTeacher, updateTeacher, deleteTeacher, subscribeToUpdates, getTeacherStats } from '../../../utils/teacherStore';
-import { addTeacher as addUserTeacher, deleteTeacherByEmail } from '../../../utils/userStore';
+import { teacherApi, emailApi } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
-import { sendTeacherCredentials } from '../../../utils/emailService';
-
 
 const TeacherFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, darkMode }) => {
     const departments = ['Mathematics', 'Science', 'English', 'Social Studies', 'Computer Science', 'Physical Education', 'Arts', 'Languages'];
@@ -18,7 +15,7 @@ const TeacherFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl w-full max-w-6xl shadow-2xl flex flex-col max-h-[90vh]`}>
 
-                {}
+                { }
                 <div className={`flex items-center justify-between p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                         {isEdit ? 'Edit Teacher Details' : 'Add New Teacher'}
@@ -28,11 +25,11 @@ const TeacherFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
                     </button>
                 </div>
 
-                {}
+                { }
                 <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-6">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                        {}
+                        { }
                         <div className="space-y-4">
                             <h3 className={sectionTitleClass}>Identity & Status</h3>
                             <div className="space-y-3">
@@ -71,7 +68,7 @@ const TeacherFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
                             </div>
                         </div>
 
-                        {}
+                        { }
                         <div className="space-y-4">
                             <h3 className={sectionTitleClass}>Academic Role</h3>
                             <div className="space-y-3">
@@ -96,7 +93,7 @@ const TeacherFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
                             </div>
                         </div>
 
-                        {}
+                        { }
                         <div className="space-y-4">
                             <h3 className={sectionTitleClass}>Personal & Contact</h3>
                             <div className="space-y-3">
@@ -138,7 +135,7 @@ const TeacherFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
 
                     </div>
 
-                    {}
+                    { }
                     <div className="flex justify-end gap-3 pt-6 mt-2  border-gray-200 dark:border-gray-700">
                         <button
                             type="button"
@@ -160,7 +157,6 @@ const TeacherFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
         </div>
     );
 };
-
 
 const DeleteConfirmModal = ({ darkMode, selectedTeacher, onClose, onConfirm }) => (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -218,18 +214,33 @@ const Teachers = ({ darkMode }) => {
         status: 'Active'
     });
 
-    
-    useEffect(() => {
-        loadTeachers();
-        const unsubscribe = subscribeToUpdates(loadTeachers);
-        return unsubscribe;
+    const loadTeachers = useCallback(async () => {
+        try {
+            const response = await teacherApi.getAll();
+            const data = response.data || [];
+            setTeachers(data);
+
+            try {
+                const statsResponse = await teacherApi.getStats();
+                setStats(statsResponse.data || { total: 0, active: 0, inactive: 0, onLeave: 0 });
+            } catch (statsError) {
+
+                setStats({
+                    total: data.length,
+                    active: data.filter(t => t.status === 'Active').length,
+                    inactive: data.filter(t => t.status === 'Inactive').length,
+                    onLeave: data.filter(t => t.status === 'On Leave').length
+                });
+            }
+        } catch (error) {
+            console.error('Failed to load teachers', error);
+            setTeachers([]);
+        }
     }, []);
 
-    const loadTeachers = useCallback(() => {
-        const data = getAllTeachers();
-        setTeachers(data);
-        setStats(getTeacherStats());
-    }, []);
+    useEffect(() => {
+        loadTeachers();
+    }, [loadTeachers]);
 
     const resetForm = useCallback(() => {
         setFormData({
@@ -250,10 +261,10 @@ const Teachers = ({ darkMode }) => {
         });
     }, []);
 
-    const handleAddTeacher = useCallback((e) => {
+    const handleAddTeacher = useCallback(async (e) => {
         e.preventDefault();
         try {
-            
+
             if (formData.dateOfBirth) {
                 const dob = new Date(formData.dateOfBirth);
                 const today = new Date();
@@ -264,47 +275,32 @@ const Teachers = ({ darkMode }) => {
                 }
             }
 
-            
-            addTeacher(formData);
+            await teacherApi.create(formData);
 
-            
-            addUserTeacher({
-                email: formData.email,
-                name: formData.name,
-                subject: formData.subject,
-                department: formData.department,
-                qualification: formData.qualification,
-                phone: formData.phone,
-                address: formData.address,
-                dateOfBirth: formData.dateOfBirth,
-                createdBy: localStorage.getItem('userName') || 'admin'
-            });
+            try {
+                await emailApi.sendTeacherCredentials({
+                    email: formData.email,
+                    password: 'password',
+                    name: formData.name
+                });
+                showSuccess('📧 Credentials emailed successfully to Faculty!');
+            } catch (emailError) {
+                console.warn('Email sending failed:', emailError);
+            }
 
             setShowAddModal(false);
             resetForm();
-            
-            sendTeacherCredentials({
-                email: formData.email,
-                password: 'password', 
-                name: formData.name
-            }).then(response => {
-                if (response.success) {
-                    showSuccess('📧 Credentials emailed successfully to Faculty!');
-                } else {
-                    console.warn('Email sending failed. Is backend running?');
-                }
-            });
-
+            loadTeachers();
             showSuccess('Teacher added successfully!');
         } catch (error) {
-            showError('Error adding teacher: ' + error.message);
+            showError('Error adding teacher: ' + (error.response?.data?.message || error.message));
         }
-    }, [formData, resetForm, showSuccess, showError]);
+    }, [formData, resetForm, showSuccess, showError, loadTeachers]);
 
-    const handleEditTeacher = useCallback((e) => {
+    const handleEditTeacher = useCallback(async (e) => {
         e.preventDefault();
         try {
-            
+
             if (formData.dateOfBirth) {
                 const dob = new Date(formData.dateOfBirth);
                 const today = new Date();
@@ -315,31 +311,29 @@ const Teachers = ({ darkMode }) => {
                 }
             }
 
-            updateTeacher(selectedTeacher.id, formData);
+            await teacherApi.update(selectedTeacher.id, formData);
             setShowEditModal(false);
             setSelectedTeacher(null);
             resetForm();
+            loadTeachers();
             showSuccess('Teacher updated successfully!');
         } catch (error) {
-            showError('Error updating teacher: ' + error.message);
+            showError('Error updating teacher: ' + (error.response?.data?.message || error.message));
         }
-    }, [formData, selectedTeacher, resetForm, showSuccess, showError]);
+    }, [formData, selectedTeacher, resetForm, showSuccess, showError, loadTeachers]);
 
-    const handleDeleteTeacher = useCallback(() => {
+    const handleDeleteTeacher = useCallback(async () => {
         try {
-            
-            deleteTeacher(selectedTeacher.id);
-
-            
-            deleteTeacherByEmail(selectedTeacher.email);
+            await teacherApi.delete(selectedTeacher.id);
 
             setShowDeleteConfirm(false);
             setSelectedTeacher(null);
+            loadTeachers();
             showSuccess('Teacher deleted successfully!');
         } catch (error) {
-            showError('Error deleting teacher: ' + error.message);
+            showError('Error deleting teacher: ' + (error.response?.data?.message || error.message));
         }
-    }, [selectedTeacher, showSuccess, showError]);
+    }, [selectedTeacher, showSuccess, showError, loadTeachers]);
 
     const openEditModal = useCallback((teacher) => {
         setSelectedTeacher(teacher);
@@ -382,7 +376,7 @@ const Teachers = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <p className="text-sm text-gray-500">Total Teachers</p>
@@ -402,7 +396,7 @@ const Teachers = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                     Teachers Management
@@ -452,7 +446,7 @@ const Teachers = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             {filteredTeachers.length === 0 ? (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 text-center border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <UserPlus className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -531,7 +525,7 @@ const Teachers = ({ darkMode }) => {
                 </div>
             )}
 
-            {}
+            { }
             {showAddModal && (
                 <TeacherFormModal
                     isEdit={false}
@@ -577,4 +571,3 @@ const Teachers = ({ darkMode }) => {
 };
 
 export default Teachers;
-

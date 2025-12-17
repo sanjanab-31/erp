@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AuthLayout from './AuthLayout';
 import { Mail, AlertCircle, CheckCircle } from 'lucide-react';
+import { authApi } from '../../services/api';
 
 const ForgotPassword = () => {
     const [email, setEmail] = useState('');
@@ -9,38 +10,26 @@ const ForgotPassword = () => {
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
 
-    
     useEffect(() => {
         if (!error && !message) return;
         const timer = setTimeout(() => {
             setError('');
             setMessage('');
         }, 5000);
-        const handleAnyClick = () => {
-            setError('');
-            setMessage('');
-        };
-        window.addEventListener('click', handleAnyClick, { once: true });
-        return () => {
-            clearTimeout(timer);
-            window.removeEventListener('click', handleAnyClick);
-        };
+        return () => clearTimeout(timer);
     }, [error, message]);
 
     async function handleSubmit(e) {
         e.preventDefault();
+        setMessage('');
+        setError('');
+        setLoading(true);
 
         try {
-            setMessage('');
-            setError('');
-            setLoading(true);
-
-            
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            setMessage('Check your inbox for further instructions');
+            const response = await authApi.forgotPassword(email);
+            setMessage(response.data?.message || 'Check your inbox for further instructions');
         } catch (err) {
-            setError('Failed to reset password. ' + err.message);
+            setError(err.response?.data?.message || err.message || 'Failed to reset password');
             console.error(err);
         } finally {
             setLoading(false);

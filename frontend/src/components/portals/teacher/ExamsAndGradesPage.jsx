@@ -13,17 +13,11 @@ import {
     AlertCircle
 } from 'lucide-react';
 import {
-    getCoursesByTeacher,
-    enterExamMarks,
-    gradeSubmission,
-    createSubmission,
-    getExamMarksByCourse,
-    getSubmissionsByAssignment,
-    getAssignmentsByCourse,
-    calculateFinalMarks,
-    subscribeToAcademicUpdates
-} from '../../../utils/academicStore';
-import { getAllStudents } from '../../../utils/studentStore';
+    studentApi,
+    courseApi,
+    resultApi,
+    assignmentApi
+} from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 
 const ExamsAndGradesPage = ({ darkMode }) => {
@@ -41,13 +35,6 @@ const ExamsAndGradesPage = ({ darkMode }) => {
 
     useEffect(() => {
         loadCourses();
-        const unsubscribe = subscribeToAcademicUpdates(() => {
-            loadCourses();
-            if (selectedCourse) {
-                loadCourseData(selectedCourse.id);
-            }
-        });
-        return unsubscribe;
     }, []);
 
     useEffect(() => {
@@ -56,53 +43,77 @@ const ExamsAndGradesPage = ({ darkMode }) => {
         }
     }, [selectedCourse]);
 
-    const loadCourses = () => {
-        const teacherCourses = getCoursesByTeacher(teacherId);
-        setCourses(teacherCourses);
-        if (teacherCourses.length > 0 && !selectedCourse) {
-            setSelectedCourse(teacherCourses[0]);
+    const loadCourses = async () => {
+        try {
+            const res = await courseApi.getAll();
+            const allCourses = res.data || [];
+            const teacherCourses = allCourses.filter(c => c.teacherId === teacherId || c.teacher === currentUser.name);
+            setCourses(teacherCourses);
+            if (teacherCourses.length > 0 && !selectedCourse) {
+                setSelectedCourse(teacherCourses[0]);
+            }
+        } catch (error) {
+            console.error('Failed to load courses:', error);
+            showError('Failed to load courses');
         }
     };
 
-    const loadCourseData = (courseId) => {
-        
+    const loadCourseData = async (courseId) => {
         const course = courses.find(c => c.id === courseId) || selectedCourse;
         if (!course) return;
 
-        const allStudents = getAllStudents();
-        const classStudents = allStudents.filter(s => s.class === course.class);
-        setStudents(classStudents);
+        try {
+            const studentRes = await studentApi.getAll();
+            const allStudents = studentRes.data || [];
+            const classStudents = allStudents.filter(s => s.class === course.class);
+            setStudents(classStudents);
 
-        
-        const marksMap = {};
-        const assignments = getAssignmentsByCourse(courseId);
+            const resultsRes = await resultApi.getAll({ courseId });
+            const allResults = resultsRes.data || [];
 
-        classStudents.forEach(student => {
-            const examMarks = getExamMarksByCourse(courseId).find(m => m.studentId === student.id);
+            const assignments = course.assignments || [];
+            const marksMap = {};
+            const submissionsMap = {};
 
-            
-            let assignment1 = 0;
-            let assignment2 = 0;
-
-            if (assignments.length > 0) {
-                const sub1 = getSubmissionsByAssignment(assignments[0].id).find(s => s.studentId === student.id);
-                assignment1 = sub1 && sub1.status === 'graded' ? parseFloat(sub1.marks) || 0 : 0;
-            }
-            if (assignments.length > 1) {
-                const sub2 = getSubmissionsByAssignment(assignments[1].id).find(s => s.studentId === student.id);
-                assignment2 = sub2 && sub2.status === 'graded' ? parseFloat(sub2.marks) || 0 : 0;
+            for (const assign of assignments) {
+                try {
+                    const subRes = await assignmentApi.getSubmissions(assign.id);
+                    submissionsMap[assign.id] = subRes.data || [];
+                } catch (e) {
+                    submissionsMap[assign.id] = [];
+                }
             }
 
-            marksMap[student.id] = {
-                exam1: examMarks?.exam1 || 0,
-                exam2: examMarks?.exam2 || 0,
-                exam3: examMarks?.exam3 || 0,
-                assignment1,
-                assignment2
-            };
-        });
+            classStudents.forEach(student => {
+                const result = allResults.find(r => r.studentId === student.id);
+                const examScores = result ? (result.examScores || {}) : {};
 
-        setMarksData(marksMap);
+                let assignment1 = 0;
+                let assignment2 = 0;
+
+                if (assignments.length > 0) {
+                    const sub1 = submissionsMap[assignments[0].id]?.find(s => s.studentId === student.id);
+                    assignment1 = sub1 ? sub1.marks || 0 : 0;
+                }
+                if (assignments.length > 1) {
+                    const sub2 = submissionsMap[assignments[1].id]?.find(s => s.studentId === student.id);
+                    assignment2 = sub2 ? sub2.marks || 0 : 0;
+                }
+
+                marksMap[student.id] = {
+                    exam1: examScores.exam1 || 0,
+                    exam2: examScores.exam2 || 0,
+                    exam3: examScores.exam3 || 0,
+                    assignment1,
+                    assignment2
+                };
+            });
+
+            setMarksData(marksMap);
+        } catch (error) {
+            console.error('Failed to load course data:', error);
+            showError('Failed to load student data');
+        }
     };
 
     const updateMarks = (studentId, field, value) => {
@@ -119,13 +130,10 @@ const ExamsAndGradesPage = ({ darkMode }) => {
     const calculateTotals = (studentId) => {
         const marks = marksData[studentId] || {};
 
-        
         const examTotal = ((parseFloat(marks.exam1) || 0) + (parseFloat(marks.exam2) || 0) + (parseFloat(marks.exam3) || 0)) / 300 * 75;
 
-        
         const assignmentTotal = ((parseFloat(marks.assignment1) || 0) + (parseFloat(marks.assignment2) || 0)) / 200 * 25;
 
-        
         const finalTotal = examTotal + assignmentTotal;
 
         return {
@@ -151,84 +159,68 @@ const ExamsAndGradesPage = ({ darkMode }) => {
 
         setSaving(true);
         try {
-            const assignments = getAssignmentsByCourse(selectedCourse.id);
-            console.log('Assignments found for save:', assignments);
+            const assignments = selectedCourse.assignments || [];
 
-            
+            const submissionsMap = {};
+            for (const assign of assignments) {
+                try {
+                    const subRes = await assignmentApi.getSubmissions(assign.id);
+                    submissionsMap[assign.id] = subRes.data || [];
+                } catch (e) {
+                    submissionsMap[assign.id] = [];
+                }
+            }
+
             for (const student of students) {
                 const marks = marksData[student.id];
                 if (marks) {
-                    
-                    await enterExamMarks({
+
+                    await resultApi.save({
                         courseId: selectedCourse.id,
                         studentId: student.id,
                         studentName: student.name,
-                        exam1: marks.exam1 || 0,
-                        exam2: marks.exam2 || 0,
-                        exam3: marks.exam3 || 0,
+                        examScores: {
+                            exam1: marks.exam1 || 0,
+                            exam2: marks.exam2 || 0,
+                            exam3: marks.exam3 || 0
+                        },
                         enteredBy: teacherId
                     });
 
-                    
-                    if (assignments.length > 0) {
-                        const assignmentId = assignments[0].id;
-                        const submissions = getSubmissionsByAssignment(assignmentId);
-                        const existingSub = submissions.find(s => s.studentId === student.id);
-                        const markToSave = marks.assignment1 || 0;
-                        console.log(`Saving Assignment 1 for ${student.name}: ID=${assignmentId}, Mark=${markToSave}`);
+                    const saveAssignmentMark = async (assignmentIndex, markField) => {
+                        if (assignments.length > assignmentIndex) {
+                            const assignmentId = assignments[assignmentIndex].id;
+                            const markToSave = marks[markField] || 0;
+                            const existingSub = submissionsMap[assignmentId].find(s => s.studentId === student.id);
 
-                        if (existingSub) {
-                            console.log('Updating existing submission 1:', existingSub.id);
-                            gradeSubmission(existingSub.id, markToSave, 'Graded by teacher');
-                        } else {
-                            console.log('Creating new submission 1');
-                            const newSub = await createSubmission({
-                                assignmentId: assignmentId,
-                                courseId: selectedCourse.id,
-                                studentId: student.id,
-                                studentName: student.name,
-                                link: '',
-                                submittedBy: student.id
-                            });
-                            console.log('New submission 1 created:', newSub.id);
-                            gradeSubmission(newSub.id, markToSave, 'Graded by teacher');
+                            if (existingSub) {
+                                await assignmentApi.gradeSubmission(existingSub.id, {
+                                    marks: markToSave,
+                                    comments: 'Graded by teacher'
+                                });
+                            } else {
+                                await assignmentApi.createSubmission({
+                                    assignmentId: assignmentId,
+                                    studentId: student.id,
+                                    marks: markToSave,
+                                    status: 'graded',
+                                    feedback: 'Graded by teacher'
+                                });
+                            }
                         }
-                    }
+                    };
 
-                    
-                    if (assignments.length > 1) {
-                        const assignmentId = assignments[1].id;
-                        const submissions = getSubmissionsByAssignment(assignmentId);
-                        const existingSub = submissions.find(s => s.studentId === student.id);
-                        const markToSave = marks.assignment2 || 0;
-                        console.log(`Saving Assignment 2 for ${student.name}: ID=${assignmentId}, Mark=${markToSave}`);
-
-                        if (existingSub) {
-                            console.log('Updating existing submission 2:', existingSub.id);
-                            gradeSubmission(existingSub.id, markToSave, 'Graded by teacher');
-                        } else {
-                            console.log('Creating new submission 2');
-                            const newSub = await createSubmission({
-                                assignmentId: assignmentId,
-                                courseId: selectedCourse.id,
-                                studentId: student.id,
-                                studentName: student.name,
-                                link: '',
-                                submittedBy: student.id
-                            });
-                            console.log('New submission 2 created:', newSub.id);
-                            gradeSubmission(newSub.id, markToSave, 'Graded by teacher');
-                        }
-                    }
+                    await saveAssignmentMark(0, 'assignment1');
+                    await saveAssignmentMark(1, 'assignment2');
                 }
             }
 
             showSuccess('Marks saved successfully!');
             setEditMode(false);
-            loadCourseData(selectedCourse.id); 
+            loadCourseData(selectedCourse.id);
         } catch (error) {
             console.error(error);
-            showError('Error saving marks: ' + error.message);
+            showError('Error saving marks: ' + (error.response?.data?.message || error.message));
         } finally {
             setSaving(false);
         }
@@ -239,7 +231,6 @@ const ExamsAndGradesPage = ({ darkMode }) => {
         student.rollNo?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    
     const calculateStats = () => {
         if (filteredStudents.length === 0) return { average: 0, topScore: 0, passRate: 0 };
 
@@ -259,7 +250,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {}
+            { }
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Exams & Grades
@@ -267,7 +258,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">Manage student marks and assessments</p>
             </div>
 
-            {}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
@@ -302,7 +293,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6`}>
                 <div className="flex flex-col md:flex-row gap-4 mb-4">
                     <select
@@ -377,7 +368,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             {editMode && (
                 <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start space-x-3">
                     <AlertCircle className="w-5 h-5 text-green-600 mt-0.5" />
@@ -391,7 +382,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 </div>
             )}
 
-            {}
+            { }
             {!selectedCourse ? (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 text-center border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -451,7 +442,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
 
                                     return (
                                         <tr key={student.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}>
-                                            {}
+                                            { }
                                             <td className={`px-4 py-3 whitespace-nowrap sticky left-0 ${darkMode ? 'bg-gray-800' : 'bg-white'} z-10`}>
                                                 <div className="flex items-center">
                                                     <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">
@@ -465,12 +456,12 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                                                 </div>
                                             </td>
 
-                                            {}
+                                            { }
                                             <td className="px-4 py-3 text-center">
                                                 <span className="text-xs text-gray-500">{student.rollNo || student.id}</span>
                                             </td>
 
-                                            {}
+                                            { }
                                             <td className="px-4 py-3 text-center bg-green-50">
                                                 {editMode ? (
                                                     <input
@@ -489,7 +480,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                                                 )}
                                             </td>
 
-                                            {}
+                                            { }
                                             <td className="px-4 py-3 text-center bg-green-50">
                                                 {editMode ? (
                                                     <input
@@ -508,7 +499,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                                                 )}
                                             </td>
 
-                                            {}
+                                            { }
                                             <td className="px-4 py-3 text-center bg-green-50">
                                                 {editMode ? (
                                                     <input
@@ -527,14 +518,14 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                                                 )}
                                             </td>
 
-                                            {}
+                                            { }
                                             <td className="px-4 py-3 text-center bg-green-100">
                                                 <span className="text-sm font-bold text-green-700">
                                                     {totals.examTotal}
                                                 </span>
                                             </td>
 
-                                            {}
+                                            { }
                                             <td className="px-4 py-3 text-center bg-green-50">
                                                 {editMode ? (
                                                     <input
@@ -553,7 +544,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                                                 )}
                                             </td>
 
-                                            {}
+                                            { }
                                             <td className="px-4 py-3 text-center bg-green-50">
                                                 {editMode ? (
                                                     <input
@@ -572,21 +563,21 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                                                 )}
                                             </td>
 
-                                            {}
+                                            { }
                                             <td className="px-4 py-3 text-center bg-green-100">
                                                 <span className="text-sm font-bold text-green-700">
                                                     {totals.assignmentTotal}
                                                 </span>
                                             </td>
 
-                                            {}
+                                            { }
                                             <td className="px-4 py-3 text-center bg-purple-100">
                                                 <span className="text-lg font-bold text-purple-700">
                                                     {totals.finalTotal}
                                                 </span>
                                             </td>
 
-                                            {}
+                                            { }
                                             <td className="px-4 py-3 text-center">
                                                 <span className={`px-3 py-1 rounded-full text-sm font-bold ${gradeInfo.color}`}>
                                                     {gradeInfo.grade}
@@ -612,7 +603,6 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                     )}
                 </div>
             )}
-
 
         </div>
     );

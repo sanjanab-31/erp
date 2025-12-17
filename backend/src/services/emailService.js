@@ -3,7 +3,6 @@ import twilio from 'twilio';
 import dotenv from 'dotenv';
 dotenv.config();
 
-// Twilio Client Setup
 let twilioClient;
 try {
     if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
@@ -67,7 +66,6 @@ export const sendStudentCredentials = async (studentEmail, password, studentName
             `
         });
 
-        
         if (parentEmail) {
             await transporter.sendMail({
                 from: fromAddress,
@@ -158,13 +156,13 @@ export const sendAnnouncementEmail = async (recipientEmail, recipientName, title
         return true;
     } catch (error) {
         console.error('Email Service Error (Announcement):', error);
-        // Don't throw here, just log failure so other emails can proceed
+
         return false;
     }
 };
 
 export const sendAnnouncementSMS = async (phone, title) => {
-    // Keep it short for SMS
+
     const message = `ERP Alert: ${title.substring(0, 30)}${title.length > 30 ? '...' : ''}. Check portal for details.`;
     return sendSMS(phone, message);
 };

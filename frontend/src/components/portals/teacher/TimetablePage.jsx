@@ -7,14 +7,12 @@ import {
     Users,
     AlertCircle
 } from 'lucide-react';
-import { getAllTeacherTimetables, subscribeToUpdates } from '../../../utils/timetableStore';
-import { getAllTeachers } from '../../../utils/teacherStore';
+import { timetableApi, teacherApi } from '../../../services/api';
 
 const TimetablePage = ({ darkMode }) => {
     const [timetable, setTimetable] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    
     const teacherEmail = localStorage.getItem('userEmail');
     const teacherName = localStorage.getItem('userName');
 
@@ -29,49 +27,39 @@ const TimetablePage = ({ darkMode }) => {
         '15:00-16:00'
     ];
 
-    
     useEffect(() => {
         loadTimetable();
-        const unsubscribe = subscribeToUpdates(loadTimetable);
-        return unsubscribe;
     }, []);
 
-    const loadTimetable = useCallback(() => {
+    const loadTimetable = useCallback(async () => {
         setLoading(true);
-        console.log('Loading teacher timetable for:', { teacherEmail, teacherName });
+        try {
+            const teachersRes = await teacherApi.getAll();
+            const teachers = teachersRes.data || [];
 
-        
-        const teachers = getAllTeachers();
-        console.log('All teachers:', teachers);
-
-        
-        const currentTeacher = teachers.find(t =>
-            t.email === teacherEmail || t.name === teacherName
-        );
-
-        console.log('Current teacher found:', currentTeacher);
-
-        if (currentTeacher) {
-            
-            const allTimetables = getAllTeacherTimetables();
-            console.log('All teacher timetables:', allTimetables);
-
-            
-            const teacherTT = allTimetables.find(tt =>
-                tt.teacherId === currentTeacher.id.toString() ||
-                tt.teacherId === currentTeacher.id
+            const currentTeacher = teachers.find(t =>
+                t.email === teacherEmail || t.name === teacherName
             );
 
-            console.log('Teacher timetable found:', teacherTT);
-            setTimetable(teacherTT);
-        } else {
-            console.log('Teacher not found in teacher list');
-        }
+            if (currentTeacher) {
+                const ttRes = await timetableApi.getTeacherTimetables();
+                const allTimetables = ttRes.data || [];
 
-        setLoading(false);
+                const teacherTT = allTimetables.find(tt =>
+                    tt.teacherId === currentTeacher.id.toString() ||
+                    tt.teacherId === currentTeacher.id ||
+                    tt.teacherName === currentTeacher.name
+                );
+
+                setTimetable(teacherTT);
+            }
+        } catch (error) {
+            console.error('Error loading timetable:', error);
+        } finally {
+            setLoading(false);
+        }
     }, [teacherEmail, teacherName]);
 
-    
     const scheduleByDay = {};
     days.forEach(day => {
         scheduleByDay[day] = [];
@@ -85,9 +73,8 @@ const TimetablePage = ({ darkMode }) => {
         });
     }
 
-    
     const totalClasses = timetable?.schedule?.length || 0;
-    const todayIndex = new Date().getDay() - 1; 
+    const todayIndex = new Date().getDay() - 1;
     const todayClasses = todayIndex >= 0 && todayIndex < 5 ? scheduleByDay[days[todayIndex]]?.length || 0 : 0;
 
     const formatTime = (time) => {
@@ -116,7 +103,7 @@ const TimetablePage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {}
+            { }
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     My Timetable
@@ -139,7 +126,7 @@ const TimetablePage = ({ darkMode }) => {
                 </div>
             ) : (
                 <>
-                    {/* Stats Cards */}
+                    {}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                             <div className="flex items-center justify-between mb-4">
@@ -169,7 +156,7 @@ const TimetablePage = ({ darkMode }) => {
                         </div>
                     </div>
 
-                    {}
+                    { }
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
                         <div className="p-6 border-b border-gray-200">
                             <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>

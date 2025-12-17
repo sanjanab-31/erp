@@ -11,15 +11,11 @@ import {
     AlertCircle
 } from 'lucide-react';
 import {
-    getCoursesByClass,
-    calculateFinalMarks,
-    getStudentCourseMarks,
-    getExamSchedulesByClass,
-    getSubmissionsByStudent,
-    subscribeToAcademicUpdates
-} from '../../../utils/academicStore';
-import { getAllStudents } from '../../../utils/studentStore';
-import { getChildrenByParentEmail } from '../../../utils/userStore';
+    studentApi,
+    courseApi,
+    examApi,
+    resultApi
+} from '../../../services/api';
 
 const AcademicProgressPage = ({ darkMode }) => {
     const [courses, setCourses] = useState([]);
@@ -27,7 +23,7 @@ const AcademicProgressPage = ({ darkMode }) => {
     const [allMarks, setAllMarks] = useState([]);
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [viewMode, setViewMode] = useState('table'); // 'table' or 'cards'
+    const [viewMode, setViewMode] = useState('table');
 
     const parentEmail = localStorage.getItem('userEmail');
     const [childId, setChildId] = useState('');
@@ -35,108 +31,112 @@ const AcademicProgressPage = ({ darkMode }) => {
     const [childClass, setChildClass] = useState('');
 
     useEffect(() => {
-        console.log('=== AcademicProgressPage: Initial Load ===');
-        console.log('Parent email from localStorage:', parentEmail);
+        const init = async () => {
+            if (!parentEmail) return;
+            setLoading(true);
+            try {
+                const studentsRes = await studentApi.getAll();
+                const allStudents = studentsRes.data || [];
+                const child = allStudents.find(s => s.parentEmail === parentEmail || s.email === parentEmail);
+
+                if (!child) {
+                    console.error('Child not found for parent:', parentEmail);
+                    setLoading(false);
+                    return;
+                }
+
+                setChildId(child.id);
+                setChildName(child.name);
+                setChildClass(child.class);
+
+                const [coursesRes, examsRes, resultsRes] = await Promise.all([
+                    courseApi.getAll(),
+                    examApi.getAll(),
+                    resultApi.getAll()
+                ]);
+
+                const classCourses = (coursesRes.data || []).filter(c => c.class === child.class);
+                setCourses(classCourses);
+
+                const classExams = (examsRes.data || []).filter(e => e.class === child.class);
+                setExamSchedules(classExams);
+
+                const allResults = resultsRes.data || [];
+                const studentResults = allResults.filter(r => r.studentId === child.id);
+
+                const marksData = classCourses.map(course => {
+                    const result = studentResults.find(r => r.courseId === course.id) || {};
+
+                    const courseAssignments = course.assignments || [];
+                    const studentSubmissions = [];
+                    let assignmentScore = 0;
+
+                    courseAssignments.forEach(assign => {
+                        const sub = (assign.submissions || []).find(s => s.studentId === child.id);
+                        if (sub) {
+                            studentSubmissions.push({
+                                ...sub,
+                                assignmentId: assign.id,
+                                title: assign.title,
+                                courseId: course.id,
+                                marks: sub.grade || 0,
+                                status: sub.status || 'pending',
+                                submittedAt: sub.submittedAt || sub.createdAt,
+                                feedback: sub.feedback
+                            });
+                            if (sub.grade) assignmentScore += sub.grade;
+                        }
+                    });
+
+                    if (result.assignmentScore) assignmentScore = result.assignmentScore;
+
+                    const examScore = result.examScore || 0;
+                    const finalTotal = result.percentage || 0;
+
+                    return {
+                        courseId: course.id,
+                        courseName: course.name,
+                        courseCode: course.code,
+                        teacherName: course.teacherName || course.teacher,
+                        finalMarks: {
+                            assignmentMarks: assignmentScore,
+                            examMarks: examScore,
+                            finalTotal: finalTotal
+                        },
+                        examMarks: result.examBreakdown || { exam1: 0, exam2: 0, exam3: 0 },
+                        submissions: studentSubmissions
+                    };
+                });
+
+                setAllMarks(marksData);
+                if (selectedCourse) {
+                    const updatedSelected = marksData.find(m => m.courseId === selectedCourse.courseId);
+                    if (updatedSelected) setSelectedCourse(updatedSelected);
+                }
+
+            } catch (err) {
+                console.error("Error loading academic data", err);
+            } finally {
+                setLoading(false);
+            }
+        };
 
         if (parentEmail) {
-            const children = getChildrenByParentEmail(parentEmail);
-            console.log('Children found for parent:', children);
-
-            if (children && children.length > 0) {
-                console.log('First child ID:', children[0].id);
-
-                const students = getAllStudents();
-                console.log('All students in system:', students);
-
-                const child = students.find(s => s.id === children[0].id);
-                console.log('Child student record found:', child);
-
-                if (child) {
-                    setChildId(child.id);
-                    setChildName(child.name);
-                    setChildClass(child.class);
-                    console.log('Child data set - ID:', child.id, 'Name:', child.name, 'Class:', child.class);
-                } else {
-                    console.error('ERROR: Child student record not found for ID:', children[0].id);
-                }
-            } else {
-                console.error('ERROR: No children found for parent email:', parentEmail);
-            }
-        } else {
-            console.error('ERROR: No parent email in localStorage');
+            init();
         }
-        setLoading(false);
     }, [parentEmail]);
 
-    useEffect(() => {
-        if (childId && childClass) {
-            console.log('=== Loading academic data ===');
-            console.log('Child ID:', childId, 'Class:', childClass);
-            loadData();
-            const unsubscribe = subscribeToAcademicUpdates(() => {
-                console.log('Academic data updated - reloading...');
-                loadData();
-            });
-            return unsubscribe;
-        } else {
-            console.log('Waiting for childId and childClass to be set...');
-        }
-    }, [childId, childClass]);
-
-    const loadData = () => {
-        console.log('=== loadData called ===');
-        console.log('Loading data for child:', { childId, childClass });
-
-        const classCourses = getCoursesByClass(childClass);
-        console.log('Courses found for class', childClass, ':', classCourses);
-        setCourses(classCourses);
-
-        const classSchedules = getExamSchedulesByClass(childClass);
-        console.log('Exam schedules found:', classSchedules);
-        setExamSchedules(classSchedules);
-
-        const marksData = classCourses.map(course => {
-            console.log(`Processing course: ${course.name} (${course.id})`);
-
-            const finalMarks = calculateFinalMarks(childId, course.id);
-            console.log(`  Final marks for ${course.name}:`, finalMarks);
-
-            const examMarks = getStudentCourseMarks(childId, course.id);
-            console.log(`  Exam marks for ${course.name}:`, examMarks);
-
-            return {
-                courseId: course.id,
-                courseName: course.name,
-                courseCode: course.code,
-                teacherName: course.teacherName,
-                finalMarks,
-                examMarks: examMarks || { exam1: 0, exam2: 0, exam3: 0 }
-            };
-        });
-
-        console.log('All marks data:', marksData);
-        setAllMarks(marksData);
-
-        if (selectedCourse) {
-            const updatedSelected = marksData.find(m => m.courseId === selectedCourse.courseId);
-            if (updatedSelected) setSelectedCourse(updatedSelected);
-        }
-    };
-
-    const calculateOverallPerformance = () => {
+    const calculateOverallPerformance = React.useCallback(() => {
         let totalMarks = 0;
         let courseCount = 0;
-
-        courses.forEach(course => {
-            const finalMarks = calculateFinalMarks(childId, course.id);
-            if (finalMarks.finalTotal > 0) {
-                totalMarks += finalMarks.finalTotal;
+        allMarks.forEach(m => {
+            if (m.finalMarks.finalTotal > 0) {
+                totalMarks += m.finalMarks.finalTotal;
                 courseCount++;
             }
         });
-
         return courseCount > 0 ? (totalMarks / courseCount).toFixed(2) : 0;
-    };
+    }, [allMarks]);
 
     const overallAverage = calculateOverallPerformance();
 
@@ -160,7 +160,7 @@ const AcademicProgressPage = ({ darkMode }) => {
                 </p>
             </div>
 
-            {/* Diagnostic Information - Show when no courses found */}
+            {}
             {childClass && courses.length === 0 && (
                 <div className={`${darkMode ? 'bg-yellow-900 border-yellow-700' : 'bg-yellow-50 border-yellow-200'} border rounded-xl p-6`}>
                     <div className="flex items-start space-x-3">
@@ -191,7 +191,7 @@ const AcademicProgressPage = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Overall Performance Card */}
+            {}
             <div className={`${darkMode ? 'bg-gradient-to-r from-blue-900 to-purple-900' : 'bg-gradient-to-r from-blue-500 to-purple-600'} rounded-xl p-6 text-white`}>
                 <div className="flex items-center justify-between">
                     <div>
@@ -210,7 +210,7 @@ const AcademicProgressPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Stats Cards */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl p-6 shadow-sm border`}>
                     <div className="flex items-center justify-between mb-4">
@@ -261,7 +261,7 @@ const AcademicProgressPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Course-wise Performance with View Toggle */}
+            {}
             <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border overflow-hidden`}>
                 <div className="p-6 border-b border-gray-200 flex justify-between items-center">
                     <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Course-wise Performance</h2>
@@ -399,7 +399,7 @@ const AcademicProgressPage = ({ darkMode }) => {
                 )}
             </div>
 
-            {/* Detailed Course View Modal/Section */}
+            {}
             {selectedCourse && (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg border ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6 mt-6`}>
                     <div className="flex justify-between items-center mb-6">
@@ -415,13 +415,13 @@ const AcademicProgressPage = ({ darkMode }) => {
                     </div>
 
                     <div className="space-y-6">
-                        {/* Assignment Marks */}
+                        {}
                         <div>
                             <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4 border-b pb-2`}>
                                 Assignment Marks (Weight: 25%)
                             </h3>
                             {(() => {
-                                const submissions = getSubmissionsByStudent(childId).filter(s => s.courseId === selectedCourse.courseId);
+                                const submissions = selectedCourse.submissions || [];
 
                                 if (submissions.length === 0) {
                                     return <p className="text-gray-500 italic">No assignments submitted yet.</p>;
@@ -468,7 +468,7 @@ const AcademicProgressPage = ({ darkMode }) => {
                             </div>
                         </div>
 
-                        {/* Exam Marks */}
+                        {}
                         <div>
                             <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4 border-b pb-2`}>
                                 Exam Marks (Weight: 75%)
@@ -496,7 +496,7 @@ const AcademicProgressPage = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Exam Schedules Section - Grouped by Exam Name */}
+            {}
             <div>
                 <div className="flex items-center space-x-2 mb-4">
                     <Calendar className={`w-6 h-6 ${darkMode ? 'text-white' : 'text-gray-900'}`} />

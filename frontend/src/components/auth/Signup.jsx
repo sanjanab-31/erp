@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from './AuthLayout';
 import { User, Mail, Lock, AlertCircle, Briefcase } from 'lucide-react';
+import { authApi } from '../../services/api';
 
 const Signup = () => {
     const [name, setName] = useState('');
@@ -12,16 +13,10 @@ const Signup = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    
     useEffect(() => {
         if (!error) return;
         const timer = setTimeout(() => setError(''), 5000);
-        const handleAnyClick = () => setError('');
-        window.addEventListener('click', handleAnyClick, { once: true });
-        return () => {
-            clearTimeout(timer);
-            window.removeEventListener('click', handleAnyClick);
-        };
+        return () => clearTimeout(timer);
     }, [error]);
 
     async function handleSubmit(e) {
@@ -35,20 +30,21 @@ const Signup = () => {
             setError('');
             setLoading(true);
 
-            
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            const response = await authApi.register({ name, email, password, role });
 
-            
+            const { token, user } = response.data;
+            localStorage.setItem('token', token);
             localStorage.setItem('isAuthenticated', 'true');
-            localStorage.setItem('userRole', role);
-            localStorage.setItem('userEmail', email);
-            localStorage.setItem('userName', name);
+            localStorage.setItem('userRole', user.role);
+            localStorage.setItem('userEmail', user.email);
+            localStorage.setItem('userName', user.name);
+            localStorage.setItem('currentUser', JSON.stringify(user));
 
-            
-            navigate('/login');
+            navigate(`/dashboard/${user.role.toLowerCase()}`);
+
         } catch (err) {
             console.error(err);
-            setError('Failed to create an account: ' + err.message);
+            setError(err.response?.data?.message || err.message || 'Failed to create an account');
         } finally {
             setLoading(false);
         }

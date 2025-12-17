@@ -7,9 +7,7 @@ import {
     BookOpen,
     User
 } from 'lucide-react';
-import { getClassTimetable, subscribeToUpdates } from '../../../utils/timetableStore';
-import { getAllStudents } from '../../../utils/studentStore';
-import { getChildrenByParentEmail } from '../../../utils/userStore';
+import { timetableApi, studentApi } from '../../../services/api';
 
 const TimetablePage = ({ darkMode }) => {
     const [timetable, setTimetable] = useState(null);
@@ -17,8 +15,33 @@ const TimetablePage = ({ darkMode }) => {
     const [childClass, setChildClass] = useState('');
     const [childName, setChildName] = useState('');
 
-
     const parentEmail = localStorage.getItem('userEmail');
+
+    useEffect(() => {
+        const init = async () => {
+            setLoading(true);
+            try {
+                const studentsRes = await studentApi.getAll();
+                const students = studentsRes.data || [];
+                const child = students.find(s => s.parentEmail === parentEmail || s.guardianEmail === parentEmail || s.email === parentEmail);
+
+                if (child) {
+                    setChildClass(child.class);
+                    setChildName(child.name);
+
+                    const ttRes = await timetableApi.getClassTimetables();
+                    const allTimetables = ttRes.data || [];
+                    const classTT = allTimetables.find(t => t.className === child.class);
+                    setTimetable(classTT);
+                }
+            } catch (error) {
+                console.error('Error loading timetable:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        init();
+    }, [parentEmail]);
 
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
     const timeSlots = [
@@ -30,55 +53,6 @@ const TimetablePage = ({ darkMode }) => {
         '14:00-15:00',
         '15:00-16:00'
     ];
-
-
-    useEffect(() => {
-        loadChildClass();
-    }, []);
-
-    useEffect(() => {
-        if (childClass) {
-            loadTimetable();
-            const unsubscribe = subscribeToUpdates(loadTimetable);
-            return unsubscribe;
-        }
-    }, [childClass]);
-
-    const loadChildClass = useCallback(() => {
-        console.log('Loading child class for parent email:', parentEmail);
-
-        if (parentEmail) {
-            const children = getChildrenByParentEmail(parentEmail);
-            console.log('Children found:', children);
-
-            if (children && children.length > 0) {
-                const students = getAllStudents();
-                const child = students.find(s => s.id === children[0].id);
-                console.log('Child found:', child);
-
-                if (child) {
-                    setChildClass(child.class);
-                    setChildName(child.name);
-                    console.log('Child class set to:', child.class, 'Name:', child.name);
-                } else {
-                    console.log('Child student record not found for ID:', children[0].id);
-                }
-            } else {
-                console.log('No children found for parent email:', parentEmail);
-            }
-        }
-        setLoading(false);
-    }, [parentEmail]);
-
-    const loadTimetable = useCallback(() => {
-        if (childClass) {
-            console.log('Loading timetable for class:', childClass);
-            const classTT = getClassTimetable(childClass);
-            console.log('Class timetable found:', classTT);
-            setTimetable(classTT);
-        }
-    }, [childClass]);
-
 
     const scheduleByDay = {};
     days.forEach(day => {
@@ -93,11 +67,9 @@ const TimetablePage = ({ darkMode }) => {
         });
     }
 
-
     const totalClasses = timetable?.schedule?.length || 0;
     const todayIndex = new Date().getDay() - 1;
     const todayClasses = todayIndex >= 0 && todayIndex < 5 ? scheduleByDay[days[todayIndex]]?.length || 0 : 0;
-
 
     const uniqueSubjects = timetable?.schedule
         ? [...new Set(timetable.schedule.map(entry => entry.subject).filter(s => s))]
@@ -198,7 +170,7 @@ const TimetablePage = ({ darkMode }) => {
                         </div>
                     </div>
 
-                    {/* Timetable Grid */}
+                    {}
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden mb-6`}>
                         <div className="p-6 border-b border-gray-200">
                             <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -260,7 +232,7 @@ const TimetablePage = ({ darkMode }) => {
                         </div>
                     </div>
 
-                    {/* Subject Legend */}
+                    {}
                     {uniqueSubjects.length > 0 && (
                         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6`}>
                             <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
@@ -279,7 +251,7 @@ const TimetablePage = ({ darkMode }) => {
                         </div>
                     )}
 
-                    {/* Info Note */}
+                    {}
                     <div className={`${darkMode ? 'bg-blue-900 border-blue-700' : 'bg-blue-50 border-blue-200'} border rounded-xl p-4`}>
                         <div className="flex items-start space-x-3">
                             <AlertCircle className={`w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'} mt-0.5`} />

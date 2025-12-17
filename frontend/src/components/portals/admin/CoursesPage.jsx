@@ -13,7 +13,7 @@ import {
     FileText,
     Link as LinkIcon
 } from 'lucide-react';
-import { getAllCourses, subscribeToUpdates } from '../../../utils/courseStore';
+import { courseApi } from '../../../services/api';
 
 const CourseDetailsModal = ({ course, onClose, darkMode }) => {
     if (!course) return null;
@@ -32,7 +32,7 @@ const CourseDetailsModal = ({ course, onClose, darkMode }) => {
                 </div>
 
                 <div className="p-6 space-y-6">
-                    {}
+                    { }
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                             <p className="text-sm text-gray-500">Teacher</p>
@@ -48,7 +48,7 @@ const CourseDetailsModal = ({ course, onClose, darkMode }) => {
                         </div>
                     </div>
 
-                    {}
+                    { }
                     <div>
                         <h3 className="font-semibold mb-2">Description</h3>
                         <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -56,7 +56,7 @@ const CourseDetailsModal = ({ course, onClose, darkMode }) => {
                         </p>
                     </div>
 
-                    {}
+                    { }
                     <div className="grid grid-cols-3 gap-4">
                         <div className={`p-3 rounded-lg text-center ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                             <p className="text-lg font-bold">{course.materials?.length || 0}</p>
@@ -72,7 +72,7 @@ const CourseDetailsModal = ({ course, onClose, darkMode }) => {
                         </div>
                     </div>
 
-                    {}
+                    { }
                     <div>
                         <h3 className="font-semibold mb-2 flex items-center gap-2">
                             <BookOpen className="w-4 h-4" /> Course Materials
@@ -108,25 +108,22 @@ const CoursesPage = ({ darkMode }) => {
     const [classes, setClasses] = useState(['All']);
     const [selectedCourse, setSelectedCourse] = useState(null);
 
-    
     useEffect(() => {
-        const fetchCourses = () => {
-            const allCourses = getAllCourses();
+        const fetchCourses = async () => {
+            try {
+                const response = await courseApi.getAll();
+                const allCourses = response.data || [];
 
-            
-            const uniqueClasses = ['All', ...new Set(allCourses.map(c => c.class).filter(Boolean))];
-            setClasses(uniqueClasses);
+                const uniqueClasses = ['All', ...new Set(allCourses.map(c => c.class).filter(Boolean))];
+                setClasses(uniqueClasses);
 
-            setCourses(allCourses);
+                setCourses(allCourses);
+            } catch (error) {
+                console.error('Failed to fetch courses', error);
+            }
         };
 
-        
         fetchCourses();
-
-        
-        const unsubscribe = subscribeToUpdates(fetchCourses);
-
-        return () => unsubscribe();
     }, []);
 
     const filteredCourses = courses.filter(course => {
@@ -137,14 +134,13 @@ const CoursesPage = ({ darkMode }) => {
         return matchesSearch && matchesClass;
     });
 
-    const activeCourses = courses; 
+    const activeCourses = courses;
 
-    
     const totalStudents = courses.reduce((sum, course) => sum + (course.enrolledStudents?.length || 0), 0);
 
     return (
         <div className="space-y-6">
-            {}
+            { }
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
@@ -154,7 +150,7 @@ const CoursesPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
@@ -193,13 +189,13 @@ const CoursesPage = ({ darkMode }) => {
                         <BookOpen className="w-5 h-5 text-yellow-500" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {classes.length - 1} {}
+                        {classes.length - 1} { }
                     </p>
                     <p className="text-xs text-gray-500 mt-1">Active classes</p>
                 </div>
             </div>
 
-            {}
+            { }
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="flex flex-col md:flex-row gap-4">
                     <div className="flex-1 relative">
@@ -231,7 +227,7 @@ const CoursesPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             {filteredCourses.length === 0 ? (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-center`}>
                     <BookOpen className={`w-16 h-16 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
@@ -306,7 +302,7 @@ const CoursesPage = ({ darkMode }) => {
                 </div>
             )}
 
-            {}
+            { }
             {selectedCourse && (
                 <CourseDetailsModal
                     course={selectedCourse}

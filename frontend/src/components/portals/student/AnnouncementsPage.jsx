@@ -7,33 +7,37 @@ import {
     Link as LinkIcon,
     Bell
 } from 'lucide-react';
-import * as announcementStore from '../../../utils/announcementStore';
+import { announcementApi } from '../../../services/api';
 
 const AnnouncementsPage = ({ darkMode }) => {
     const [announcements, setAnnouncements] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    
-    const studentClass = 'Grade 10-A'; 
+    const studentClass = 'Grade 10-A';
 
     useEffect(() => {
-        const loadData = () => {
-            
-            const studentAnnouncements = announcementStore.getAnnouncementsForAudience('Students', studentClass);
-            const allAnnouncements = announcementStore.getAnnouncementsForAudience('All', studentClass);
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                const res = await announcementApi.getAll();
+                const all = res.data || [];
 
-            
-            const combined = [...studentAnnouncements, ...allAnnouncements];
-            const unique = combined.filter((item, index, self) =>
-                index === self.findIndex((t) => t.id === item.id)
-            );
+                const filtered = all.filter(a => {
+                    const audienceMatch = a.targetAudience === 'Students' || a.targetAudience === 'All';
+                    const classMatch = !a.classes || a.classes.length === 0 || a.classes.includes(studentClass);
+                    return audienceMatch && classMatch;
+                });
 
-            setAnnouncements(unique);
+                setAnnouncements(filtered);
+            } catch (error) {
+                console.error('Failed to load announcements:', error);
+            } finally {
+                setLoading(false);
+            }
         };
 
         loadData();
-        const unsubscribe = announcementStore.subscribeToUpdates(loadData);
-        return () => unsubscribe();
     }, []);
 
     const filteredAnnouncements = announcements.filter(a =>
@@ -43,7 +47,7 @@ const AnnouncementsPage = ({ darkMode }) => {
 
     return (
         <div className={`space-y-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            {}
+            { }
             <div className="flex justify-between items-center bg-blue-50 p-4 rounded-xl border border-blue-100">
                 <div>
                     <h2 className="text-xl font-bold text-blue-900">Announcements</h2>
@@ -52,7 +56,7 @@ const AnnouncementsPage = ({ darkMode }) => {
                 <Megaphone className="w-8 h-8 text-blue-600" />
             </div>
 
-            {}
+            { }
             <div className="relative">
                 <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                 <input
@@ -64,7 +68,7 @@ const AnnouncementsPage = ({ darkMode }) => {
                 />
             </div>
 
-            {}
+            { }
             <div className="space-y-4">
                 {filteredAnnouncements.map(announcement => (
                     <div

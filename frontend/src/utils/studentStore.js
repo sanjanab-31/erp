@@ -1,13 +1,10 @@
 
 
-
 const STORAGE_KEY = 'erp_students_data';
-
 
 const initializeDefaultData = () => {
     return [];
 };
-
 
 export const getAllStudents = () => {
     try {
@@ -24,7 +21,6 @@ export const getAllStudents = () => {
     }
 };
 
-
 export const addStudent = (student) => {
     try {
         const students = getAllStudents();
@@ -37,7 +33,6 @@ export const addStudent = (student) => {
         students.push(newStudent);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(students));
 
-        
         window.dispatchEvent(new Event('studentsUpdated'));
 
         return newStudent;
@@ -46,7 +41,6 @@ export const addStudent = (student) => {
         throw error;
     }
 };
-
 
 export const updateStudent = (id, updates) => {
     try {
@@ -65,7 +59,6 @@ export const updateStudent = (id, updates) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(students));
 
-        
         window.dispatchEvent(new Event('studentsUpdated'));
 
         return students[index];
@@ -74,7 +67,6 @@ export const updateStudent = (id, updates) => {
         throw error;
     }
 };
-
 
 export const deleteStudent = (id) => {
     try {
@@ -87,7 +79,6 @@ export const deleteStudent = (id) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredStudents));
 
-        
         window.dispatchEvent(new Event('studentsUpdated'));
 
         return true;
@@ -96,7 +87,6 @@ export const deleteStudent = (id) => {
         throw error;
     }
 };
-
 
 export const searchStudents = (query) => {
     const students = getAllStudents();
@@ -110,7 +100,6 @@ export const searchStudents = (query) => {
     );
 };
 
-
 export const filterByClass = (className) => {
     const students = getAllStudents();
     if (className === 'All Classes' || !className) {
@@ -118,7 +107,6 @@ export const filterByClass = (className) => {
     }
     return students.filter(student => student.class === className);
 };
-
 
 export const filterByStatus = (status) => {
     const students = getAllStudents();
@@ -128,12 +116,10 @@ export const filterByStatus = (status) => {
     return students.filter(student => student.status.toLowerCase() === status.toLowerCase());
 };
 
-
 export const getStudentById = (id) => {
     const students = getAllStudents();
     return students.find(s => s.id === id);
 };
-
 
 export const getStudentStats = () => {
     const students = getAllStudents();
@@ -149,12 +135,10 @@ export const getStudentStats = () => {
     };
 };
 
-
 export const subscribeToUpdates = (callback) => {
     const handler = () => callback(getAllStudents());
     window.addEventListener('studentsUpdated', handler);
 
-    
     return () => window.removeEventListener('studentsUpdated', handler);
 };
 

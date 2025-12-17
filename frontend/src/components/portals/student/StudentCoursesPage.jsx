@@ -14,16 +14,12 @@ import {
     AlertCircle
 } from 'lucide-react';
 import {
-    getCoursesByClass,
-    getAssignmentsByCourse,
-    getSubmission,
-    submitAssignment,
-    getCourseMaterials,
-    getExamSchedulesByClass,
-    calculateFinalMarks,
-    getStudentCourseMarks,
-    subscribeToAcademicUpdates
-} from '../../../utils/academicStore';
+    studentApi,
+    courseApi,
+    assignmentApi,
+    resultApi,
+    examApi
+} from '../../../services/api';
 
 const StudentCoursesPage = ({ darkMode }) => {
     const { showSuccess, showError, showWarning, showInfo } = useToast();
@@ -43,58 +39,100 @@ const StudentCoursesPage = ({ darkMode }) => {
 
     useEffect(() => {
         loadData();
-        const unsubscribe = subscribeToAcademicUpdates(() => {
-            loadData();
-        });
-        return unsubscribe;
     }, []);
 
-    const loadData = () => {
-        const classCourses = getCoursesByClass(studentClass);
-        setCourses(classCourses);
+    const [results, setResults] = useState([]);
 
-        const classSchedules = getExamSchedulesByClass(studentClass);
-        setExamSchedules(classSchedules);
+    const loadData = async () => {
+        try {
+            const studentEmail = localStorage.getItem('userEmail');
+            if (!studentEmail) return;
+
+            const studentRes = await studentApi.getAll();
+            const student = (studentRes.data || []).find(s => s.email === studentEmail);
+
+            if (student) {
+                const [coursesRes, resultsRes, examsRes] = await Promise.all([
+                    courseApi.getAll({ class: student.class }),
+                    resultApi.getAll({ studentId: student.id }),
+                    examApi.getAll()
+                ]);
+                setCourses(coursesRes.data || []);
+                setResults(resultsRes.data || []);
+                setExamSchedules(examsRes.data || []);
+            }
+        } catch (error) {
+            console.error(error);
+        }
     };
 
-    const handleCourseSelect = (course) => {
+    const [allSubmissions, setAllSubmissions] = useState({});
+
+    const handleCourseSelect = async (course) => {
         setSelectedCourse(course);
-        const courseAssignments = getAssignmentsByCourse(course.id);
-        setAssignments(courseAssignments);
+        setMaterials(course.materials || []);
 
-        const courseMaterials = getCourseMaterials(course.id);
-        setMaterials(courseMaterials);
+        const courseAssignments = course.assignments || [];
+        const submissionsMap = {};
+
+        await Promise.all(courseAssignments.map(async (assign) => {
+            try {
+                const subRes = await assignmentApi.getSubmissions(assign.id);
+                const subs = subRes.data || [];
+                const studentSub = subs.find(s => s.studentId === studentId);
+                if (studentSub) {
+                    submissionsMap[assign.id] = studentSub;
+                }
+            } catch (e) {
+                console.error(`Failed to fetch submissions for assignment ${assign.id}`, e);
+            }
+        }));
+
+        setAllSubmissions(submissionsMap);
+        setAssignments(courseAssignments);
     };
 
-    const handleSubmitAssignment = (e) => {
+    const handleSubmitAssignment = async (e) => {
         e.preventDefault();
         try {
-            submitAssignment({
+            await assignmentApi.createSubmission({
                 assignmentId: selectedAssignment.id,
                 courseId: selectedCourse.id,
                 studentId,
                 studentName,
-                driveLink
+                driveLink,
+                status: 'submitted',
+                submittedAt: new Date().toISOString()
             });
             setShowSubmitModal(false);
             setDriveLink('');
             setSelectedAssignment(null);
             showSuccess('Assignment submitted successfully!');
+            loadData();
         } catch (error) {
-            showError('Error submitting assignment: ' + error.message);
+            showError('Error submitting assignment: ' + (error.response?.data?.message || error.message));
         }
     };
 
-    const openSubmitModal = (assignment) => {
-        const existingSubmission = getSubmission(studentId, assignment.id);
-        setSelectedAssignment(assignment);
-        setDriveLink(existingSubmission?.driveLink || '');
-        setShowSubmitModal(true);
+    const openSubmitModal = async (assignment) => {
+        try {
+            const subRes = await assignmentApi.getSubmissions(assignment.id);
+            const submissions = subRes.data || [];
+            const existingSubmission = submissions.find(s => s.studentId === studentId);
+
+            setSelectedAssignment(assignment);
+            setDriveLink(existingSubmission?.driveLink || '');
+            setShowSubmitModal(true);
+        } catch (e) {
+            setSelectedAssignment(assignment);
+            setDriveLink('');
+            setShowSubmitModal(true);
+        }
     };
 
     return (
         <div className="space-y-6">
-            {}
+            { }
             <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     My Courses
@@ -102,11 +140,13 @@ const StudentCoursesPage = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">View courses, submit assignments, and track your progress</p>
             </div>
 
-            {}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {courses.map((course) => {
-                    const finalMarks = calculateFinalMarks(studentId, course.id);
-                    const examMarks = getStudentCourseMarks(studentId, course.id);
+                    const result = results.find(r => r.courseId === course.id);
+                    const scores = result?.examScores || {};
+                    const examTotal = (scores.exam1 || 0) + (scores.exam2 || 0) + (scores.exam3 || 0);
+                    const examScaled = Math.round((examTotal / 300) * 75);
 
                     return (
                         <div
@@ -131,15 +171,14 @@ const StudentCoursesPage = ({ darkMode }) => {
                                 Teacher: {course.teacherName}
                             </p>
 
-                            {finalMarks.finalTotal > 0 && (
+                            {examTotal > 0 && (
                                 <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-3 mt-4`}>
-                                    <p className="text-xs text-gray-500 mb-1">Final Score</p>
+                                    <p className="text-xs text-gray-500 mb-1">Current Exam Performance</p>
                                     <p className="text-2xl font-bold text-blue-600">
-                                        {finalMarks.finalTotal}/100
+                                        {Math.round(examTotal / 3)}%
                                     </p>
                                     <div className="flex justify-between text-xs text-gray-500 mt-2">
-                                        <span>Assignment: {finalMarks.assignmentMarks}/25</span>
-                                        <span>Exam: {finalMarks.examMarks}/75</span>
+                                        <span>Exam Score: {examScaled}/75</span>
                                     </div>
                                 </div>
                             )}
@@ -148,14 +187,14 @@ const StudentCoursesPage = ({ darkMode }) => {
                 })}
             </div>
 
-            {}
+            { }
             {selectedCourse && (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6`}>
                     <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-6`}>
                         {selectedCourse.name} - Details
                     </h2>
 
-                    {}
+                    { }
                     <div className="mb-8">
                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                             Assignments
@@ -165,7 +204,7 @@ const StudentCoursesPage = ({ darkMode }) => {
                         ) : (
                             <div className="space-y-4">
                                 {assignments.map((assignment) => {
-                                    const submission = getSubmission(studentId, assignment.id);
+                                    const submission = allSubmissions[assignment.id];
                                     const isOverdue = new Date(assignment.dueDate) < new Date() && !submission;
 
                                     return (
@@ -246,16 +285,18 @@ const StudentCoursesPage = ({ darkMode }) => {
                         )}
                     </div>
 
-                    {}
+                    { }
                     <div className="mb-8">
                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                             Exam Marks
                         </h3>
                         {(() => {
-                            const examMarks = getStudentCourseMarks(studentId, selectedCourse.id);
-                            const finalMarks = calculateFinalMarks(studentId, selectedCourse.id);
+                            const result = results.find(r => r.courseId === selectedCourse.id);
+                            const examMarks = result?.examScores || {};
+                            const examTotal = (examMarks.exam1 || 0) + (examMarks.exam2 || 0) + (examMarks.exam3 || 0);
+                            const examScaled = Math.round((examTotal / 300) * 75);
 
-                            if (!examMarks) {
+                            if (!result) {
                                 return <p className="text-gray-500">No exam marks entered yet</p>;
                             }
 
@@ -264,25 +305,25 @@ const StudentCoursesPage = ({ darkMode }) => {
                                     <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-4`}>
                                         <p className="text-sm text-gray-500 mb-1">Exam 1</p>
                                         <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                            {examMarks.exam1}/100
+                                            {examMarks.exam1 || 0}/100
                                         </p>
                                     </div>
                                     <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-4`}>
                                         <p className="text-sm text-gray-500 mb-1">Exam 2</p>
                                         <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                            {examMarks.exam2}/100
+                                            {examMarks.exam2 || 0}/100
                                         </p>
                                     </div>
                                     <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-4`}>
                                         <p className="text-sm text-gray-500 mb-1">Exam 3</p>
                                         <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                            {examMarks.exam3}/100
+                                            {examMarks.exam3 || 0}/100
                                         </p>
                                     </div>
                                     <div className={`${darkMode ? 'bg-blue-900' : 'bg-blue-50'} rounded-lg p-4`}>
                                         <p className="text-sm text-blue-600 mb-1">Total (Scaled)</p>
                                         <p className="text-2xl font-bold text-blue-600">
-                                            {finalMarks.examMarks}/75
+                                            {examScaled}/75
                                         </p>
                                     </div>
                                 </div>
@@ -290,15 +331,28 @@ const StudentCoursesPage = ({ darkMode }) => {
                         })()}
                     </div>
 
-                    {}
+                    { }
                     <div className="mb-8">
                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                             Final Marks Summary
                         </h3>
                         {(() => {
-                            const finalMarks = calculateFinalMarks(studentId, selectedCourse.id);
+                            const result = results.find(r => r.courseId === selectedCourse.id);
+                            const examMarks = result?.examScores || {};
+                            const examTotal = (examMarks.exam1 || 0) + (examMarks.exam2 || 0) + (examMarks.exam3 || 0);
+                            const examScaled = Math.round((examTotal / 300) * 75);
 
-                            if (finalMarks.finalTotal === 0) {
+                            const courseSubmissions = Object.entries(allSubmissions)
+                                .filter(([assignId]) => selectedCourse.assignments.some(a => a.id === assignId))
+                                .map(([_, sub]) => sub);
+
+                            const assignmentTotal = courseSubmissions.reduce((sum, sub) => sum + (sub.marks || 0), 0);
+                            const assignmentCount = selectedCourse.assignments.length;
+                            const assignmentScaled = assignmentCount > 0 ? Math.round((assignmentTotal / (assignmentCount * 100)) * 25) : 0;
+
+                            const finalTotal = examScaled + assignmentScaled;
+
+                            if (!result && assignmentCount === 0) {
                                 return <p className="text-gray-500">No marks available yet</p>;
                             }
 
@@ -307,16 +361,16 @@ const StudentCoursesPage = ({ darkMode }) => {
                                     <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-4`}>
                                         <p className="text-sm text-gray-500 mb-1">Assignment Marks</p>
                                         <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                            {finalMarks.assignmentMarks}/25
+                                            {assignmentScaled}/25
                                         </p>
                                         <p className="text-xs text-gray-500 mt-1">
-                                            {finalMarks.assignmentCount} assignment(s)
+                                            {assignmentCount} assignment(s)
                                         </p>
                                     </div>
                                     <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-4`}>
                                         <p className="text-sm text-gray-500 mb-1">Exam Marks</p>
                                         <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                            {finalMarks.examMarks}/75
+                                            {examScaled}/75
                                         </p>
                                         <p className="text-xs text-gray-500 mt-1">
                                             3 exams
@@ -325,10 +379,10 @@ const StudentCoursesPage = ({ darkMode }) => {
                                     <div className={`${darkMode ? 'bg-green-900' : 'bg-green-50'} rounded-lg p-4`}>
                                         <p className="text-sm text-green-600 mb-1">Final Total</p>
                                         <p className="text-3xl font-bold text-green-600">
-                                            {finalMarks.finalTotal}/100
+                                            {finalTotal}/100
                                         </p>
                                         <p className="text-xs text-green-600 mt-1">
-                                            {finalMarks.finalTotal >= 90 ? 'Excellent!' : finalMarks.finalTotal >= 75 ? 'Good!' : finalMarks.finalTotal >= 60 ? 'Fair' : 'Needs Improvement'}
+                                            {finalTotal >= 90 ? 'Excellent!' : finalTotal >= 75 ? 'Good!' : finalTotal >= 60 ? 'Fair' : 'Needs Improvement'}
                                         </p>
                                     </div>
                                 </div>
@@ -336,7 +390,7 @@ const StudentCoursesPage = ({ darkMode }) => {
                         })()}
                     </div>
 
-                    {}
+                    { }
                     <div className="mb-8">
                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                             Course Materials
@@ -373,7 +427,7 @@ const StudentCoursesPage = ({ darkMode }) => {
                         )}
                     </div>
 
-                    {}
+                    { }
                     <div>
                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                             Exam Schedules
@@ -423,7 +477,7 @@ const StudentCoursesPage = ({ darkMode }) => {
                 </div>
             )}
 
-            {}
+            { }
             {showSubmitModal && selectedAssignment && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>

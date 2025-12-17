@@ -15,92 +15,106 @@ import {
     UserX,
     User
 } from 'lucide-react';
-import { getAllStudents, subscribeToUpdates as subscribeToStudentUpdates } from '../../../utils/studentStore';
 import {
-    bulkMarkAttendance,
-    getAttendanceByDate,
-    getAttendanceStats,
-    calculateAttendancePercentage,
-    subscribeToUpdates as subscribeToAttendanceUpdates
-} from '../../../utils/attendanceStore';
-import { getAllTeachers } from '../../../utils/teacherStore';
-import { getAttendanceByTeacher } from '../../../utils/teacherAttendanceStore';
+    studentApi,
+    teacherApi,
+    attendanceApi
+} from '../../../services/api';
 
 const AttendancePage = ({ darkMode }) => {
-    
-    const [activeTab, setActiveTab] = useState('student_attendance'); 
+
+    const [activeTab, setActiveTab] = useState('student_attendance');
     const [currentUser, setCurrentUser] = useState(null);
 
-    
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [selectedClass, setSelectedClass] = useState('All Classes');
     const [searchQuery, setSearchQuery] = useState('');
-    const [saveStatus, setSaveStatus] = useState(null); 
+    const [saveStatus, setSaveStatus] = useState(null);
     const [allStudents, setAllStudents] = useState([]);
 
-    
     const [localAttendanceData, setLocalAttendanceData] = useState({});
 
-    
     const [myAttendanceHistory, setMyAttendanceHistory] = useState([]);
 
     const classes = ['All Classes', 'Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
 
-    
+    const [allAttendance, setAllAttendance] = useState([]);
+
     useEffect(() => {
-        const userEmail = localStorage.getItem('userEmail');
-        if (userEmail) {
-            const teachers = getAllTeachers();
-            const teacher = teachers.find(t => t.email === userEmail);
-            if (teacher) {
-                setCurrentUser(teacher);
-                loadMyAttendance(teacher.id);
+        const init = async () => {
+            const userEmail = localStorage.getItem('userEmail');
+            if (userEmail) {
+                try {
+                    const teachersRes = await teacherApi.getAll();
+                    const teachers = teachersRes.data || [];
+                    const teacher = teachers.find(t => t.email === userEmail);
+                    if (teacher) {
+                        setCurrentUser(teacher);
+                        loadMyAttendance(teacher.id);
+                    }
+                } catch (error) {
+                    console.error('Error loading teacher profile:', error);
+                }
             }
-        }
-
-        loadStudents();
-        loadStudentAttendance();
-
-        const unsubscribeStudents = subscribeToStudentUpdates(loadStudents);
-        const unsubscribeAttendance = subscribeToAttendanceUpdates(loadStudentAttendance);
-
-        return () => {
-            unsubscribeStudents();
-            unsubscribeAttendance();
+            loadStudents();
+            loadStudentAttendance();
         };
+
+        init();
     }, []);
 
-    
     useEffect(() => {
         if (activeTab === 'student_attendance') {
             loadStudentAttendance();
             setSaveStatus(null);
         }
-    }, [selectedDate, selectedClass]);
+    }, [selectedDate, selectedClass, activeTab]);
 
-    const loadStudents = useCallback(() => {
-        setAllStudents(getAllStudents());
-    }, []);
-
-    const loadStudentAttendance = useCallback(() => {
-        const todayAttendance = getAttendanceByDate(selectedDate);
-        const attendanceMap = {};
-
-        todayAttendance.forEach(record => {
-            attendanceMap[record.studentId] = record.status;
-        });
-
-        setLocalAttendanceData(attendanceMap);
-    }, [selectedDate]);
-
-    const loadMyAttendance = (teacherId) => {
-        const records = getAttendanceByTeacher(teacherId);
-        
-        records.sort((a, b) => new Date(b.date) - new Date(a.date));
-        setMyAttendanceHistory(records);
+    const loadStudents = async () => {
+        try {
+            const res = await studentApi.getAll();
+            setAllStudents(res.data || []);
+        } catch (error) {
+            console.error('Error loading students:', error);
+        }
     };
 
-    
+    const loadStudentAttendance = async () => {
+        try {
+            const res = await attendanceApi.getAll();
+            const records = res.data || [];
+            setAllAttendance(records);
+
+            const todayRecords = records.filter(r => r.date === selectedDate);
+            const attendanceMap = {};
+            todayRecords.forEach(record => {
+                attendanceMap[record.studentId] = record.status;
+            });
+            setLocalAttendanceData(attendanceMap);
+        } catch (error) {
+            console.error('Error loading student attendance:', error);
+        }
+    };
+
+    const loadMyAttendance = async (teacherId) => {
+        try {
+            const res = await attendanceApi.getAll();
+            const allRecords = res.data || [];
+            const myRecords = allRecords.filter(r => r.teacherId === teacherId);
+            myRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
+            setMyAttendanceHistory(myRecords);
+        } catch (error) {
+            console.error('Error loading teacher attendance:', error);
+        }
+    };
+
+    const calculateAttendancePercentage = (studentId) => {
+        const studentRecords = allAttendance.filter(r => r.studentId === studentId);
+        if (studentRecords.length === 0) return 0;
+        const presentCount = studentRecords.filter(r => r.status === 'Present').length;
+        return Math.round((presentCount / studentRecords.length) * 100);
+    };
+
     const toggleAttendance = (studentId, newStatus) => {
         setLocalAttendanceData(prev => ({
             ...prev,
@@ -127,42 +141,22 @@ const AttendancePage = ({ darkMode }) => {
         setSaveStatus(null);
     };
 
-    const saveAttendance = () => {
+    const saveAttendance = async () => {
         setSaveStatus('saving');
         try {
             const teacherName = currentUser ? currentUser.name : 'Teacher';
 
-            
-            
-            
-            
-            
-            
-            
-            
-            
-
             const attendanceList = filteredStudents.map(student => ({
                 date: selectedDate,
                 studentId: student.id,
-                status: localAttendanceData[student.id] || 'Absent', 
-                
-                
-                
-                
-                
-                
-                
-                
-                
-            })).filter(r => localAttendanceData[r.studentId]); 
+                status: localAttendanceData[student.id] || 'Absent',
+                teacherId: currentUser?.id
 
-            
-            
-            
+            })).filter(r => localAttendanceData[r.studentId]);
 
-            bulkMarkAttendance(attendanceList);
+            await attendanceApi.markBulk(attendanceList);
             setSaveStatus('saved');
+            loadStudentAttendance();
             setTimeout(() => setSaveStatus(null), 3000);
         } catch (error) {
             console.error(error);
@@ -177,7 +171,6 @@ const AttendancePage = ({ darkMode }) => {
         return matchesSearch && matchesClass;
     });
 
-    
     const currentPresentCount = filteredStudents.filter(s => localAttendanceData[s.id] === 'Present').length;
     const currentAbsentCount = filteredStudents.filter(s => localAttendanceData[s.id] === 'Absent').length;
     const currentAttendancePercentage = filteredStudents.length > 0
@@ -212,8 +205,8 @@ const AttendancePage = ({ darkMode }) => {
                     <button
                         onClick={() => setActiveTab('student_attendance')}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'student_attendance'
-                                ? 'bg-white text-green-600 shadow-sm'
-                                : 'text-gray-600 hover:text-gray-900'
+                            ? 'bg-white text-green-600 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
                             }`}
                     >
                         Student Attendance
@@ -221,8 +214,8 @@ const AttendancePage = ({ darkMode }) => {
                     <button
                         onClick={() => setActiveTab('my_attendance')}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'my_attendance'
-                                ? 'bg-white text-green-600 shadow-sm'
-                                : 'text-gray-600 hover:text-gray-900'
+                            ? 'bg-white text-green-600 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
                             }`}
                     >
                         My Attendance
@@ -260,8 +253,8 @@ const AttendancePage = ({ darkMode }) => {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${record.status === 'Present' ? 'bg-green-100 text-green-700' :
-                                                            record.status === 'Absent' ? 'bg-red-100 text-red-700' :
-                                                                'bg-yellow-100 text-yellow-700'
+                                                        record.status === 'Absent' ? 'bg-red-100 text-red-700' :
+                                                            'bg-yellow-100 text-yellow-700'
                                                         }`}>
                                                         {record.status}
                                                     </span>
@@ -281,7 +274,7 @@ const AttendancePage = ({ darkMode }) => {
 
             {activeTab === 'student_attendance' && (
                 <>
-                    {}
+                    { }
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                             <div className="flex items-center justify-between mb-4">
@@ -316,7 +309,7 @@ const AttendancePage = ({ darkMode }) => {
                         </div>
                     </div>
 
-                    {}
+                    { }
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6`}>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                             <div>
@@ -395,8 +388,8 @@ const AttendancePage = ({ darkMode }) => {
                                 onClick={saveAttendance}
                                 disabled={saveStatus === 'saved'}
                                 className={`ml-auto px-6 py-2 rounded-lg transition-colors flex items-center space-x-2 font-medium ${saveStatus === 'saved'
-                                        ? 'bg-green-600 text-white cursor-default'
-                                        : 'bg-green-600 text-white hover:bg-green-700'
+                                    ? 'bg-green-600 text-white cursor-default'
+                                    : 'bg-green-600 text-white hover:bg-green-700'
                                     }`}
                             >
                                 {saveStatus === 'saved' ? (
@@ -414,7 +407,7 @@ const AttendancePage = ({ darkMode }) => {
                         </div>
                     </div>
 
-                    {}
+                    { }
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
                         <div className="overflow-x-auto">
                             {filteredStudents.length === 0 ? (

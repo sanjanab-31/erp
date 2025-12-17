@@ -1,13 +1,10 @@
 
 
-
 const STORAGE_KEY = 'erp_attendance_data';
-
 
 const initializeDefaultData = () => {
     return [];
 };
-
 
 export const getAllAttendance = () => {
     try {
@@ -24,13 +21,11 @@ export const getAllAttendance = () => {
     }
 };
 
-
 export const markAttendance = (attendanceData) => {
     try {
         const allAttendance = getAllAttendance();
         const { date, studentId, status, markedBy } = attendanceData;
 
-        
         const existingIndex = allAttendance.findIndex(
             a => a.date === date && a.studentId === studentId
         );
@@ -54,7 +49,6 @@ export const markAttendance = (attendanceData) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(allAttendance));
 
-        
         window.dispatchEvent(new Event('attendanceUpdated'));
 
         return newRecord;
@@ -64,16 +58,13 @@ export const markAttendance = (attendanceData) => {
     }
 };
 
-
 export const bulkMarkAttendance = (attendanceList) => {
     try {
         const allAttendance = getAllAttendance();
         const date = attendanceList[0]?.date;
 
-        
         const filteredAttendance = allAttendance.filter(a => a.date !== date);
 
-        
         const newRecords = attendanceList.map(record => ({
             id: Date.now() + Math.random(),
             ...record,
@@ -83,7 +74,6 @@ export const bulkMarkAttendance = (attendanceList) => {
         const updatedAttendance = [...filteredAttendance, ...newRecords];
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedAttendance));
 
-        
         window.dispatchEvent(new Event('attendanceUpdated'));
 
         return newRecords;
@@ -93,24 +83,20 @@ export const bulkMarkAttendance = (attendanceList) => {
     }
 };
 
-
 export const getAttendanceByDate = (date) => {
     const allAttendance = getAllAttendance();
     return allAttendance.filter(a => a.date === date);
 };
-
 
 export const getAttendanceByStudent = (studentId) => {
     const allAttendance = getAllAttendance();
     return allAttendance.filter(a => a.studentId === studentId);
 };
 
-
 export const getAttendanceByDateRange = (startDate, endDate) => {
     const allAttendance = getAllAttendance();
     return allAttendance.filter(a => a.date >= startDate && a.date <= endDate);
 };
-
 
 export const calculateAttendancePercentage = (studentId, startDate = null, endDate = null) => {
     let attendance;
@@ -127,7 +113,6 @@ export const calculateAttendancePercentage = (studentId, startDate = null, endDa
     return Math.round((presentCount / attendance.length) * 100);
 };
 
-
 export const getAttendanceStats = (date) => {
     const attendance = getAttendanceByDate(date);
 
@@ -139,7 +124,6 @@ export const getAttendanceStats = (date) => {
         excused: attendance.filter(a => a.status === 'Excused').length
     };
 };
-
 
 export const getOverallAttendanceStats = () => {
     const allAttendance = getAllAttendance();
@@ -153,7 +137,6 @@ export const getOverallAttendanceStats = () => {
     };
 };
 
-
 export const deleteAttendance = (id) => {
     try {
         const allAttendance = getAllAttendance();
@@ -161,7 +144,6 @@ export const deleteAttendance = (id) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredAttendance));
 
-        
         window.dispatchEvent(new Event('attendanceUpdated'));
 
         return true;
@@ -171,12 +153,10 @@ export const deleteAttendance = (id) => {
     }
 };
 
-
 export const subscribeToUpdates = (callback) => {
     const handler = () => callback(getAllAttendance());
     window.addEventListener('attendanceUpdated', handler);
 
-    
     return () => window.removeEventListener('attendanceUpdated', handler);
 };
 

@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Plus, MoreVertical, Mail, Phone, Edit, Trash2, X, Save, UserPlus } from 'lucide-react';
-import { getAllStudents, addStudent, updateStudent, deleteStudent, subscribeToUpdates, getStudentStats } from '../../../utils/studentStore';
-import { addStudent as addUserStudent, deleteStudentAndParent } from '../../../utils/userStore';
+import { studentApi, emailApi } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
-import { sendStudentCredentials } from '../../../utils/emailService';
-
 
 const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, darkMode }) => {
     const classes = ['Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
@@ -17,7 +14,7 @@ const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl w-full max-w-6xl shadow-2xl flex flex-col max-h-[90vh]`}>
 
-                {}
+                { }
                 <div className={`flex items-center justify-between p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                         {isEdit ? 'Edit Student Details' : 'Add New Student'}
@@ -27,11 +24,11 @@ const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
                     </button>
                 </div>
 
-                {}
+                { }
                 <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-6">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                        {}
+                        { }
                         <div className="space-y-4">
                             <h3 className={sectionTitleClass}>Academic Identity</h3>
                             <div className="space-y-3">
@@ -61,7 +58,7 @@ const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
                             </div>
                         </div>
 
-                        {}
+                        { }
                         <div className="space-y-4">
                             <h3 className={sectionTitleClass}>Personal Details</h3>
                             <div className="space-y-3">
@@ -97,7 +94,7 @@ const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
                             </div>
                         </div>
 
-                        {}
+                        { }
                         <div className="space-y-4">
                             <h3 className={sectionTitleClass}>Family & Address</h3>
                             <div className="space-y-3">
@@ -124,7 +121,7 @@ const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
 
                     </div>
 
-                    {}
+                    { }
                     <div className="flex justify-end gap-3 pt-6 mt-2 border-gray-200 dark:border-gray-700">
                         <button
                             type="button"
@@ -203,18 +200,33 @@ const Students = ({ darkMode }) => {
         grade: 'A'
     });
 
-    
-    useEffect(() => {
-        loadStudents();
-        const unsubscribe = subscribeToUpdates(loadStudents);
-        return unsubscribe;
+    const loadStudents = useCallback(async () => {
+        try {
+            const response = await studentApi.getAll();
+            const data = response.data || [];
+            setStudents(Array.isArray(data) ? data : []);
+
+            try {
+                const statsRes = await studentApi.getStats();
+                setStats(statsRes.data || { total: 0, active: 0, inactive: 0, warning: 0 });
+            } catch (e) {
+                const s = Array.isArray(data) ? data : [];
+                setStats({
+                    total: s.length,
+                    active: s.filter(i => i.status === 'Active').length,
+                    inactive: s.filter(i => i.status === 'Inactive').length,
+                    warning: s.filter(i => i.status === 'Warning').length
+                });
+            }
+        } catch (error) {
+            console.error('Failed to load students', error);
+            setStudents([]);
+        }
     }, []);
 
-    const loadStudents = useCallback(() => {
-        const data = getAllStudents();
-        setStudents(data);
-        setStats(getStudentStats());
-    }, []);
+    useEffect(() => {
+        loadStudents();
+    }, [loadStudents]);
 
     const resetForm = useCallback(() => {
         setFormData({
@@ -235,17 +247,16 @@ const Students = ({ darkMode }) => {
         });
     }, []);
 
-    const handleAddStudent = useCallback((e) => {
+    const handleAddStudent = useCallback(async (e) => {
         e.preventDefault();
         try {
-            
+
             if (formData.email && formData.parentEmail &&
                 formData.email.toLowerCase().trim() === formData.parentEmail.toLowerCase().trim()) {
                 showError('Student email and parent email cannot be the same!');
                 return;
             }
 
-            
             if (formData.dateOfBirth) {
                 const dob = new Date(formData.dateOfBirth);
                 const today = new Date();
@@ -256,26 +267,24 @@ const Students = ({ darkMode }) => {
                 }
             }
 
-            
-            addStudent(formData);
+            await studentApi.create(formData);
 
-            
-            addUserStudent({
-                email: formData.email,
-                name: formData.name,
-                class: formData.class,
-                rollNumber: formData.rollNo,
-                parentEmail: formData.parentEmail,
-                parentName: formData.parent,
-                phone: formData.phone,
-                address: formData.address,
-                dateOfBirth: formData.dateOfBirth,
-                createdBy: localStorage.getItem('userName') || 'admin'
-            });
+            try {
+                await emailApi.sendStudentCredentials({
+                    email: formData.email,
+                    password: 'password',
+                    name: formData.name,
+                    parentEmail: formData.parentEmail
+                });
+                showSuccess('📧 Credentials emailed successfully!');
+            } catch (emailError) {
+                console.warn('Email sending failed:', emailError);
+            }
 
             setShowAddModal(false);
             resetForm();
-            
+            loadStudents();
+
             let message = 'Student added successfully!\n\n';
             message += '📚 Student Login:\n';
             message += 'Email: ' + formData.email + '\n';
@@ -287,37 +296,22 @@ const Students = ({ darkMode }) => {
                 message += 'Password: password';
             }
 
-            
-            sendStudentCredentials({
-                email: formData.email,
-                password: 'password', 
-                name: formData.name,
-                parentEmail: formData.parentEmail
-            }).then(response => {
-                if (response.success) {
-                    showSuccess('📧 Credentials emailed successfully!');
-                } else {
-                    console.warn('Email sending failed. Is backend running?');
-                }
-            });
-
             showSuccess(message);
         } catch (error) {
-            showError('Error adding student: ' + error.message);
+            showError('Error adding student: ' + (error.response?.data?.message || error.message));
         }
     }, [formData, resetForm, showSuccess, showError]);
 
-    const handleEditStudent = useCallback((e) => {
+    const handleEditStudent = useCallback(async (e) => {
         e.preventDefault();
         try {
-            
+
             if (formData.email && formData.parentEmail &&
                 formData.email.toLowerCase().trim() === formData.parentEmail.toLowerCase().trim()) {
                 showError('Student email and parent email cannot be the same!');
                 return;
             }
 
-            
             if (formData.dateOfBirth) {
                 const dob = new Date(formData.dateOfBirth);
                 const today = new Date();
@@ -328,31 +322,30 @@ const Students = ({ darkMode }) => {
                 }
             }
 
-            updateStudent(selectedStudent.id, formData);
+            await studentApi.update(selectedStudent.id, formData);
             setShowEditModal(false);
             setSelectedStudent(null);
             resetForm();
+            loadStudents();
             showSuccess('Student updated successfully!');
         } catch (error) {
-            showError('Error updating student: ' + error.message);
+            showError('Error updating student: ' + (error.response?.data?.message || error.message));
         }
-    }, [formData, selectedStudent, resetForm, showSuccess, showError]);
+    }, [formData, selectedStudent, resetForm, showSuccess, showError, loadStudents]);
 
-    const handleDeleteStudent = useCallback(() => {
+    const handleDeleteStudent = useCallback(async () => {
         try {
-            
-            deleteStudent(selectedStudent.id);
 
-            
-            deleteStudentAndParent(selectedStudent.email, selectedStudent.parentEmail);
+            await studentApi.delete(selectedStudent.id);
 
             setShowDeleteConfirm(false);
             setSelectedStudent(null);
-            showSuccess('Student and associated parent profile deleted successfully!');
+            loadStudents();
+            showSuccess('Student deleted successfully!');
         } catch (error) {
-            showError('Error deleting student: ' + error.message);
+            showError('Error deleting student: ' + (error.response?.data?.message || error.message));
         }
-    }, [selectedStudent, showSuccess, showError]);
+    }, [selectedStudent, showSuccess, showError, loadStudents]);
 
     const openEditModal = useCallback((student) => {
         setSelectedStudent(student);
@@ -394,7 +387,7 @@ const Students = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <p className="text-sm text-gray-500">Total Students</p>
@@ -414,7 +407,7 @@ const Students = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                     Students Management
@@ -464,7 +457,7 @@ const Students = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             <div className={`overflow-hidden rounded-xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="overflow-x-auto">
                     <table className={`w-full text-left ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -579,7 +572,7 @@ const Students = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             {showAddModal && (
                 <StudentFormModal
                     isEdit={false}
@@ -625,5 +618,4 @@ const Students = ({ darkMode }) => {
 };
 
 export default Students;
-
 

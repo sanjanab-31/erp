@@ -1,18 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, BookOpen, FileText, Link as LinkIcon, Trash2, Calendar, Users, Upload, X, Save } from 'lucide-react';
-import { getAllStudents } from '../../../utils/studentStore';
-import { getAllTeachers } from '../../../utils/teacherStore';
-import { useToast } from '../../../context/ToastContext';
 import {
-    getCoursesByTeacher,
-    addCourse,
-    deleteCourse,
-    addCourseMaterial,
-    deleteCourseMaterial,
-    addAssignment,
-    deleteAssignment,
-    subscribeToUpdates
-} from '../../../utils/courseStore';
+    studentApi,
+    teacherApi,
+    courseApi,
+    assignmentApi
+} from '../../../services/api';
+import { useToast } from '../../../context/ToastContext';
 
 const CourseModal = ({ darkMode, onClose, onSave, teacherId, teacherName }) => {
     const { showSuccess, showError, showWarning, showInfo } = useToast();
@@ -25,8 +19,15 @@ const CourseModal = ({ darkMode, onClose, onSave, teacherId, teacherName }) => {
     const [students, setStudents] = useState([]);
 
     useEffect(() => {
-        const allStudents = getAllStudents();
-        setStudents(allStudents);
+        const fetchStudents = async () => {
+            try {
+                const res = await studentApi.getAll();
+                setStudents(res.data || []);
+            } catch (error) {
+                console.error('Error fetching students:', error);
+            }
+        };
+        fetchStudents();
     }, []);
 
     const handleSubmit = (e) => {
@@ -37,7 +38,6 @@ const CourseModal = ({ darkMode, onClose, onSave, teacherId, teacherName }) => {
             return;
         }
 
-        
         const enrolledStudents = students
             .filter(s => s.class === formData.class)
             .map(s => s.id);
@@ -380,6 +380,8 @@ const CoursesPage = ({ darkMode }) => {
     const teacherEmail = localStorage.getItem('userEmail');
     const storedTeacherName = localStorage.getItem('userName');
 
+    const { showSuccess, showError, showWarning } = useToast();
+
     useEffect(() => {
         loadTeacherInfo();
     }, []);
@@ -387,116 +389,120 @@ const CoursesPage = ({ darkMode }) => {
     useEffect(() => {
         if (teacherId) {
             loadCourses();
-            const unsubscribe = subscribeToUpdates(loadCourses);
-            return unsubscribe;
         }
     }, [teacherId]);
 
-    const loadTeacherInfo = useCallback(() => {
-        console.log('Loading teacher info for email:', teacherEmail);
-        const teachers = getAllTeachers();
-        console.log('All teachers:', teachers);
+    const loadTeacherInfo = useCallback(async () => {
+        try {
+            const teachersRes = await teacherApi.getAll();
+            const teachers = teachersRes.data || [];
+            const teacher = teachers.find(t => t.email === teacherEmail);
 
-        const teacher = teachers.find(t => t.email === teacherEmail);
-        console.log('Teacher found:', teacher);
-
-        if (teacher) {
-            setTeacherId(teacher.id);
-            setTeacherName(teacher.name);
-            console.log('Teacher ID set to:', teacher.id);
-            console.log('Teacher Name set to:', teacher.name);
-        } else {
-            console.log('Teacher not found, using stored name:', storedTeacherName);
+            if (teacher) {
+                setTeacherId(teacher.id);
+                setTeacherName(teacher.name);
+            } else {
+                setTeacherName(storedTeacherName || 'Teacher');
+            }
+        } catch (error) {
+            console.error('Error loading teacher info:', error);
             setTeacherName(storedTeacherName || 'Teacher');
         }
     }, [teacherEmail, storedTeacherName]);
 
-    const loadCourses = useCallback(() => {
-        if (teacherId) {
-            console.log('Loading courses for teacher ID:', teacherId);
-            const teacherCourses = getCoursesByTeacher(teacherId);
-            console.log('Teacher courses found:', teacherCourses);
+    const loadCourses = useCallback(async () => {
+        if (!teacherId) return;
+        try {
+            const res = await courseApi.getAll({ teacherId });
+            const teacherCourses = res.data || [];
             setCourses(teacherCourses);
 
-            
             if (selectedCourse) {
                 const updated = teacherCourses.find(c => c.id === selectedCourse.id);
                 if (updated) {
                     setSelectedCourse(updated);
                 }
             }
-        } else {
-            console.log('No teacher ID set, cannot load courses');
+        } catch (error) {
+            console.error('Error loading courses:', error);
         }
     }, [teacherId, selectedCourse]);
 
-    const handleAddCourse = useCallback((courseData) => {
+    const handleAddCourse = useCallback(async (courseData) => {
         try {
-            addCourse(courseData);
+            await courseApi.create(courseData);
             setShowCourseModal(false);
             showSuccess('Course created successfully!');
+            loadCourses();
         } catch (error) {
             showError('Error creating course: ' + error.message);
         }
-    }, []);
+    }, [loadCourses]);
 
-    const handleDeleteCourse = useCallback((courseId) => {
+    const handleDeleteCourse = useCallback(async (courseId) => {
         if (window.confirm('Are you sure you want to delete this course?')) {
             try {
-                deleteCourse(courseId);
+                await courseApi.delete(courseId);
                 setSelectedCourse(null);
                 showSuccess('Course deleted successfully!');
+                loadCourses();
             } catch (error) {
                 showError('Error deleting course: ' + error.message);
             }
         }
-    }, []);
+    }, [loadCourses]);
 
-    const handleAddMaterial = useCallback((materialData) => {
+    const handleAddMaterial = useCallback(async (materialData) => {
         try {
-            addCourseMaterial(selectedCourse.id, materialData);
+            const updatedMaterials = [...(selectedCourse.materials || []), { ...materialData, id: Date.now().toString() }];
+            await courseApi.update(selectedCourse.id, { ...selectedCourse, materials: updatedMaterials });
             setShowMaterialModal(false);
             showSuccess('Material added successfully!');
+            loadCourses();
         } catch (error) {
             showError('Error adding material: ' + error.message);
         }
-    }, [selectedCourse]);
+    }, [selectedCourse, loadCourses]);
 
-    const handleDeleteMaterial = useCallback((materialId) => {
+    const handleDeleteMaterial = useCallback(async (materialId) => {
         if (window.confirm('Are you sure you want to delete this material?')) {
             try {
-                deleteCourseMaterial(selectedCourse.id, materialId);
+                const updatedMaterials = selectedCourse.materials.filter(m => m.id !== materialId);
+                await courseApi.update(selectedCourse.id, { ...selectedCourse, materials: updatedMaterials });
                 showSuccess('Material deleted successfully!');
+                loadCourses();
             } catch (error) {
                 showError('Error deleting material: ' + error.message);
             }
         }
-    }, [selectedCourse]);
+    }, [selectedCourse, loadCourses]);
 
-    const handleAddAssignment = useCallback((assignmentData) => {
+    const handleAddAssignment = useCallback(async (assignmentData) => {
         try {
-            addAssignment(selectedCourse.id, assignmentData);
+            await assignmentApi.create({ ...assignmentData, courseId: selectedCourse.id });
             setShowAssignmentModal(false);
             showSuccess('Assignment created successfully!');
+            loadCourses();
         } catch (error) {
             showError('Error creating assignment: ' + error.message);
         }
-    }, [selectedCourse]);
+    }, [selectedCourse, loadCourses]);
 
-    const handleDeleteAssignment = useCallback((assignmentId) => {
+    const handleDeleteAssignment = useCallback(async (assignmentId) => {
         if (window.confirm('Are you sure you want to delete this assignment?')) {
             try {
-                deleteAssignment(selectedCourse.id, assignmentId);
+                await assignmentApi.delete(assignmentId);
                 showSuccess('Assignment deleted successfully!');
+                loadCourses();
             } catch (error) {
                 showError('Error deleting assignment: ' + error.message);
             }
         }
-    }, [selectedCourse]);
+    }, [loadCourses]);
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {}
+            { }
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     My Courses
@@ -504,7 +510,7 @@ const CoursesPage = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">Manage your courses, materials, and assignments (Real-time sync with Students)</p>
             </div>
 
-            {}
+            { }
             <div className="mb-6">
                 <button
                     onClick={() => setShowCourseModal(true)}
@@ -515,7 +521,7 @@ const CoursesPage = ({ darkMode }) => {
                 </button>
             </div>
 
-            {}
+            { }
             {courses.length === 0 ? (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-center`}>
                     <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -534,7 +540,7 @@ const CoursesPage = ({ darkMode }) => {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {}
+                    { }
                     <div className="lg:col-span-1 space-y-4">
                         {courses.map(course => (
                             <div
@@ -559,11 +565,11 @@ const CoursesPage = ({ darkMode }) => {
                         ))}
                     </div>
 
-                    {}
+                    { }
                     <div className="lg:col-span-2">
                         {selectedCourse ? (
                             <div className="space-y-6">
-                                {}
+                                { }
                                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                     <div className="flex items-start justify-between mb-4">
                                         <div>
@@ -600,7 +606,7 @@ const CoursesPage = ({ darkMode }) => {
                                     </div>
                                 </div>
 
-                                {}
+                                { }
                                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                     <div className="flex items-center justify-between mb-4">
                                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -652,7 +658,7 @@ const CoursesPage = ({ darkMode }) => {
                                     )}
                                 </div>
 
-                                {}
+                                { }
                                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                     <div className="flex items-center justify-between mb-4">
                                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -700,7 +706,7 @@ const CoursesPage = ({ darkMode }) => {
                                                         </button>
                                                     </div>
 
-                                                    {}
+                                                    { }
                                                     {assignment.submissions.length > 0 && (
                                                         <div className="mt-3 pt-3 border-t border-gray-200">
                                                             <p className="text-sm font-medium text-gray-500 mb-2">Submissions:</p>
@@ -740,7 +746,7 @@ const CoursesPage = ({ darkMode }) => {
                 </div>
             )}
 
-            {}
+            { }
             {showCourseModal && (
                 <CourseModal
                     darkMode={darkMode}

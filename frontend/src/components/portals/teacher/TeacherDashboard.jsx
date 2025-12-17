@@ -29,10 +29,12 @@ import {
     LogOut,
     Megaphone
 } from 'lucide-react';
-import { getCoursesByTeacher, subscribeToUpdates } from '../../../utils/courseStore';
-import { getAllStudents } from '../../../utils/studentStore';
-import { getTeacherTimetable } from '../../../utils/timetableStore';
-import { getAllTeachers } from '../../../utils/teacherStore';
+import {
+    studentApi,
+    teacherApi,
+    courseApi,
+    timetableApi
+} from '../../../services/api';
 
 const TeacherDashboard = () => {
     const navigate = useNavigate();
@@ -68,97 +70,106 @@ const TeacherDashboard = () => {
     ];
 
     const handleLogout = () => {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userName');
+        localStorage.clear();
         navigate('/login');
     };
 
     useEffect(() => {
-        const fetchDashboardData = () => {
-            const allStudents = getAllStudents();
-            const allTeachers = getAllTeachers();
+        const fetchDashboardData = async () => {
+            try {
+                const [studentsRes, teachersRes, coursesRes, timetablesRes] = await Promise.all([
+                    studentApi.getAll(),
+                    teacherApi.getAll(),
+                    courseApi.getAll(),
+                    timetableApi.getTeacherTimetables()
+                ]);
 
-            const teacherObj = allTeachers.find(t => t.email === userEmail);
-            let teacherId = userEmail;
-            if (teacherObj) {
-                teacherId = teacherObj.id;
-            }
+                const allStudents = studentsRes.data || [];
+                const allTeachers = teachersRes.data || [];
+                const allCourses = coursesRes.data || [];
+                const allTimetables = timetablesRes.data || [];
 
-            const teacherCourses = getCoursesByTeacher(teacherId);
-
-            let todayClassesData = [];
-
-            if (teacherObj) {
-                const teacherTimetable = getTeacherTimetable(teacherObj.id);
-                if (teacherTimetable && teacherTimetable.schedule) {
-                    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                    const currentDay = days[new Date().getDay()];
-
-                    todayClassesData = teacherTimetable.schedule
-                        .filter(s => s.day === currentDay)
-                        .sort((a, b) => {
-                            const timeA = parseInt(a.time.split('-')[0].replace(':', ''));
-                            const timeB = parseInt(b.time.split('-')[0].replace(':', ''));
-                            return timeA - timeB;
-                        })
-                        .map((s, idx) => ({
-                            id: idx,
-                            subject: s.subject,
-                            class: teacherObj.subject || 'Class',
-                            time: s.time,
-                            room: s.room
-                        }));
+                const teacherObj = allTeachers.find(t => t.email === userEmail);
+                let teacherId = userEmail;
+                if (teacherObj) {
+                    teacherId = teacherObj.id;
                 }
-            }
 
-            const teacherClasses = [...new Set(teacherCourses.map(c => c.class))];
-            const myStudents = allStudents.filter(s => teacherClasses.includes(s.class));
+                const teacherCourses = allCourses.filter(c => c.teacherId === teacherId || c.teacher === teacherObj?.name);
 
-            let totalPendingSubmissions = 0;
-            const recentSubs = [];
+                let todayClassesData = [];
 
-            teacherCourses.forEach(course => {
-                const assignments = course.assignments || [];
-                assignments.forEach(assignment => {
-                    const submissions = assignment.submissions || [];
-                    
-                    totalPendingSubmissions += submissions.length;
+                if (teacherObj) {
+                    const teacherTimetable = allTimetables.find(t => t.teacherId === teacherObj.id || t.teacherName === teacherObj.name);
 
-                    submissions.forEach(sub => {
-                        recentSubs.push({
-                            id: sub.id,
-                            student: sub.studentName,
-                            assignment: assignment.title,
-                            subject: course.courseName,
-                            status: 'pending',
-                            date: new Date(sub.submittedAt || sub.createdAt)
+                    if (teacherTimetable && teacherTimetable.schedule) {
+                        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                        const currentDay = days[new Date().getDay()];
+
+                        const scheduleArray = Array.isArray(teacherTimetable.schedule)
+                            ? teacherTimetable.schedule
+                            : Object.entries(teacherTimetable.schedule).flatMap(([day, classes]) => classes.map(c => ({ ...c, day })));
+
+                        todayClassesData = scheduleArray
+                            .filter(s => s.day === currentDay)
+                            .sort((a, b) => {
+                                const timeA = parseInt((a.time || '0:0').split('-')[0].replace(':', ''));
+                                const timeB = parseInt((b.time || '0:0').split('-')[0].replace(':', ''));
+                                return timeA - timeB;
+                            })
+                            .map((s, idx) => ({
+                                id: idx,
+                                subject: s.subject,
+                                class: s.className || teacherObj.subject || 'Class',
+                                time: s.time,
+                                room: s.room
+                            }));
+                    }
+                }
+
+                const teacherClasses = [...new Set(teacherCourses.map(c => c.class))];
+                const myStudents = allStudents.filter(s => teacherClasses.includes(s.class));
+
+                let totalPendingSubmissions = 0;
+                const recentSubs = [];
+
+                teacherCourses.forEach(course => {
+                    const assignments = course.assignments || [];
+                    assignments.forEach(assignment => {
+                        const submissions = assignment.submissions || [];
+
+                        const pending = submissions.filter(s => s.status !== 'graded');
+                        totalPendingSubmissions += pending.length;
+
+                        submissions.forEach(sub => {
+                            recentSubs.push({
+                                id: sub.id,
+                                student: sub.studentName,
+                                assignment: assignment.title,
+                                subject: course.courseName,
+                                status: sub.status || 'pending',
+                                date: new Date(sub.submittedAt || sub.createdAt)
+                            });
                         });
                     });
                 });
-            });
 
-            recentSubs.sort((a, b) => b.date - a.date);
+                recentSubs.sort((a, b) => b.date - a.date);
 
-            setDashboardData({
-                totalClasses: teacherCourses.length,
-                totalStudents: myStudents.length > 0 ? myStudents.length : allStudents.length,
-                pendingAssignments: totalPendingSubmissions,
-                upcomingClasses: todayClassesData.length,
-                todayClasses: todayClassesData,
-                recentSubmissions: recentSubs.slice(0, 5)
-            });
+                setDashboardData({
+                    totalClasses: teacherCourses.length,
+                    totalStudents: myStudents.length > 0 ? myStudents.length : allStudents.length,
+                    pendingAssignments: totalPendingSubmissions,
+                    upcomingClasses: todayClassesData.length,
+                    todayClasses: todayClassesData,
+                    recentSubmissions: recentSubs.slice(0, 5)
+                });
+            } catch (error) {
+                console.error("Failed to load teacher dashboard", error);
+            }
         };
 
-        
         fetchDashboardData();
-
-        
-        const unsubscribe = subscribeToUpdates(fetchDashboardData);
-
-        return () => unsubscribe();
     }, [userEmail]);
 
     const getGreeting = () => {
@@ -168,7 +179,6 @@ const TeacherDashboard = () => {
         return 'Good evening';
     };
 
-    
     const renderContent = () => {
         if (activeTab === 'Students') {
             return <StudentsPage darkMode={darkMode} />;
@@ -206,7 +216,6 @@ const TeacherDashboard = () => {
             return <AnnouncementsPage darkMode={darkMode} />;
         }
 
-        
         return (
             <div className="flex-1 overflow-y-auto p-8">
                 <div className="mb-8">
@@ -386,8 +395,7 @@ const TeacherDashboard = () => {
                     </div>
                 </header>
 
-
-                {}
+                { }
                 {renderContent()}
             </main>
         </div>

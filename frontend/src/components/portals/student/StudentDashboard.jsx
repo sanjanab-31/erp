@@ -30,9 +30,13 @@ import {
     FileText,
     LogOut
 } from 'lucide-react';
-import { calculateAttendancePercentage, subscribeToUpdates as subscribeToAttendance } from '../../../utils/attendanceStore';
-import { getSubmissionsByStudent, getStudentFinalMarks, subscribeToAcademicUpdates } from '../../../utils/academicStore';
-import { getAllStudents } from '../../../utils/studentStore';
+import {
+    studentApi,
+    attendanceApi,
+    resultApi,
+    courseApi,
+    libraryApi
+} from '../../../services/api';
 
 const StudentPortal = () => {
     const navigate = useNavigate();
@@ -41,13 +45,11 @@ const StudentPortal = () => {
     const userEmail = localStorage.getItem('userEmail') || '';
     const userId = localStorage.getItem('userId') || '';
 
-    
     const [activeTab, setActiveTab] = useState('Dashboard');
     const [darkMode, setDarkMode] = useState(false);
     const [notifications, setNotifications] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
 
-    
     const [dashboardData, setDashboardData] = useState({
         attendance: 0,
         currentGrade: '-',
@@ -64,7 +66,6 @@ const StudentPortal = () => {
         recentGrades: []
     });
 
-    
     const menuItems = [
         { icon: Home, label: 'Dashboard', active: true },
         { icon: Calendar, label: 'Attendance' },
@@ -76,93 +77,114 @@ const StudentPortal = () => {
         { icon: Megaphone, label: 'Announcements' },
         { icon: FileText, label: 'Reports' },
         { icon: Settings, label: 'Settings' },
-        
 
     ];
 
     const handleLogout = () => {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userName');
+        localStorage.clear();
         navigate('/login');
     };
 
-    
     useEffect(() => {
-        const fetchDashboardData = () => {
-            
-            const students = getAllStudents();
-            const student = students.find(s => s.email === userEmail);
+        const fetchDashboardData = async () => {
+            if (!userEmail) return;
 
-            if (!student) {
-                console.log('Student not found for email:', userEmail);
-                return;
+            try {
+
+                const studentsRes = await studentApi.getAll();
+                const student = (studentsRes.data || []).find(s => s.email === userEmail);
+
+                if (!student) {
+                    console.log('Student not found for email:', userEmail);
+                    return;
+                }
+
+                const studentId = student.id;
+
+                const [
+                    attendanceRes,
+                    resultsRes,
+                    coursesRes,
+                    libraryUsageRes
+                ] = await Promise.all([
+                    attendanceApi.getAll(),
+                    resultApi.getAll(),
+                    courseApi.getAll(),
+                    libraryApi.getAllIssues()
+                ]);
+
+                const allAttendance = attendanceRes.data || [];
+                const studentAttendance = allAttendance.filter(a => a.studentId === studentId);
+                const totalDays = studentAttendance.length;
+                const presentDays = studentAttendance.filter(a => a.status === 'Present').length;
+                const attendancePct = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
+
+                const allResults = resultsRes.data || [];
+                const studentResults = allResults.filter(r => r.studentId === studentId);
+
+                const avgGrade = studentResults.length > 0
+                    ? studentResults.reduce((sum, r) => sum + (r.percentage || 0), 0) / studentResults.length
+                    : 0;
+                const overallGrade = avgGrade >= 90 ? 'A' : avgGrade >= 80 ? 'B+' : avgGrade >= 70 ? 'B' : avgGrade >= 60 ? 'C' : 'D';
+
+                const recentGrades = studentResults.slice(0, 2).map((r, idx) => ({
+                    id: idx + 1,
+                    subject: r.subject || 'Subject',
+                    assessment: r.examName || 'Assessment',
+                    grade: (r.percentage || 0) >= 90 ? 'A' : (r.percentage || 0) >= 80 ? 'B+' : 'B',
+                    color: (r.percentage || 0) >= 90 ? 'green' : 'blue'
+                }));
+
+                const allCourses = coursesRes.data || [];
+                const studentCourses = allCourses.filter(c => c.class === student.class);
+
+                let pendingSubmissions = 0;
+                let totalAssignments = 0;
+                let upcomingAssignments = [];
+
+                studentCourses.forEach(c => {
+                    const assigns = c.assignments || [];
+                    totalAssignments += assigns.length;
+                    assigns.forEach(a => {
+                        const isSubmitted = a.submissions && a.submissions.some(s => s.studentId === studentId);
+                        if (!isSubmitted) {
+                            pendingSubmissions++;
+                            upcomingAssignments.push({
+                                id: a.id,
+                                title: a.title,
+                                description: c.name,
+                                dueDate: a.dueDate,
+                                status: new Date(a.dueDate) < new Date(Date.now() + 86400000) ? 'urgent' : 'normal'
+                            });
+                        }
+                    });
+                });
+
+                const allIssues = libraryUsageRes.data || [];
+                const myIssues = allIssues.filter(i => i.studentId === studentId && i.status === 'Issued');
+
+                setDashboardData({
+                    attendance: attendancePct,
+                    currentGrade: overallGrade,
+                    gradePerformance: studentResults.length > 0 ? `Average: ${avgGrade.toFixed(1)}%` : 'No grades yet',
+                    assignments: {
+                        pending: pendingSubmissions,
+                        total: totalAssignments
+                    },
+                    libraryBooks: {
+                        issued: myIssues.length,
+                        total: 5
+                    },
+                    upcomingAssignments: upcomingAssignments.slice(0, 3),
+                    recentGrades: recentGrades
+                });
+
+            } catch (error) {
+                console.error("Failed to load student dashboard", error);
             }
-
-            const studentId = student.id;
-            console.log('Dashboard loading for student:', student.name, 'ID:', studentId);
-
-            
-            const attendancePercentage = calculateAttendancePercentage(studentId);
-
-            
-            const submissions = getSubmissionsByStudent(studentId);
-            const finalMarks = getStudentFinalMarks(studentId);
-
-            console.log('Attendance:', attendancePercentage);
-            console.log('Submissions:', submissions.length);
-            console.log('Final Marks:', finalMarks.length);
-
-            
-            const pendingSubmissions = submissions.filter(s => s.status !== 'graded');
-
-            
-            const recentGrades = finalMarks.slice(0, 2).map((mark, idx) => ({
-                id: idx + 1,
-                subject: mark.courseName,
-                assessment: 'Course Total',
-                grade: mark.finalTotal >= 90 ? 'A' : mark.finalTotal >= 80 ? 'B+' : mark.finalTotal >= 70 ? 'B' : 'C',
-                color: mark.finalTotal >= 90 ? 'green' : 'blue'
-            }));
-
-            
-            const avgGrade = finalMarks.length > 0
-                ? finalMarks.reduce((sum, m) => sum + m.finalTotal, 0) / finalMarks.length
-                : 0;
-            const overallGrade = avgGrade >= 90 ? 'A' : avgGrade >= 80 ? 'B+' : avgGrade >= 70 ? 'B' : avgGrade >= 60 ? 'C' : 'D';
-
-            setDashboardData({
-                attendance: attendancePercentage,
-                currentGrade: overallGrade,
-                gradePerformance: finalMarks.length > 0 ? `Average: ${avgGrade.toFixed(1)}%` : 'No grades yet',
-                assignments: {
-                    pending: pendingSubmissions.length,
-                    total: submissions.length
-                },
-                libraryBooks: {
-                    issued: 0, 
-                    total: 0
-                },
-                upcomingAssignments: [], 
-                recentGrades: recentGrades
-            });
         };
 
-        
-        if (userEmail) {
-            fetchDashboardData();
-        }
-
-        
-        const unsubscribeAttendance = subscribeToAttendance(fetchDashboardData);
-        const unsubscribeAcademic = subscribeToAcademicUpdates(fetchDashboardData);
-
-        return () => {
-            unsubscribeAttendance();
-            unsubscribeAcademic();
-        };
+        fetchDashboardData();
     }, [userEmail]);
 
     const getGreeting = () => {
@@ -172,7 +194,6 @@ const StudentPortal = () => {
         return 'Good evening';
     };
 
-    
     const renderContent = () => {
         if (activeTab === 'Attendance') {
             return <AttendancePage />;
@@ -209,13 +230,10 @@ const StudentPortal = () => {
         if (activeTab === 'Settings') {
             return <SettingsPage darkMode={darkMode} />;
         }
-        
-        
-        
-        
+
         return (
             <div className="flex-1 overflow-y-auto p-8">
-                {}
+                { }
                 <div className="mb-8">
                     <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                         {getGreeting()}, {userName.split(' ')[0]}!
@@ -223,9 +241,9 @@ const StudentPortal = () => {
                     <p className="text-sm text-gray-500">Student Dashboard</p>
                 </div>
 
-                {}
+                { }
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    {}
+                    { }
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                         <div className="flex items-center justify-between mb-4">
                             <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Attendance</h3>
@@ -242,7 +260,7 @@ const StudentPortal = () => {
                         </div>
                     </div>
 
-                    {}
+                    { }
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                         <div className="flex items-center justify-between mb-4">
                             <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Current Grade</h3>
@@ -254,7 +272,7 @@ const StudentPortal = () => {
                         <p className="text-sm text-gray-500">{dashboardData.gradePerformance}</p>
                     </div>
 
-                    {}
+                    { }
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                         <div className="flex items-center justify-between mb-4">
                             <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Assignments</h3>
@@ -266,7 +284,7 @@ const StudentPortal = () => {
                         <p className="text-sm text-gray-500">Pending submissions</p>
                     </div>
 
-                    {}
+                    { }
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                         <div className="flex items-center justify-between mb-4">
                             <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Library Books</h3>
@@ -279,9 +297,9 @@ const StudentPortal = () => {
                     </div>
                 </div>
 
-                {}
+                { }
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {}
+                    { }
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Upcoming Assignments</h3>
                         <div className="space-y-4">
@@ -309,7 +327,7 @@ const StudentPortal = () => {
                         </div>
                     </div>
 
-                    {}
+                    { }
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Recent Grades</h3>
                         <div className="space-y-4">
@@ -343,9 +361,9 @@ const StudentPortal = () => {
 
     return (
         <div className={`flex h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-            {}
+            { }
             <aside className={`w-64 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r flex flex-col`}>
-                {}
+                { }
                 <div className="px-6 py-3 border-b border-gray-200">
                     <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
@@ -358,7 +376,7 @@ const StudentPortal = () => {
                     </div>
                 </div>
 
-                {}
+                { }
                 <nav className="flex-1 p-4 overflow-y-auto">
                     <ul className="space-y-1">
                         {menuItems.map((item, index) => (
@@ -379,9 +397,9 @@ const StudentPortal = () => {
                 </nav>
             </aside>
 
-            {}
+            { }
             <main className="flex-1 flex flex-col overflow-hidden">
-                {}
+                { }
                 <header className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b px-8 py-4`}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
@@ -393,7 +411,7 @@ const StudentPortal = () => {
                         </div>
 
                         <div className="flex items-center space-x-4">
-                            {}
+                            { }
                             <div className="relative">
                                 <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                                 <input
@@ -408,7 +426,7 @@ const StudentPortal = () => {
                                 />
                             </div>
 
-                            {}
+                            { }
                             <button className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
                                 <Bell className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`} />
                                 {notifications > 0 && (
@@ -418,7 +436,7 @@ const StudentPortal = () => {
                                 )}
                             </button>
 
-                            {}
+                            { }
                             <button
                                 onClick={() => setDarkMode(!darkMode)}
                                 className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}
@@ -430,7 +448,7 @@ const StudentPortal = () => {
                                 )}
                             </button>
 
-                            {}
+                            { }
                             <button className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}>
                                 <Settings className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`} />
                             </button>
@@ -438,7 +456,7 @@ const StudentPortal = () => {
                     </div>
                 </header>
 
-                {}
+                { }
                 {renderContent()}
             </main>
         </div>

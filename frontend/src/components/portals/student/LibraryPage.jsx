@@ -9,7 +9,7 @@ import {
     Calendar,
     AlertTriangle
 } from 'lucide-react';
-import * as libraryStore from '../../../utils/libraryStore';
+import { libraryApi } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 
 const StudentLibraryPage = ({ darkMode }) => {
@@ -18,40 +18,44 @@ const StudentLibraryPage = ({ darkMode }) => {
     const [books, setBooks] = useState([]);
     const [myIssues, setMyIssues] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
-    const [rules, setRules] = useState(libraryStore.getLibraryRules());
     const [user] = useState({
         email: localStorage.getItem('userEmail') || 'student@eshwar.com',
         name: localStorage.getItem('userName') || 'Student',
         role: 'Student'
     });
+    const [rules] = useState({ currency: '₹' });
 
     useEffect(() => {
-        console.log('StudentLibrary: Loading data for user:', user.email);
+        const loadData = async () => {
+            try {
+                const [booksRes, issuesRes] = await Promise.all([
+                    libraryApi.getAllBooks(),
+                    libraryApi.getAllIssues({ userEmail: user.email })
+                ]);
 
-        const loadData = () => {
-            const allBooks = libraryStore.getAllBooks();
-            const userIssues = libraryStore.getIssuesByUser(user.email);
-            const currentRules = libraryStore.getLibraryRules();
-
-            console.log('StudentLibrary: Loaded books:', allBooks.length);
-            console.log('StudentLibrary: Loaded issues:', userIssues.length);
-
-            setBooks(allBooks);
-            setMyIssues(userIssues);
-            setRules(currentRules);
+                setBooks(booksRes.data || []);
+                setMyIssues(issuesRes.data || []);
+            } catch (error) {
+                console.error('Failed to load library data:', error);
+            }
         };
 
         loadData();
-        const unsubscribe = libraryStore.subscribeToUpdates(() => {
-            console.log('StudentLibrary: Received update event');
-            loadData();
-        });
-
-        return () => unsubscribe();
     }, [user.email]);
 
-    const handleRequestBook = (book) => {
-        
+    const refreshData = async () => {
+        try {
+            const [booksRes, issuesRes] = await Promise.all([
+                libraryApi.getAllBooks(),
+                libraryApi.getAllIssues({ userEmail: user.email })
+            ]);
+            setBooks(booksRes.data || []);
+            setMyIssues(issuesRes.data || []);
+        } catch (e) { }
+    };
+
+    const handleRequestBook = async (book) => {
+
         const alreadyHas = myIssues.some(i => i.bookId === book.id && (i.status === 'Issued' || i.status === 'Requested'));
         if (alreadyHas) {
             showWarning('You have already requested or issued this book.');
@@ -60,14 +64,19 @@ const StudentLibraryPage = ({ darkMode }) => {
 
         if (window.confirm(`Request "${book.title}" from the library?`)) {
             try {
-                libraryStore.issueBook(book.id, {
-                    id: user.email,
-                    name: user.name,
-                    role: user.role
-                }, null, 'Requested');
+                await libraryApi.issueBook({
+                    bookId: book.id,
+                    bookTitle: book.title,
+                    userId: user.email,
+                    userName: user.name,
+                    userRole: user.role,
+                    status: 'Requested',
+                    requestDate: new Date().toISOString()
+                });
                 showSuccess('Book requested successfully! Please collect it from the library once approved.');
+                refreshData();
             } catch (error) {
-                showError(error.message);
+                showError(error.response?.data?.message || 'Failed to request book');
             }
         }
     };
@@ -88,7 +97,7 @@ const StudentLibraryPage = ({ darkMode }) => {
                 <Book className="w-8 h-8 text-blue-600" />
             </div>
 
-            {}
+            { }
             <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
                 <button
                     onClick={() => setActiveTab('browse')}
@@ -104,7 +113,7 @@ const StudentLibraryPage = ({ darkMode }) => {
                 </button>
             </div>
 
-            {}
+            { }
             {activeTab === 'browse' && (
                 <div className="space-y-4">
                     <div className="relative">

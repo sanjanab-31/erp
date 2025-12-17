@@ -38,24 +38,17 @@ export const sendAnnouncement = async (req, res) => {
 
         console.log(`Sending announcement "${title}" to ${recipients.length} recipients...`);
 
-        // Process in background (don't wait for all to finish to respond to client, 
-        // OR wait if we want to confirm. Let's wait for a few, or fire and forget?
-        // Better to wait for simplicity and confirmation, but limit concurrency if needed.
-        // For this scale, Promise.all is fine.
-
         let emailCount = 0;
         let smsCount = 0;
 
         const promises = recipients.map(async (recipient) => {
             const { email, phone, name } = recipient;
 
-            // Send Email
             if (email) {
                 const sent = await sendAnnouncementEmail(email, name, title, description, attachment);
                 if (sent) emailCount++;
             }
 
-            // Send SMS
             if (phone) {
                 const sent = await sendAnnouncementSMS(phone, title);
                 if (sent) smsCount++;

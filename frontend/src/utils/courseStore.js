@@ -1,13 +1,10 @@
 
 
-
 const STORAGE_KEY = 'erp_course_data';
-
 
 const initializeDefaultData = () => {
     return [];
 };
-
 
 export const getAllCourses = () => {
     try {
@@ -23,7 +20,6 @@ export const getAllCourses = () => {
         return initializeDefaultData();
     }
 };
-
 
 export const addCourse = (courseData) => {
     try {
@@ -49,7 +45,6 @@ export const addCourse = (courseData) => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
         console.log('Course saved to localStorage');
 
-        
         window.dispatchEvent(new Event('coursesUpdated'));
         console.log('coursesUpdated event dispatched');
 
@@ -59,7 +54,6 @@ export const addCourse = (courseData) => {
         throw error;
     }
 };
-
 
 export const updateCourse = (courseId, updates) => {
     try {
@@ -78,7 +72,6 @@ export const updateCourse = (courseId, updates) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
 
-        
         window.dispatchEvent(new Event('coursesUpdated'));
 
         return courses[index];
@@ -88,7 +81,6 @@ export const updateCourse = (courseId, updates) => {
     }
 };
 
-
 export const deleteCourse = (courseId) => {
     try {
         const courses = getAllCourses();
@@ -96,7 +88,6 @@ export const deleteCourse = (courseId) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredCourses));
 
-        
         window.dispatchEvent(new Event('coursesUpdated'));
 
         return true;
@@ -105,7 +96,6 @@ export const deleteCourse = (courseId) => {
         throw error;
     }
 };
-
 
 export const addCourseMaterial = (courseId, materialData) => {
     try {
@@ -133,7 +123,6 @@ export const addCourseMaterial = (courseId, materialData) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
 
-        
         window.dispatchEvent(new Event('coursesUpdated'));
 
         return newMaterial;
@@ -142,7 +131,6 @@ export const addCourseMaterial = (courseId, materialData) => {
         throw error;
     }
 };
-
 
 export const deleteCourseMaterial = (courseId, materialId) => {
     try {
@@ -161,7 +149,6 @@ export const deleteCourseMaterial = (courseId, materialId) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
 
-        
         window.dispatchEvent(new Event('coursesUpdated'));
 
         return true;
@@ -170,7 +157,6 @@ export const deleteCourseMaterial = (courseId, materialId) => {
         throw error;
     }
 };
-
 
 export const addAssignment = (courseId, assignmentData) => {
     try {
@@ -198,7 +184,6 @@ export const addAssignment = (courseId, assignmentData) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
 
-        
         window.dispatchEvent(new Event('coursesUpdated'));
 
         return newAssignment;
@@ -207,7 +192,6 @@ export const addAssignment = (courseId, assignmentData) => {
         throw error;
     }
 };
-
 
 export const deleteAssignment = (courseId, assignmentId) => {
     try {
@@ -226,7 +210,6 @@ export const deleteAssignment = (courseId, assignmentId) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
 
-        
         window.dispatchEvent(new Event('coursesUpdated'));
 
         return true;
@@ -235,7 +218,6 @@ export const deleteAssignment = (courseId, assignmentId) => {
         throw error;
     }
 };
-
 
 export const submitAssignment = (courseId, assignmentId, submissionData) => {
     try {
@@ -252,7 +234,6 @@ export const submitAssignment = (courseId, assignmentId, submissionData) => {
             throw new Error('Assignment not found');
         }
 
-        
         const existingSubmissionIndex = assignment.submissions.findIndex(
             s => s.studentId === submissionData.studentId
         );
@@ -280,7 +261,6 @@ export const submitAssignment = (courseId, assignmentId, submissionData) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
 
-        
         window.dispatchEvent(new Event('coursesUpdated'));
 
         return newSubmission;
@@ -289,7 +269,6 @@ export const submitAssignment = (courseId, assignmentId, submissionData) => {
         throw error;
     }
 };
-
 
 export const getCoursesByTeacher = (teacherId) => {
     console.log('getCoursesByTeacher called with teacherId:', teacherId);
@@ -306,7 +285,6 @@ export const getCoursesByTeacher = (teacherId) => {
     return filtered;
 };
 
-
 export const getCoursesByClass = (className) => {
     console.log('getCoursesByClass called with className:', className);
     const courses = getAllCourses();
@@ -322,7 +300,6 @@ export const getCoursesByClass = (className) => {
     return filtered;
 };
 
-
 export const getCoursesForStudent = (studentId) => {
     const courses = getAllCourses();
     return courses.filter(c =>
@@ -330,12 +307,10 @@ export const getCoursesForStudent = (studentId) => {
     );
 };
 
-
 export const subscribeToUpdates = (callback) => {
     const handler = () => callback(getAllCourses());
     window.addEventListener('coursesUpdated', handler);
 
-    
     return () => window.removeEventListener('coursesUpdated', handler);
 };
 

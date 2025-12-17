@@ -12,9 +12,7 @@ import {
     Phone,
     LogOut
 } from 'lucide-react';
-import { getSettings, updateSettingsSection, changePassword, subscribeToSettingsUpdates } from '../../../utils/settingsStore';
-import { getAllStudents } from '../../../utils/studentStore';
-import { getChildrenByParentEmail } from '../../../utils/userStore';
+import { studentApi, settingsApi } from '../../../services/api';
 
 const SettingsPage = ({ darkMode }) => {
     const navigate = useNavigate();
@@ -49,79 +47,70 @@ const SettingsPage = ({ darkMode }) => {
     });
 
     const handleLogout = () => {
-        localStorage.removeItem('authToken'); 
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userName');
-        localStorage.removeItem('token');
+        localStorage.clear();
         navigate('/login');
     };
 
-    
     useEffect(() => {
-        const parentEmail = localStorage.getItem('userEmail');
+        const loadInitData = async () => {
+            const parentEmail = localStorage.getItem('userEmail');
+            if (parentEmail) {
+                try {
+                    const res = await studentApi.getAll();
+                    const students = res.data || [];
+                    const parentChildren = students.filter(s => s.parentEmail === parentEmail || s.guardianEmail === parentEmail || s.email === parentEmail);
+                    setChildren(parentChildren);
 
-        if (parentEmail) {
-            
-            const parentChildren = getChildrenByParentEmail(parentEmail);
-            setChildren(parentChildren);
+                    if (parentChildren.length > 0) {
+                        const child = parentChildren[0];
+                        setProfileData({
+                            name: child.parentName || localStorage.getItem('userName') || '',
+                            email: child.parentEmail || parentEmail,
+                            phone: child.parentPhone || '',
+                            address: child.address || '',
+                            relationship: 'Parent/Guardian'
+                        });
+                    } else {
+                        setProfileData({
+                            name: localStorage.getItem('userName') || '',
+                            email: parentEmail,
+                            phone: '',
+                            address: '',
+                            relationship: 'Parent/Guardian'
+                        });
+                    }
 
-            console.log('Loading settings for parent:', parentEmail);
-            console.log('Children found:', parentChildren);
-
-            
-            if (parentChildren && parentChildren.length > 0) {
-                const students = getAllStudents();
-                const child = students.find(s => s.id === parentChildren[0].id);
-
-                console.log('Child record:', child);
-
-                if (child) {
-                    setProfileData({
-                        name: child.parentName || '',
-                        email: child.parentEmail || parentEmail,
-                        phone: child.parentPhone || '',
-                        address: child.address || '',
-                        relationship: 'Parent/Guardian'
-                    });
+                    const settingsRes = await settingsApi.get('parent');
+                    if (settingsRes.data && settingsRes.data.notifications) {
+                        setNotificationSettings(settingsRes.data.notifications);
+                    }
+                } catch (error) {
+                    console.error('Error loading settings data:', error);
                 }
-            } else {
-                
-                setProfileData({
-                    name: localStorage.getItem('userName') || '',
-                    email: parentEmail,
-                    phone: '',
-                    address: '',
-                    relationship: 'Parent/Guardian'
-                });
             }
-        }
+            setLoading(false);
+        };
 
-        
-        const settings = getSettings('parent');
-        if (settings.notifications) setNotificationSettings(settings.notifications);
-
-        setLoading(false);
-
-        
-        const unsubscribe = subscribeToSettingsUpdates('parent', (updatedSettings) => {
-            if (updatedSettings.notifications) setNotificationSettings(updatedSettings.notifications);
-        });
-
-        return () => unsubscribe();
+        loadInitData();
     }, []);
 
-    const handleSave = () => {
-        updateSettingsSection('parent', 'profile', profileData);
-        updateSettingsSection('parent', 'notifications', notificationSettings);
+    const handleSave = async () => {
+        try {
+            await Promise.all([
+                settingsApi.update('parent', 'profile', profileData),
+                settingsApi.update('parent', 'notifications', notificationSettings)
+            ]);
 
-        setSaved(true);
-        setSaveMessage('Settings saved successfully!');
-        setTimeout(() => {
-            setSaved(false);
-            setSaveMessage('');
-        }, 3000);
+            setSaved(true);
+            setSaveMessage('Settings saved successfully!');
+            setTimeout(() => {
+                setSaved(false);
+                setSaveMessage('');
+            }, 3000);
+        } catch (error) {
+            setSaveMessage('Error saving settings: ' + error.message);
+            setTimeout(() => setSaveMessage(''), 3000);
+        }
     };
 
     const sections = [
@@ -239,7 +228,7 @@ const SettingsPage = ({ darkMode }) => {
                             </div>
                         </div>
 
-                        {}
+                        { }
                         {children && children.length > 0 && (
                             <div className="mt-8">
                                 <h4 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
@@ -371,7 +360,7 @@ const SettingsPage = ({ darkMode }) => {
                             </div>
 
                             <button
-                                onClick={() => {
+                                onClick={async () => {
                                     if (!securitySettings.currentPassword || !securitySettings.newPassword || !securitySettings.confirmPassword) {
                                         setSaveMessage('Please fill all password fields');
                                         setTimeout(() => setSaveMessage(''), 3000);
@@ -382,15 +371,24 @@ const SettingsPage = ({ darkMode }) => {
                                         setTimeout(() => setSaveMessage(''), 3000);
                                         return;
                                     }
-                                    changePassword('parent', securitySettings.currentPassword, securitySettings.newPassword);
-                                    setSecuritySettings({ currentPassword: '', newPassword: '', confirmPassword: '' });
-                                    setSaveMessage('Password updated successfully!');
+                                    try {
+                                        await settingsApi.changePassword({
+                                            role: 'parent',
+                                            currentPassword: securitySettings.currentPassword,
+                                            newPassword: securitySettings.newPassword
+                                        });
+                                        setSecuritySettings({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                                        setSaveMessage('Password updated successfully!');
+                                    } catch (err) {
+                                        setSaveMessage(err.response?.data?.message || 'Error updating password');
+                                    }
                                     setTimeout(() => setSaveMessage(''), 3000);
                                 }}
                                 className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
                             >
                                 Update Password
                             </button>
+
                         </div>
                     </div>
                 );
@@ -402,7 +400,7 @@ const SettingsPage = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {}
+            { }
             <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Settings
@@ -411,7 +409,7 @@ const SettingsPage = ({ darkMode }) => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                {}
+                { }
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} h-fit`}>
                     <nav className="space-y-2">
                         {sections.map((section) => (
@@ -428,7 +426,7 @@ const SettingsPage = ({ darkMode }) => {
                             </button>
                         ))}
 
-                        {}
+                        { }
                         <div className="pt-4 mt-4 border-t border-gray-200">
                             <button
                                 onClick={handleLogout}
@@ -441,12 +439,12 @@ const SettingsPage = ({ darkMode }) => {
                     </nav>
                 </div>
 
-                {}
+                { }
                 <div className="lg:col-span-3">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-8 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                         {renderContent()}
 
-                        {}
+                        { }
                         <div className="flex items-center justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
                             {(saved || saveMessage) && (
                                 <span className={`text-sm font-medium ${saveMessage.includes('success') || saveMessage.includes('updated') || saved ? 'text-green-600' : 'text-red-600'}`}>

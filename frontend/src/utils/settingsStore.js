@@ -1,13 +1,11 @@
 
 
-
 const STORAGE_KEYS = {
     STUDENT: 'erp_student_settings',
     TEACHER: 'erp_teacher_settings',
     PARENT: 'erp_parent_settings',
     ADMIN: 'erp_admin_settings'
 };
-
 
 const initializeDefaultSettings = (portal) => {
     const commonSettings = {
@@ -129,7 +127,6 @@ const initializeDefaultSettings = (portal) => {
     }
 };
 
-
 export const getSettings = (portal) => {
     try {
         const storageKey = STORAGE_KEYS[portal.toUpperCase()];
@@ -150,7 +147,6 @@ export const getSettings = (portal) => {
     }
 };
 
-
 export const updateSettings = (portal, updates) => {
     try {
         const storageKey = STORAGE_KEYS[portal.toUpperCase()];
@@ -167,7 +163,6 @@ export const updateSettings = (portal, updates) => {
 
         localStorage.setItem(storageKey, JSON.stringify(updatedSettings));
 
-        
         window.dispatchEvent(new CustomEvent('settingsUpdated', {
             detail: { portal, settings: updatedSettings }
         }));
@@ -178,7 +173,6 @@ export const updateSettings = (portal, updates) => {
         throw error;
     }
 };
-
 
 export const updateSettingsSection = (portal, section, data) => {
     try {
@@ -195,7 +189,6 @@ export const updateSettingsSection = (portal, section, data) => {
         const storageKey = STORAGE_KEYS[portal.toUpperCase()];
         localStorage.setItem(storageKey, JSON.stringify(updatedSettings));
 
-        
         window.dispatchEvent(new CustomEvent('settingsUpdated', {
             detail: { portal, section, settings: updatedSettings }
         }));
@@ -207,11 +200,9 @@ export const updateSettingsSection = (portal, section, data) => {
     }
 };
 
-
 export const changePassword = (portal, currentPassword, newPassword) => {
     try {
-        
-        
+
         const currentSettings = getSettings(portal);
         const updatedSettings = {
             ...currentSettings,
@@ -225,7 +216,6 @@ export const changePassword = (portal, currentPassword, newPassword) => {
         const storageKey = STORAGE_KEYS[portal.toUpperCase()];
         localStorage.setItem(storageKey, JSON.stringify(updatedSettings));
 
-        
         window.dispatchEvent(new CustomEvent('settingsUpdated', {
             detail: { portal, section: 'security', settings: updatedSettings }
         }));
@@ -237,14 +227,12 @@ export const changePassword = (portal, currentPassword, newPassword) => {
     }
 };
 
-
 export const resetSettings = (portal) => {
     try {
         const defaultSettings = initializeDefaultSettings(portal);
         const storageKey = STORAGE_KEYS[portal.toUpperCase()];
         localStorage.setItem(storageKey, JSON.stringify(defaultSettings));
 
-        
         window.dispatchEvent(new CustomEvent('settingsUpdated', {
             detail: { portal, settings: defaultSettings }
         }));
@@ -256,7 +244,6 @@ export const resetSettings = (portal) => {
     }
 };
 
-
 export const subscribeToSettingsUpdates = (portal, callback) => {
     const handler = (event) => {
         if (event.detail.portal === portal) {
@@ -265,7 +252,6 @@ export const subscribeToSettingsUpdates = (portal, callback) => {
     };
     window.addEventListener('settingsUpdated', handler);
 
-    
     return () => window.removeEventListener('settingsUpdated', handler);
 };
 

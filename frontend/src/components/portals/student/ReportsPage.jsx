@@ -9,9 +9,13 @@ import {
     BookOpen,
     Clock
 } from 'lucide-react';
-import { calculateAttendancePercentage, getAttendanceByStudent } from '../../../utils/attendanceStore';
-import { getStudentFinalMarks, getSubmissionsByStudent, getAllAcademicData } from '../../../utils/academicStore';
-import { getAllStudents } from '../../../utils/studentStore';
+import {
+    studentApi,
+    attendanceApi,
+    resultApi,
+    assignmentApi,
+    courseApi
+} from '../../../services/api';
 
 const ReportsPage = ({ darkMode }) => {
     const [selectedReport, setSelectedReport] = useState('Academic Performance');
@@ -22,7 +26,6 @@ const ReportsPage = ({ darkMode }) => {
         'Progress Summary': { summary: '', data: [] }
     });
 
-    
     const studentEmail = localStorage.getItem('userEmail') || '';
     const studentName = localStorage.getItem('userName') || 'Student';
     const [studentId, setStudentId] = useState('');
@@ -34,148 +37,137 @@ const ReportsPage = ({ darkMode }) => {
         { name: 'Progress Summary', icon: TrendingUp, color: 'bg-orange-500' }
     ];
 
-    
     useEffect(() => {
-        if (studentEmail) {
-            const students = getAllStudents();
-            const student = students.find(s => s.email === studentEmail);
-            if (student) {
-                setStudentId(student.id);
-                console.log('Found student:', student);
-                console.log('Student ID:', student.id);
+        const init = async () => {
+            if (studentEmail) {
+                try {
+                    const studentRes = await studentApi.getAll();
+                    const students = studentRes.data || [];
+                    const student = students.find(s => s.email === studentEmail);
+                    if (student) {
+                        setStudentId(student.id);
+                        loadReportData(student.id);
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
             }
-        }
+        };
+        init();
     }, [studentEmail]);
 
-    useEffect(() => {
-        if (studentId) {
-            loadReportData();
-        }
-    }, [studentId]);
+    const loadReportData = async (sId) => {
+        try {
+            const [resultsRes, attendanceRes, assignmentsRes, coursesRes] = await Promise.all([
+                resultApi.getAll({ studentId: sId }),
+                attendanceApi.getByStudent(sId),
+                assignmentApi.getAll(),
+                courseApi.getAll()
+            ]);
 
-    const loadReportData = () => {
-        
-        const finalMarks = getStudentFinalMarks(studentId);
-        const academicData = finalMarks.map((mark, index) => {
-            const percentage = mark.finalTotal;
-            const grade = percentage >= 90 ? 'A+' : percentage >= 80 ? 'A' : percentage >= 70 ? 'A-' : percentage >= 60 ? 'B+' : 'B';
+            const allResults = resultsRes.data || [];
+            const allAttendance = attendanceRes.data || [];
+            const allCourses = coursesRes.data || [];
 
-            return {
-                subject: mark.courseName || `Subject ${index + 1}`,
-                grade,
-                percentage: Math.round(percentage),
-                rank: Math.floor(Math.random() * 10) + 1 
-            };
-        });
+            const academicData = allResults.map(result => {
+                const course = allCourses.find(c => c.id === result.courseId);
+                const scores = result.examScores || {};
+                const total = (scores.exam1 || 0) + (scores.exam2 || 0) + (scores.exam3 || 0);
+                const percentage = total / 3;
+                const grade = percentage >= 90 ? 'A+' : percentage >= 80 ? 'A' : percentage >= 70 ? 'A-' : percentage >= 60 ? 'B+' : 'B';
 
-        
-        const attendanceRecords = getAttendanceByStudent(studentId);
-        const monthlyAttendance = {};
-
-        attendanceRecords.forEach(record => {
-            const date = new Date(record.date);
-            const monthKey = date.toLocaleString('default', { month: 'long' });
-
-            if (!monthlyAttendance[monthKey]) {
-                monthlyAttendance[monthKey] = { present: 0, absent: 0, late: 0 };
-            }
-
-            if (record.status === 'Present') {
-                monthlyAttendance[monthKey].present++;
-            } else if (record.status === 'Absent') {
-                monthlyAttendance[monthKey].absent++;
-            } else if (record.status === 'Late') {
-                monthlyAttendance[monthKey].late++;
-            }
-        });
-
-        const attendanceData = Object.entries(monthlyAttendance).map(([month, data]) => {
-            const total = data.present + data.absent + data.late;
-            const percentage = total > 0 ? Math.round((data.present / total) * 100) : 0;
-
-            return {
-                month,
-                present: data.present,
-                absent: data.absent,
-                late: data.late,
-                percentage
-            };
-        });
-
-        
-        const submissions = getSubmissionsByStudent(studentId);
-        console.log('Student ID:', studentId);
-        console.log('Submissions found:', submissions);
-
-        const allAcademicData = getAllAcademicData();
-
-        const assignmentsData = submissions.map(sub => {
-            
-            const assignment = allAcademicData.assignments.find(a => a.id === sub.assignmentId);
-            const course = allAcademicData.courses.find(c => c.id === sub.courseId);
-
-            console.log('Submission:', sub);
-            console.log('Assignment:', assignment);
-            console.log('Course:', course);
-
-            return {
-                title: assignment?.title || sub.assignmentTitle || 'Assignment',
-                course: course?.name || sub.courseName || 'Course',
-                status: sub.status || 'pending',
-                marks: sub.marks !== null && sub.marks !== undefined ? sub.marks : 0,
-                maxMarks: assignment?.maxMarks || sub.maxMarks || 100,
-                submittedDate: sub.submittedAt ? new Date(sub.submittedAt).toLocaleDateString() : 'Not submitted',
-                grade: sub.marks !== null && sub.marks !== undefined
-                    ? (sub.marks >= 90 ? 'A+' : sub.marks >= 80 ? 'A' : sub.marks >= 70 ? 'B+' : sub.marks >= 60 ? 'B' : 'C')
-                    : 'N/A'
-            };
-        });
-
-        
-        const progressData = [];
-        if (finalMarks.length > 0) {
-            const avgMarks = finalMarks.reduce((sum, m) => sum + m.finalTotal, 0) / finalMarks.length;
-            const grade = avgMarks >= 90 ? 'A+' : avgMarks >= 80 ? 'A' : avgMarks >= 70 ? 'A-' : avgMarks >= 60 ? 'B+' : 'B';
-            const overallAttendance = calculateAttendancePercentage(studentId);
-
-            progressData.push({
-                term: 'Current Term',
-                overall: Math.round(avgMarks),
-                attendance: overallAttendance,
-                rank: Math.floor(Math.random() * 10) + 1,
-                grade,
-                totalSubjects: finalMarks.length,
-                assignmentsCompleted: submissions.filter(s => s.status === 'graded').length,
-                totalAssignments: submissions.length
+                return {
+                    subject: course?.name || 'Unknown',
+                    grade,
+                    percentage: Math.round(percentage),
+                    rank: Math.floor(Math.random() * 10) + 1
+                };
             });
-        }
 
-        setReportData({
-            'Academic Performance': {
-                summary: 'Your subject-wise academic performance',
-                data: academicData.length > 0 ? academicData : [
-                    { subject: 'No data available', grade: 'N/A', percentage: 0, rank: 0 }
-                ]
-            },
-            'Attendance Report': {
-                summary: 'Your monthly attendance summary',
-                data: attendanceData.length > 0 ? attendanceData : [
-                    { month: 'No data available', present: 0, absent: 0, late: 0, percentage: 0 }
-                ]
-            },
-            'Assignments Report': {
-                summary: 'Your assignment submissions and grades',
-                data: assignmentsData.length > 0 ? assignmentsData : [
-                    { title: 'No assignments available', course: 'N/A', status: 'N/A', marks: 0, maxMarks: 0, submittedDate: 'N/A', grade: 'N/A' }
-                ]
-            },
-            'Progress Summary': {
-                summary: 'Your overall academic progress',
-                data: progressData.length > 0 ? progressData : [
-                    { term: 'No data available', overall: 0, attendance: 0, rank: 0, grade: 'N/A', totalSubjects: 0, assignmentsCompleted: 0, totalAssignments: 0 }
-                ]
+            const monthlyAttendance = {};
+            allAttendance.forEach(record => {
+                const date = new Date(record.date);
+                const monthKey = date.toLocaleString('default', { month: 'long' });
+                if (!monthlyAttendance[monthKey]) {
+                    monthlyAttendance[monthKey] = { present: 0, absent: 0, late: 0 };
+                }
+                if (record.status === 'Present') monthlyAttendance[monthKey].present++;
+                else if (record.status === 'Absent') monthlyAttendance[monthKey].absent++;
+                else if (record.status === 'Late') monthlyAttendance[monthKey].late++;
+            });
+
+            const attendanceData = Object.entries(monthlyAttendance).map(([month, data]) => {
+                const total = data.present + data.absent + data.late;
+                return {
+                    month,
+                    present: data.present,
+                    absent: data.absent,
+                    late: data.late,
+                    percentage: total > 0 ? Math.round((data.present / total) * 100) : 0
+                };
+            });
+
+            const assignmentsData = [];
+            for (const course of allCourses) {
+                const courseAssignments = course.assignments || [];
+                for (const assign of courseAssignments) {
+                    try {
+                        const subRes = await assignmentApi.getSubmissions(assign.id);
+                        const sub = (subRes.data || []).find(s => s.studentId === sId);
+                        if (sub) {
+                            assignmentsData.push({
+                                title: assign.title,
+                                course: course.name,
+                                status: sub.status,
+                                marks: sub.marks || 0,
+                                maxMarks: 100,
+                                submittedDate: sub.submittedAt ? new Date(sub.submittedAt).toLocaleDateString() : 'N/A',
+                                grade: (sub.marks || 0) >= 90 ? 'A+' : (sub.marks || 0) >= 80 ? 'A' : 'B'
+                            });
+                        }
+                    } catch (e) { }
+                }
             }
-        });
+
+            const avgAcademic = academicData.length > 0
+                ? academicData.reduce((sum, item) => sum + item.percentage, 0) / academicData.length
+                : 0;
+            const totalAttend = allAttendance.length;
+            const presentAttend = allAttendance.filter(a => a.status === 'Present').length;
+            const overallAttendRate = totalAttend > 0 ? Math.round((presentAttend / totalAttend) * 100) : 0;
+
+            const progressData = [{
+                term: 'Current Term',
+                overall: Math.round(avgAcademic),
+                attendance: overallAttendRate,
+                rank: Math.floor(Math.random() * 10) + 1,
+                grade: avgAcademic >= 90 ? 'A+' : avgAcademic >= 80 ? 'A' : 'B',
+                totalSubjects: academicData.length,
+                assignmentsCompleted: assignmentsData.filter(a => a.status === 'graded').length,
+                totalAssignments: assignmentsData.length
+            }];
+
+            setReportData({
+                'Academic Performance': {
+                    summary: 'Your subject-wise academic performance',
+                    data: academicData.length > 0 ? academicData : [{ subject: 'No data', grade: 'N/A', percentage: 0, rank: 0 }]
+                },
+                'Attendance Report': {
+                    summary: 'Your monthly attendance summary',
+                    data: attendanceData.length > 0 ? attendanceData : [{ month: 'No data', present: 0, absent: 0, late: 0, percentage: 0 }]
+                },
+                'Assignments Report': {
+                    summary: 'Your assignment submissions and grades',
+                    data: assignmentsData.length > 0 ? assignmentsData : [{ title: 'No data', course: 'N/A', status: 'N/A', marks: 0, maxMarks: 0, submittedDate: 'N/A', grade: 'N/A' }]
+                },
+                'Progress Summary': {
+                    summary: 'Your overall academic progress',
+                    data: progressData
+                }
+            });
+        } catch (error) {
+            console.error(error);
+        }
     };
 
     return (
@@ -193,7 +185,7 @@ const ReportsPage = ({ darkMode }) => {
                 </button>
             </div>
 
-            {}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {reportTypes.map((type) => (
                     <button
@@ -216,7 +208,7 @@ const ReportsPage = ({ darkMode }) => {
                 ))}
             </div>
 
-            {}
+            { }
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-8 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="mb-6">
                     <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>

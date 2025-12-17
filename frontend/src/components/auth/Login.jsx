@@ -12,8 +12,6 @@ const Login = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-
-
     const roles = [
         { name: 'Student', icon: User },
         { name: 'Teacher', icon: BookOpen },
@@ -33,21 +31,24 @@ const Login = () => {
         setLoading(true);
 
         try {
-            const { login } = await import('../../utils/jwt');
-            const response = await login(email, password, activeRole);
+            const { authApi } = await import('../../services/api');
+            const response = await authApi.login({ email, password, role: activeRole });
 
-            localStorage.setItem('authToken', response.token);
-            localStorage.setItem('userRole', response.user.role);
-            localStorage.setItem('userEmail', response.user.email);
-            localStorage.setItem('userName', response.user.name);
+            const { token, user } = response.data;
 
-
+            localStorage.setItem('token', token);
+            localStorage.setItem('isAuthenticated', 'true');
+            localStorage.setItem('userRole', user.role);
+            localStorage.setItem('userEmail', user.email);
+            localStorage.setItem('userName', user.name);
+            localStorage.setItem('currentUser', JSON.stringify(user));
 
             setTimeout(() => {
                 navigate(`/dashboard/${activeRole.toLowerCase()}`);
             }, 800);
         } catch (error) {
-            setError(error.message || 'Invalid email or password');
+            console.error('Login error', error);
+            setError(error.response?.data?.message || error.message || 'Invalid email or password');
             setLoading(false);
         }
     };

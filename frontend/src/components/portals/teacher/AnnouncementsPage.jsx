@@ -11,7 +11,7 @@ import {
     Trash2,
     X
 } from 'lucide-react';
-import * as announcementStore from '../../../utils/announcementStore';
+import { announcementApi } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 
 const AnnouncementsPage = ({ darkMode }) => {
@@ -19,43 +19,39 @@ const AnnouncementsPage = ({ darkMode }) => {
     const [announcements, setAnnouncements] = useState([]);
     const [myAnnouncements, setMyAnnouncements] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeTab, setActiveTab] = useState('all'); 
+    const [activeTab, setActiveTab] = useState('all');
     const [showModal, setShowModal] = useState(false);
-    const [modalType, setModalType] = useState('add'); 
+    const [modalType, setModalType] = useState('add');
     const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
 
-    
-    const teacherClass = 'Grade 10-A'; 
+    const teacherClass = 'Grade 10-A';
     const teacherName = localStorage.getItem('userName') || 'Teacher';
     const teacherEmail = localStorage.getItem('userEmail') || 'teacher@eshwar.com';
 
     const availableClasses = ['Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
 
-    useEffect(() => {
-        const loadData = () => {
-            
-            const teacherAnnouncements = announcementStore.getAnnouncementsForAudience('Teachers', teacherClass);
-            const allAnnouncements = announcementStore.getAnnouncementsForAudience('All', teacherClass);
+    const loadData = async () => {
+        try {
+            const res = await announcementApi.getAll();
+            const allAnnouncements = res.data || [];
 
-            
-            const combined = [...teacherAnnouncements, ...allAnnouncements];
-            const unique = combined.filter((item, index, self) =>
-                index === self.findIndex((t) => t.id === item.id)
+            const teacherAnnouncements = allAnnouncements.filter(a =>
+                (a.targetAudience === 'Teachers' || a.targetAudience === 'All') &&
+                (!a.classes || a.classes.length === 0 || a.classes.includes(teacherClass))
             );
+            setAnnouncements(teacherAnnouncements);
 
-            setAnnouncements(unique);
-
-            
-            const allAnnouncementsData = announcementStore.getAllAnnouncements();
-            const teacherCreated = allAnnouncementsData.filter(a =>
+            const teacherCreated = allAnnouncements.filter(a =>
                 a.createdBy === 'Teacher' && a.createdByName === teacherName
             );
             setMyAnnouncements(teacherCreated);
-        };
+        } catch (error) {
+            console.error('Error loading announcements:', error);
+        }
+    };
 
+    useEffect(() => {
         loadData();
-        const unsubscribe = announcementStore.subscribeToUpdates(loadData);
-        return () => unsubscribe();
     }, [teacherName]);
 
     const handleAdd = () => {
@@ -70,9 +66,15 @@ const AnnouncementsPage = ({ darkMode }) => {
         setShowModal(true);
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this announcement?')) {
-            announcementStore.deleteAnnouncement(id);
+            try {
+                await announcementApi.delete(id);
+                showSuccess('Announcement deleted successfully');
+                loadData();
+            } catch (error) {
+                showError('Error deleting announcement: ' + error.message);
+            }
         }
     };
 
@@ -91,8 +93,8 @@ const AnnouncementsPage = ({ darkMode }) => {
             selectedAnnouncement || {
                 title: '',
                 description: '',
-                targetAudience: 'Students', 
-                classes: [teacherClass], 
+                targetAudience: 'Students',
+                classes: [teacherClass],
                 attachment: '',
                 publishDate: new Date().toISOString().split('T')[0],
                 createdBy: 'Teacher',
@@ -100,15 +102,18 @@ const AnnouncementsPage = ({ darkMode }) => {
             }
         );
 
-        const handleSubmit = (e) => {
+        const handleSubmit = async (e) => {
             e.preventDefault();
             try {
                 if (modalType === 'add') {
-                    announcementStore.addAnnouncement(formData);
+                    await announcementApi.create(formData);
+                    showSuccess('Announcement published successfully');
                 } else {
-                    announcementStore.updateAnnouncement(selectedAnnouncement.id, formData);
+                    await announcementApi.update(selectedAnnouncement.id, formData);
+                    showSuccess('Announcement updated successfully');
                 }
                 setShowModal(false);
+                loadData();
             } catch (error) {
                 showError(error.message);
             }
@@ -226,7 +231,7 @@ const AnnouncementsPage = ({ darkMode }) => {
 
     return (
         <div className={`space-y-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            {}
+            { }
             <div className="flex justify-between items-center bg-green-50 p-4 rounded-xl border border-green-100">
                 <div>
                     <h2 className="text-xl font-bold text-green-900">Announcements</h2>
@@ -244,7 +249,7 @@ const AnnouncementsPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
                 <button
                     onClick={() => setActiveTab('all')}
@@ -260,7 +265,7 @@ const AnnouncementsPage = ({ darkMode }) => {
                 </button>
             </div>
 
-            {}
+            { }
             <div className="relative">
                 <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                 <input
@@ -272,7 +277,7 @@ const AnnouncementsPage = ({ darkMode }) => {
                 />
             </div>
 
-            {}
+            { }
             <div className="space-y-4">
                 {activeTab === 'all' && filteredAnnouncements.map(announcement => (
                     <div

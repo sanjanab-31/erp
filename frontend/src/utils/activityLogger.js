@@ -1,6 +1,5 @@
 
 
-
 export const logAdminActivity = (type, title, description) => {
     try {
         const activityLog = JSON.parse(localStorage.getItem('adminActivityLog') || '[]');
@@ -14,12 +13,10 @@ export const logAdminActivity = (type, title, description) => {
             timestamp: new Date().toISOString()
         };
 
-        
         const updatedLog = [newActivity, ...activityLog].slice(0, 50);
 
         localStorage.setItem('adminActivityLog', JSON.stringify(updatedLog));
 
-        
         window.dispatchEvent(new CustomEvent('adminActivityAdded', { detail: newActivity }));
     } catch (error) {
         console.error('Error logging admin activity:', error);
@@ -34,7 +31,6 @@ const getTimeAgo = (date) => {
     if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
     return `${Math.floor(seconds / 86400)} days ago`;
 };
-
 
 export const initializeActivityLog = () => {
     const activityLog = JSON.parse(localStorage.getItem('adminActivityLog') || '[]');

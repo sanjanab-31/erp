@@ -18,21 +18,12 @@ import {
     TrendingUp
 } from 'lucide-react';
 import {
-    createCourse,
-    getCoursesByTeacher,
-    createAssignment,
-    getAssignmentsByCourse,
-    getSubmissionsByAssignment,
-    gradeSubmission,
-    enterExamMarks,
-    getExamMarksByCourse,
-    uploadCourseMaterial,
-    getCourseMaterials,
-    deleteAssignment,
-    deleteCourseMaterial,
-    calculateFinalMarks,
-    subscribeToAcademicUpdates
-} from '../../../utils/academicStore';
+    courseApi,
+    assignmentApi,
+    resultApi,
+    studentApi,
+    teacherApi
+} from '../../../services/api';
 
 const AcademicManagement = ({ darkMode }) => {
     const { showSuccess, showError, showWarning, showInfo } = useToast();
@@ -55,7 +46,6 @@ const AcademicManagement = ({ darkMode }) => {
     const teacherId = currentUser.id || localStorage.getItem('userId') || 'teacher_1';
     const teacherName = currentUser.name || localStorage.getItem('userName') || 'Teacher';
 
-    
     const [courseForm, setCourseForm] = useState({
         name: '',
         code: '',
@@ -63,7 +53,6 @@ const AcademicManagement = ({ darkMode }) => {
         description: ''
     });
 
-    
     const [assignmentForm, setAssignmentForm] = useState({
         title: '',
         description: '',
@@ -71,13 +60,11 @@ const AcademicManagement = ({ darkMode }) => {
         maxMarks: 100
     });
 
-    
     const [gradingForm, setGradingForm] = useState({
         marks: '',
         feedback: ''
     });
 
-    
     const [examMarksForm, setExamMarksForm] = useState({
         studentId: '',
         studentName: '',
@@ -86,7 +73,6 @@ const AcademicManagement = ({ darkMode }) => {
         exam3: ''
     });
 
-    
     const [materialForm, setMaterialForm] = useState({
         title: '',
         description: '',
@@ -94,16 +80,8 @@ const AcademicManagement = ({ darkMode }) => {
         type: 'link'
     });
 
-    
     useEffect(() => {
         loadCourses();
-        const unsubscribe = subscribeToAcademicUpdates(() => {
-            loadCourses();
-            if (selectedCourse) {
-                loadCourseData(selectedCourse.id);
-            }
-        });
-        return unsubscribe;
     }, []);
 
     useEffect(() => {
@@ -112,26 +90,36 @@ const AcademicManagement = ({ darkMode }) => {
         }
     }, [selectedCourse]);
 
-    const loadCourses = () => {
-        const teacherCourses = getCoursesByTeacher(teacherId);
-        setCourses(teacherCourses);
+    const loadCourses = async () => {
+        try {
+            const res = await courseApi.getAll({ teacherId });
+            setCourses(res.data || []);
+        } catch (error) {
+            console.error('Error loading courses:', error);
+        }
     };
 
-    const loadCourseData = (courseId) => {
-        const courseAssignments = getAssignmentsByCourse(courseId);
-        setAssignments(courseAssignments);
+    const loadCourseData = async (courseId) => {
+        try {
+            const [assignmentsRes, resultsRes] = await Promise.all([
+                assignmentApi.getAll({ courseId }),
+                resultApi.getAll({ courseId })
+            ]);
 
-        const courseExamMarks = getExamMarksByCourse(courseId);
-        setExamMarks(courseExamMarks);
+            setAssignments(assignmentsRes.data || []);
+            setExamMarks(resultsRes.data || []);
 
-        const courseMaterials = getCourseMaterials(courseId);
-        setMaterials(courseMaterials);
+            const currentCourse = courses.find(c => c.id === courseId);
+            setMaterials(currentCourse?.materials || []);
+        } catch (error) {
+            console.error('Error loading course data:', error);
+        }
     };
 
-    const handleCreateCourse = (e) => {
+    const handleCreateCourse = async (e) => {
         e.preventDefault();
         try {
-            createCourse({
+            await courseApi.create({
                 ...courseForm,
                 teacherId,
                 teacherName
@@ -139,15 +127,16 @@ const AcademicManagement = ({ darkMode }) => {
             setShowCreateCourseModal(false);
             setCourseForm({ name: '', code: '', class: '', description: '' });
             showSuccess('Course created successfully!');
+            loadCourses();
         } catch (error) {
             showError('Error creating course: ' + error.message);
         }
     };
 
-    const handleAddAssignment = (e) => {
+    const handleAddAssignment = async (e) => {
         e.preventDefault();
         try {
-            createAssignment({
+            await assignmentApi.create({
                 ...assignmentForm,
                 courseId: selectedCourse.id,
                 createdBy: teacherId
@@ -155,32 +144,33 @@ const AcademicManagement = ({ darkMode }) => {
             setShowAddAssignmentModal(false);
             setAssignmentForm({ title: '', description: '', dueDate: '', maxMarks: 100 });
             showSuccess('Assignment added successfully!');
+            loadCourseData(selectedCourse.id);
         } catch (error) {
             showError('Error adding assignment: ' + error.message);
         }
     };
 
-    const handleGradeSubmission = (e) => {
+    const handleGradeSubmission = async (e) => {
         e.preventDefault();
         try {
-            gradeSubmission(
-                selectedSubmission.id,
-                parseFloat(gradingForm.marks),
-                gradingForm.feedback
-            );
+            await assignmentApi.gradeSubmission(selectedSubmission.id, {
+                marks: parseFloat(gradingForm.marks),
+                feedback: gradingForm.feedback
+            });
             setShowGradingModal(false);
             setGradingForm({ marks: '', feedback: '' });
             setSelectedSubmission(null);
             showSuccess('Submission graded successfully!');
+            loadCourseData(selectedCourse.id);
         } catch (error) {
             showError('Error grading submission: ' + error.message);
         }
     };
 
-    const handleEnterExamMarks = (e) => {
+    const handleEnterExamMarks = async (e) => {
         e.preventDefault();
         try {
-            enterExamMarks({
+            await resultApi.save({
                 courseId: selectedCourse.id,
                 studentId: examMarksForm.studentId,
                 studentName: examMarksForm.studentName,
@@ -192,22 +182,29 @@ const AcademicManagement = ({ darkMode }) => {
             setShowExamMarksModal(false);
             setExamMarksForm({ studentId: '', studentName: '', exam1: '', exam2: '', exam3: '' });
             showSuccess('Exam marks entered successfully!');
+            loadCourseData(selectedCourse.id);
         } catch (error) {
             showError('Error entering exam marks: ' + error.message);
         }
     };
 
-    const handleUploadMaterial = (e) => {
+    const handleUploadMaterial = async (e) => {
         e.preventDefault();
         try {
-            uploadCourseMaterial({
+            const updatedMaterials = [...materials, {
                 ...materialForm,
-                courseId: selectedCourse.id,
-                uploadedBy: teacherId
+                id: Date.now().toString(),
+                uploadedAt: new Date().toISOString()
+            }];
+
+            await courseApi.update(selectedCourse.id, {
+                materials: updatedMaterials
             });
+
             setShowMaterialModal(false);
             setMaterialForm({ title: '', description: '', link: '', type: 'link' });
             showSuccess('Material uploaded successfully!');
+            loadCourseData(selectedCourse.id);
         } catch (error) {
             showError('Error uploading material: ' + error.message);
         }
@@ -306,8 +303,8 @@ const AcademicManagement = ({ darkMode }) => {
                         onClick={() => setShowAddAssignmentModal(true)}
                         disabled={assignments.length >= 2}
                         className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${assignments.length >= 2
-                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                : 'bg-green-600 text-white hover:bg-green-700'
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-green-600 text-white hover:bg-green-700'
                             }`}
                     >
                         <Plus className="w-5 h-5" />
@@ -325,7 +322,7 @@ const AcademicManagement = ({ darkMode }) => {
                 ) : (
                     <div className="space-y-4">
                         {assignments.map((assignment) => {
-                            const assignmentSubmissions = getSubmissionsByAssignment(assignment.id);
+                            const assignmentSubmissions = assignment.submissions || [];
                             const gradedCount = assignmentSubmissions.filter(s => s.status === 'graded').length;
 
                             return (
@@ -353,9 +350,15 @@ const AcademicManagement = ({ darkMode }) => {
                                             </div>
                                         </div>
                                         <button
-                                            onClick={() => {
+                                            onClick={async () => {
                                                 if (confirm('Delete this assignment?')) {
-                                                    deleteAssignment(assignment.id);
+                                                    try {
+                                                        await assignmentApi.delete(assignment.id);
+                                                        showSuccess('Assignment deleted');
+                                                        loadCourseData(selectedCourse.id);
+                                                    } catch (error) {
+                                                        showError('Error deleting assignment');
+                                                    }
                                                 }
                                             }}
                                             className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
@@ -489,7 +492,12 @@ const AcademicManagement = ({ darkMode }) => {
                                 <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
                                     {examMarks.map((marks) => {
                                         const total = (marks.exam1 + marks.exam2 + marks.exam3);
-                                        const finalMarks = calculateFinalMarks(marks.studentId, selectedCourse.id);
+
+                                        const calculateFinalGradeValue = () => {
+                                            const totalExam = (marks.exam1 + marks.exam2 + marks.exam3);
+                                            return { examMarks: Math.round((totalExam / 300) * 75) };
+                                        };
+                                        const finalMarks = calculateFinalGradeValue();
 
                                         return (
                                             <tr key={marks.id} className={darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
@@ -593,9 +601,18 @@ const AcademicManagement = ({ darkMode }) => {
                                         {material.title}
                                     </h3>
                                     <button
-                                        onClick={() => {
+                                        onClick={async () => {
                                             if (confirm('Delete this material?')) {
-                                                deleteCourseMaterial(material.id);
+                                                try {
+                                                    const updatedMaterials = materials.filter(m => m.id !== material.id);
+                                                    await courseApi.update(selectedCourse.id, {
+                                                        materials: updatedMaterials
+                                                    });
+                                                    showSuccess('Material deleted');
+                                                    loadCourseData(selectedCourse.id);
+                                                } catch (error) {
+                                                    showError('Error deleting material');
+                                                }
                                             }
                                         }}
                                         className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
@@ -630,7 +647,7 @@ const AcademicManagement = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {}
+            { }
             <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Academic Management
@@ -638,7 +655,7 @@ const AcademicManagement = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">Manage courses, assignments, and student marks</p>
             </div>
 
-            {}
+            { }
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="border-b border-gray-200">
                     <div className="flex space-x-8 px-6">
@@ -647,8 +664,8 @@ const AcademicManagement = ({ darkMode }) => {
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
                                 className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors capitalize ${activeTab === tab
-                                        ? 'border-green-600 text-green-600'
-                                        : `border-transparent ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`
+                                    ? 'border-green-600 text-green-600'
+                                    : `border-transparent ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`
                                     }`}
                             >
                                 {tab === 'examMarks' ? 'Exam Marks' : tab}
@@ -665,7 +682,7 @@ const AcademicManagement = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             {showCreateCourseModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>
@@ -746,7 +763,7 @@ const AcademicManagement = ({ darkMode }) => {
                 </div>
             )}
 
-            {}
+            { }
             {showAddAssignmentModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>
@@ -814,7 +831,7 @@ const AcademicManagement = ({ darkMode }) => {
                 </div>
             )}
 
-            {}
+            { }
             {showGradingModal && selectedSubmission && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>
@@ -865,7 +882,7 @@ const AcademicManagement = ({ darkMode }) => {
                 </div>
             )}
 
-            {}
+            { }
             {showExamMarksModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>
@@ -956,7 +973,7 @@ const AcademicManagement = ({ darkMode }) => {
                 </div>
             )}
 
-            {}
+            { }
             {showMaterialModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>

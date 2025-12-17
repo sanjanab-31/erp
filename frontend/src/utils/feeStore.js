@@ -1,13 +1,10 @@
 
 
-
 const STORAGE_KEY = 'erp_fee_data';
-
 
 const initializeDefaultData = () => {
     return [];
 };
-
 
 export const getAllFees = () => {
     try {
@@ -23,7 +20,6 @@ export const getAllFees = () => {
         return initializeDefaultData();
     }
 };
-
 
 export const addFee = (feeData) => {
     try {
@@ -47,7 +43,6 @@ export const addFee = (feeData) => {
         fees.push(newFee);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(fees));
 
-        
         window.dispatchEvent(new Event('feesUpdated'));
 
         return newFee;
@@ -56,7 +51,6 @@ export const addFee = (feeData) => {
         throw error;
     }
 };
-
 
 export const updateFee = (feeId, updates) => {
     try {
@@ -75,7 +69,6 @@ export const updateFee = (feeId, updates) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(fees));
 
-        
         window.dispatchEvent(new Event('feesUpdated'));
 
         return fees[index];
@@ -84,7 +77,6 @@ export const updateFee = (feeId, updates) => {
         throw error;
     }
 };
-
 
 export const makePayment = (feeId, paymentData) => {
     try {
@@ -104,7 +96,6 @@ export const makePayment = (feeId, paymentData) => {
             paidBy: paymentData.paidBy || 'Parent'
         };
 
-        
         const newPaidAmount = fee.paidAmount + payment.amount;
         const newRemainingAmount = fee.amount - newPaidAmount;
 
@@ -122,7 +113,6 @@ export const makePayment = (feeId, paymentData) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(fees));
 
-        
         window.dispatchEvent(new Event('feesUpdated'));
 
         return updatedFee;
@@ -132,7 +122,6 @@ export const makePayment = (feeId, paymentData) => {
     }
 };
 
-
 export const deleteFee = (feeId) => {
     try {
         const fees = getAllFees();
@@ -140,7 +129,6 @@ export const deleteFee = (feeId) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredFees));
 
-        
         window.dispatchEvent(new Event('feesUpdated'));
 
         return true;
@@ -149,7 +137,6 @@ export const deleteFee = (feeId) => {
         throw error;
     }
 };
-
 
 export const getFeesByStudent = (studentId) => {
     console.log('getFeesByStudent called with studentId:', studentId);
@@ -166,13 +153,11 @@ export const getFeesByStudent = (studentId) => {
     return filtered;
 };
 
-
 export const getFeesByStudentEmail = (studentEmail) => {
     const fees = getAllFees();
     
     return fees; 
 };
-
 
 export const getFeeStats = () => {
     const fees = getAllFees();
@@ -198,7 +183,6 @@ export const getFeeStats = () => {
     };
 };
 
-
 export const getOverdueFees = () => {
     const fees = getAllFees();
     const today = new Date();
@@ -212,12 +196,10 @@ export const getOverdueFees = () => {
     });
 };
 
-
 export const subscribeToUpdates = (callback) => {
     const handler = () => callback(getAllFees());
     window.addEventListener('feesUpdated', handler);
 
-    
     return () => window.removeEventListener('feesUpdated', handler);
 };
 

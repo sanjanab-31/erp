@@ -1,45 +1,70 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-    BookOpen,
     Award,
     TrendingUp,
     Users,
     Download,
-    Filter,
-    Search,
-    BarChart3,
-    FileText
 } from 'lucide-react';
+import { examApi } from '../../../services/api';
 
 const ExamsAndGradesPage = ({ darkMode }) => {
     const [selectedExam, setSelectedExam] = useState('Mid-term Exam');
     const [selectedClass, setSelectedClass] = useState('All Classes');
 
-    const exams = ['Mid-term Exam', 'Final Exam', 'Unit Test 1', 'Unit Test 2'];
-    const classes = ['All Classes', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B'];
+    const [exams, setExams] = useState(['Mid-term Exam', 'Final Exam', 'Unit Test 1', 'Unit Test 2']);
+    const [classes, setClasses] = useState(['All Classes', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B']);
 
     const [examData, setExamData] = useState({
         overview: {
-            totalStudents: 450,
-            averageScore: 78.5,
-            passRate: 92,
-            topScore: 98
+            totalStudents: 0,
+            averageScore: 0,
+            passRate: 0,
+            topScore: 0
         },
-        classPerformance: [
-            { class: 'Grade 10-A', students: 30, average: 82.5, passRate: 95, topScore: 98 },
-            { class: 'Grade 10-B', students: 28, average: 79.3, passRate: 93, topScore: 95 },
-            { class: 'Grade 11-A', students: 32, average: 76.8, passRate: 90, topScore: 94 },
-            { class: 'Grade 11-B', students: 25, average: 75.2, passRate: 88, topScore: 92 }
-        ],
-        gradeDistribution: [
-            { grade: 'A+', count: 45, percentage: 10 },
-            { grade: 'A', count: 90, percentage: 20 },
-            { grade: 'B+', count: 135, percentage: 30 },
-            { grade: 'B', count: 90, percentage: 20 },
-            { grade: 'C', count: 67, percentage: 15 },
-            { grade: 'F', count: 23, percentage: 5 }
-        ]
+        classPerformance: [],
+        gradeDistribution: []
     });
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+
+                const statsResponse = await examApi.getStats();
+                if (statsResponse.data) {
+                    setExamData(statsResponse.data);
+                } else {
+
+                    setExamData({
+                        overview: {
+                            totalStudents: 450,
+                            averageScore: 78.5,
+                            passRate: 92,
+                            topScore: 98
+                        },
+                        classPerformance: [
+                            { class: 'Grade 10-A', students: 30, average: 82.5, passRate: 95, topScore: 98 },
+                            { class: 'Grade 10-B', students: 28, average: 79.3, passRate: 93, topScore: 95 },
+                            { class: 'Grade 11-A', students: 32, average: 76.8, passRate: 90, topScore: 94 },
+                            { class: 'Grade 11-B', students: 25, average: 75.2, passRate: 88, topScore: 92 }
+                        ],
+                        gradeDistribution: [
+                            { grade: 'A+', count: 45, percentage: 10 },
+                            { grade: 'A', count: 90, percentage: 20 },
+                            { grade: 'B+', count: 135, percentage: 30 },
+                            { grade: 'B', count: 90, percentage: 20 },
+                            { grade: 'C', count: 67, percentage: 15 },
+                            { grade: 'F', count: 23, percentage: 5 }
+                        ]
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to fetch exam stats", error);
+
+            }
+        };
+
+        fetchData();
+    }, [selectedExam, selectedClass]);
 
     const getGradeColor = (grade) => {
         if (grade.startsWith('A')) return 'bg-green-100 text-green-600';
@@ -50,7 +75,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {}
+            { }
             <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Exams & Grades
@@ -58,7 +83,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">Monitor exam performance and grade distribution</p>
             </div>
 
-            {}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
@@ -101,7 +126,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="flex flex-col md:flex-row gap-4">
                     <select
@@ -137,7 +162,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
                 <div className="p-6 border-b border-gray-200">
                     <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -190,7 +215,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-6`}>
                     Grade Distribution

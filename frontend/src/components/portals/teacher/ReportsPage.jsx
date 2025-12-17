@@ -13,9 +13,12 @@ import {
     Clock,
     CheckCircle
 } from 'lucide-react';
-import { getAllStudents } from '../../../utils/studentStore';
-import { calculateAttendancePercentage, getAttendanceByStudent } from '../../../utils/attendanceStore';
-import { getStudentFinalMarks, getSubmissionsByStudent } from '../../../utils/academicStore';
+import {
+    studentApi,
+    attendanceApi,
+    resultApi,
+    assignmentApi
+} from '../../../services/api';
 
 const ReportsPage = ({ darkMode }) => {
     const [selectedReportType, setSelectedReportType] = useState('attendance');
@@ -42,119 +45,129 @@ const ReportsPage = ({ darkMode }) => {
         loadReportData();
     }, [selectedClass, dateRange]);
 
-    const loadReportData = () => {
-        const allStudents = getAllStudents();
+    const loadReportData = async () => {
+        try {
+            const [studentsRes, attendanceRes, resultsRes, assignmentsRes] = await Promise.all([
+                studentApi.getAll(),
+                attendanceApi.getAll(),
+                resultApi.getAll(),
+                assignmentApi.getAll()
+            ]);
 
-        
-        const filteredStudents = selectedClass === 'All Classes'
-            ? allStudents
-            : allStudents.filter(s => s.class === selectedClass);
+            const allStudents = studentsRes.data || [];
+            const allAttendance = attendanceRes.data || [];
+            const allResults = resultsRes.data || [];
+            const allAssignments = assignmentsRes.data || [];
 
-        
-        const attendanceStudents = filteredStudents.map(student => {
-            const percentage = calculateAttendancePercentage(student.id);
-            const attendanceRecords = getAttendanceByStudent(student.id);
-            const present = attendanceRecords.filter(r => r.status === 'Present').length;
-            const absent = attendanceRecords.filter(r => r.status === 'Absent').length;
+            const filteredStudents = selectedClass === 'All Classes'
+                ? allStudents
+                : allStudents.filter(s => s.class === selectedClass);
 
-            return {
-                name: student.name,
-                attendance: percentage,
-                present,
-                absent
-            };
-        });
+            const attendanceStudents = filteredStudents.map(student => {
+                const studentAttendance = allAttendance.filter(r => r.studentId === student.id);
+                const present = studentAttendance.filter(r => r.status === 'Present').length;
+                const absent = studentAttendance.filter(r => r.status === 'Absent').length;
+                const percentage = studentAttendance.length > 0
+                    ? Math.round((present / studentAttendance.length) * 100)
+                    : 0;
 
-        const totalClasses = attendanceStudents.length > 0
-            ? attendanceStudents[0].present + attendanceStudents[0].absent
-            : 0;
-        const avgAttendance = attendanceStudents.length > 0
-            ? Math.round(attendanceStudents.reduce((sum, s) => sum + s.attendance, 0) / attendanceStudents.length)
-            : 0;
-        const totalPresent = attendanceStudents.reduce((sum, s) => sum + s.present, 0);
-        const totalAbsent = attendanceStudents.reduce((sum, s) => sum + s.absent, 0);
+                return {
+                    name: student.name,
+                    attendance: percentage,
+                    present,
+                    absent
+                };
+            });
 
-        
-        const gradesStudents = filteredStudents.map(student => {
-            const finalMarks = getStudentFinalMarks(student.id);
-            const avgMarks = finalMarks.length > 0
-                ? finalMarks.reduce((sum, m) => sum + m.finalTotal, 0) / finalMarks.length
+            const totalClasses = attendanceStudents.length > 0
+                ? attendanceStudents[0].present + attendanceStudents[0].absent
                 : 0;
-            const grade = avgMarks >= 90 ? 'A+' : avgMarks >= 80 ? 'A' : avgMarks >= 70 ? 'B+' : avgMarks >= 60 ? 'B' : 'C';
+            const avgAttendance = attendanceStudents.length > 0
+                ? Math.round(attendanceStudents.reduce((sum, s) => sum + s.attendance, 0) / attendanceStudents.length)
+                : 0;
+            const totalPresent = attendanceStudents.reduce((sum, s) => sum + s.present, 0);
+            const totalAbsent = attendanceStudents.reduce((sum, s) => sum + s.absent, 0);
 
-            return {
-                name: student.name,
-                grade,
-                marks: Math.round(avgMarks),
-                rank: 0 
-            };
-        }).sort((a, b) => b.marks - a.marks);
+            const gradesStudents = filteredStudents.map(student => {
+                const studentResults = allResults.filter(r => r.studentId === student.id);
+                const avgMarks = studentResults.length > 0
+                    ? studentResults.reduce((sum, r) => sum + (r.marks || 0), 0) / studentResults.length
+                    : 0;
+                const grade = avgMarks >= 90 ? 'A+' : avgMarks >= 80 ? 'A' : avgMarks >= 70 ? 'B+' : avgMarks >= 60 ? 'B' : 'C';
 
-        
-        gradesStudents.forEach((student, index) => {
-            student.rank = index + 1;
-        });
+                return {
+                    name: student.name,
+                    grade,
+                    marks: Math.round(avgMarks),
+                    rank: 0
+                };
+            }).sort((a, b) => b.marks - a.marks);
 
-        const avgGrade = gradesStudents.length > 0 ? gradesStudents[0].grade : 'N/A';
-        const passRate = gradesStudents.length > 0
-            ? Math.round((gradesStudents.filter(s => s.marks >= 40).length / gradesStudents.length) * 100)
-            : 0;
+            gradesStudents.forEach((student, index) => {
+                student.rank = index + 1;
+            });
 
-        
-        let totalAssignments = 0;
-        let totalSubmitted = 0;
-        let totalPending = 0;
-        let totalScore = 0;
-        let scoredCount = 0;
+            const avgGrade = gradesStudents.length > 0 ? gradesStudents[0].grade : 'N/A';
+            const passRate = gradesStudents.length > 0
+                ? Math.round((gradesStudents.filter(s => s.marks >= 40).length / gradesStudents.length) * 100)
+                : 0;
 
-        filteredStudents.forEach(student => {
-            const submissions = getSubmissionsByStudent(student.id);
-            totalAssignments += submissions.length;
-            totalSubmitted += submissions.filter(s => s.status === 'graded' || s.status === 'submitted').length;
-            totalPending += submissions.filter(s => s.status === 'pending' || !s.marks).length;
+            let totalAssignmentsCount = 0;
+            let totalSubmittedCount = 0;
+            let totalPendingCount = 0;
+            let totalScore = 0;
+            let scoredCount = 0;
 
-            submissions.forEach(sub => {
-                if (sub.marks) {
-                    totalScore += sub.marks;
-                    scoredCount++;
+            filteredStudents.forEach(student => {
+                const submissions = allAssignments.flatMap(a => (a.submissions || []).filter(s => s.studentId === student.id));
+                totalAssignmentsCount += allAssignments.length;
+                totalSubmittedCount += submissions.filter(s => s.status === 'graded' || s.status === 'submitted').length;
+                totalPendingCount += allAssignments.length - (submissions.length);
+
+                submissions.forEach(sub => {
+                    if (sub.marks) {
+                        totalScore += sub.marks;
+                        scoredCount++;
+                    }
+                });
+            });
+
+            const avgScore = scoredCount > 0 ? Math.round(totalScore / scoredCount) : 0;
+
+            const topPerformer = gradesStudents.length > 0 ? gradesStudents[0].name : 'N/A';
+            const needsAttention = gradesStudents.filter(s => s.marks < 60).length;
+            const onTrack = gradesStudents.filter(s => s.marks >= 60).length;
+
+            setReportData({
+                attendance: {
+                    totalClasses,
+                    averageAttendance: avgAttendance,
+                    presentDays: Math.round(totalPresent / (filteredStudents.length || 1)),
+                    absentDays: Math.round(totalAbsent / (filteredStudents.length || 1)),
+                    students: attendanceStudents.slice(0, 10)
+                },
+                grades: {
+                    averageGrade: avgGrade,
+                    totalAssessments: allResults.length,
+                    passRate,
+                    students: gradesStudents.slice(0, 10)
+                },
+                performance: {
+                    improvement: '+5%',
+                    topPerformer,
+                    needsAttention,
+                    onTrack
+                },
+                assignments: {
+                    totalAssignments: allAssignments.length * filteredStudents.length,
+                    submitted: totalSubmittedCount,
+                    pending: totalPendingCount,
+                    averageScore: avgScore
                 }
             });
-        });
-
-        const avgScore = scoredCount > 0 ? Math.round(totalScore / scoredCount) : 0;
-
-        
-        const topPerformer = gradesStudents.length > 0 ? gradesStudents[0].name : 'N/A';
-        const needsAttention = gradesStudents.filter(s => s.marks < 60).length;
-        const onTrack = gradesStudents.filter(s => s.marks >= 60).length;
-
-        setReportData({
-            attendance: {
-                totalClasses,
-                averageAttendance: avgAttendance,
-                presentDays: Math.round(totalPresent / (filteredStudents.length || 1)),
-                absentDays: Math.round(totalAbsent / (filteredStudents.length || 1)),
-                students: attendanceStudents.slice(0, 10) 
-            },
-            grades: {
-                averageGrade: avgGrade,
-                totalAssessments: totalAssignments,
-                passRate,
-                students: gradesStudents.slice(0, 10) 
-            },
-            performance: {
-                improvement: '+5%', 
-                topPerformer,
-                needsAttention,
-                onTrack
-            },
-            assignments: {
-                totalAssignments,
-                submitted: totalSubmitted,
-                pending: totalPending,
-                averageScore: avgScore
-            }
-        });
+        } catch (error) {
+            console.error('Error loading report data:', error);
+        }
     };
 
     const renderReportContent = () => {
@@ -376,7 +389,7 @@ const ReportsPage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {}
+            { }
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Reports & Analytics
@@ -384,7 +397,7 @@ const ReportsPage = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">Generate and view detailed real-time reports</p>
             </div>
 
-            {}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 {reportTypes.map((type) => (
                     <button
@@ -403,7 +416,7 @@ const ReportsPage = ({ darkMode }) => {
                 ))}
             </div>
 
-            {}
+            { }
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6`}>
                 <div className="flex flex-col md:flex-row gap-4">
                     <select
@@ -444,7 +457,7 @@ const ReportsPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             {renderReportContent()}
         </div>
     );

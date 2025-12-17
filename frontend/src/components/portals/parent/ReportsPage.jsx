@@ -7,13 +7,17 @@ import {
     Calendar,
     BarChart3
 } from 'lucide-react';
-import { calculateAttendancePercentage, getAttendanceByStudent } from '../../../utils/attendanceStore';
-import { getStudentFinalMarks } from '../../../utils/academicStore';
-import { getFeesByStudent } from '../../../utils/feeStore';
-import { getChildrenByParentEmail } from '../../../utils/userStore';
+import {
+    attendanceApi,
+    resultApi,
+    feeApi,
+    studentApi,
+    courseApi
+} from '../../../services/api';
 
 const ReportsPage = ({ darkMode }) => {
     const [selectedReport, setSelectedReport] = useState('Academic Performance');
+    const [loading, setLoading] = useState(true);
     const [reportData, setReportData] = useState({
         'Academic Performance': { summary: '', data: [] },
         'Attendance Report': { summary: '', data: [] },
@@ -21,10 +25,119 @@ const ReportsPage = ({ darkMode }) => {
         'Fee Statement': { summary: '', data: [] }
     });
 
-    
     const parentEmail = localStorage.getItem('userEmail') || '';
-    const [childId, setChildId] = useState('');
-    const [childName, setChildName] = useState('Student');
+    const [child, setChild] = useState(null);
+
+    useEffect(() => {
+        const init = async () => {
+            if (!parentEmail) return;
+            setLoading(true);
+            try {
+                const studentsRes = await studentApi.getAll();
+                const allStudents = studentsRes.data || [];
+                const foundChild = allStudents.find(s => s.parentEmail === parentEmail || s.guardianEmail === parentEmail || s.email === parentEmail);
+
+                if (foundChild) {
+                    setChild(foundChild);
+                    await loadReportData(foundChild);
+                }
+            } catch (error) {
+                console.error('Error initializing reports:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        init();
+    }, [parentEmail]);
+
+    const loadReportData = async (childInfo) => {
+        try {
+            const [resultsRes, attendanceRes, feesRes, coursesRes] = await Promise.all([
+                resultApi.getAll({ studentId: childInfo.id }),
+                attendanceApi.getAll({ studentId: childInfo.id }),
+                feeApi.getAll({ studentId: childInfo.id }),
+                courseApi.getAll()
+            ]);
+
+            const finalResults = resultsRes.data || [];
+            const allAttendance = attendanceRes.data || [];
+            const childAttendance = allAttendance.filter(r => r.studentId.toString() === childInfo.id.toString());
+            const fees = feesRes.data || [];
+            const courses = coursesRes.data || [];
+
+            const academicData = finalResults.map(res => {
+                const course = courses.find(c => c.id === res.courseId) || {};
+                const percentage = res.percentage || 0;
+                const grade = percentage >= 90 ? 'A+' : percentage >= 80 ? 'A' : percentage >= 70 ? 'A-' : percentage >= 60 ? 'B+' : 'B';
+                return {
+                    subject: course.name || 'Subject',
+                    grade,
+                    percentage: Math.round(percentage),
+                    rank: '-'
+                };
+            });
+
+            const monthlyAttendance = {};
+            childAttendance.forEach(record => {
+                const date = new Date(record.date);
+                const monthKey = date.toLocaleString('default', { month: 'long' });
+                if (!monthlyAttendance[monthKey]) monthlyAttendance[monthKey] = { present: 0, absent: 0 };
+                if (record.status === 'Present') monthlyAttendance[monthKey].present++;
+                else if (record.status === 'Absent') monthlyAttendance[monthKey].absent++;
+            });
+
+            const attendanceData = Object.entries(monthlyAttendance).map(([month, data]) => {
+                const total = data.present + data.absent;
+                return {
+                    month,
+                    present: data.present,
+                    absent: data.absent,
+                    percentage: total > 0 ? Math.round((data.present / total) * 100) : 0
+                };
+            });
+
+            const overallAvg = finalResults.reduce((sum, r) => sum + (r.percentage || 0), 0) / (finalResults.length || 1);
+            const progressData = finalResults.length > 0 ? [{
+                term: 'Current Term',
+                overall: Math.round(overallAvg),
+                rank: '-',
+                grade: overallAvg >= 90 ? 'A+' : overallAvg >= 80 ? 'A' : overallAvg >= 70 ? 'A-' : 'B'
+            }] : [];
+
+            const feeData = fees.map(fee => ({
+                term: fee.feeType || 'Fee Payment',
+                amount: fee.amount,
+                status: fee.status || 'Pending',
+                date: fee.updatedAt ? new Date(fee.updatedAt).toLocaleDateString() : 'N/A',
+                dueDate: fee.dueDate ? new Date(fee.dueDate).toLocaleDateString() : 'N/A'
+            }));
+
+            setReportData({
+                'Academic Performance': {
+                    summary: 'Overall academic performance for current term',
+                    data: academicData
+                },
+                'Attendance Report': {
+                    summary: 'Monthly attendance summary',
+                    data: attendanceData
+                },
+                'Progress Report': {
+                    summary: 'Term-wise progress tracking',
+                    data: progressData
+                },
+                'Fee Statement': {
+                    summary: 'Fee payment history',
+                    data: feeData
+                }
+            });
+        } catch (error) {
+            console.error('Error loading report data:', error);
+        }
+    };
+
+    if (!child && !loading) return <div className="p-8 text-center text-gray-500">No student profile found for this parent account.</div>;
+    const childName = child?.name || 'Student';
+    const childId = child?.id || '';
 
     const reportTypes = [
         { name: 'Academic Performance', icon: Award, color: 'bg-blue-500' },
@@ -32,135 +145,6 @@ const ReportsPage = ({ darkMode }) => {
         { name: 'Progress Report', icon: TrendingUp, color: 'bg-purple-500' },
         { name: 'Fee Statement', icon: FileText, color: 'bg-orange-500' }
     ];
-
-    useEffect(() => {
-        
-        if (parentEmail) {
-            const children = getChildrenByParentEmail(parentEmail);
-            if (children && children.length > 0) {
-                setChildId(children[0].id);
-                setChildName(children[0].name);
-            }
-        }
-    }, [parentEmail]);
-
-    useEffect(() => {
-        if (childId) {
-            loadReportData();
-        }
-    }, [childId]);
-
-    const loadReportData = () => {
-        console.log('Loading report data for child ID:', childId);
-
-        
-        const finalMarks = getStudentFinalMarks(childId);
-        console.log('Final marks:', finalMarks);
-
-        const academicData = finalMarks.map((mark, index) => {
-            const percentage = mark.finalTotal;
-            const grade = percentage >= 90 ? 'A+' : percentage >= 80 ? 'A' : percentage >= 70 ? 'A-' : percentage >= 60 ? 'B+' : 'B';
-
-            return {
-                subject: mark.courseName || `Subject ${index + 1}`,
-                grade,
-                percentage: Math.round(percentage),
-                rank: Math.floor(Math.random() * 10) + 1 
-            };
-        });
-
-        
-        const allAttendanceRecords = getAttendanceByStudent(childId);
-        console.log('All attendance records:', allAttendanceRecords);
-
-        
-        const attendanceRecords = allAttendanceRecords.filter(record =>
-            record.studentId.toString() === childId.toString()
-        );
-        console.log('Filtered attendance records for child:', attendanceRecords);
-
-        const monthlyAttendance = {};
-
-        attendanceRecords.forEach(record => {
-            const date = new Date(record.date);
-            const monthKey = date.toLocaleString('default', { month: 'long' });
-
-            if (!monthlyAttendance[monthKey]) {
-                monthlyAttendance[monthKey] = { present: 0, absent: 0 };
-            }
-
-            if (record.status === 'Present') {
-                monthlyAttendance[monthKey].present++;
-            } else if (record.status === 'Absent') {
-                monthlyAttendance[monthKey].absent++;
-            }
-        });
-
-        const attendanceData = Object.entries(monthlyAttendance).map(([month, data]) => {
-            const total = data.present + data.absent;
-            const percentage = total > 0 ? Math.round((data.present / total) * 100) : 0;
-
-            return {
-                month,
-                present: data.present,
-                absent: data.absent,
-                percentage
-            };
-        });
-
-        console.log('Attendance data for report:', attendanceData);
-
-        
-        const progressData = [];
-        if (finalMarks.length > 0) {
-            const avgMarks = finalMarks.reduce((sum, m) => sum + m.finalTotal, 0) / finalMarks.length;
-            const grade = avgMarks >= 90 ? 'A+' : avgMarks >= 80 ? 'A' : avgMarks >= 70 ? 'A-' : avgMarks >= 60 ? 'B+' : 'B';
-
-            progressData.push({
-                term: 'Current Term',
-                overall: Math.round(avgMarks),
-                rank: Math.floor(Math.random() * 10) + 1,
-                grade
-            });
-        }
-
-        
-        const feeRecords = getFeesByStudent(childId);
-        const feeData = feeRecords.map(fee => ({
-            term: fee.type || 'Fee Payment',
-            amount: fee.amount,
-            status: fee.status === 'paid' ? 'Paid' : 'Pending',
-            date: fee.paidDate ? new Date(fee.paidDate).toLocaleDateString() : undefined,
-            dueDate: fee.dueDate ? new Date(fee.dueDate).toLocaleDateString() : undefined
-        }));
-
-        setReportData({
-            'Academic Performance': {
-                summary: 'Overall academic performance for current term',
-                data: academicData.length > 0 ? academicData : [
-                    { subject: 'No data available', grade: 'N/A', percentage: 0, rank: 0 }
-                ]
-            },
-            'Attendance Report': {
-                summary: 'Monthly attendance summary',
-                data: attendanceData.length > 0 ? attendanceData : [
-                    { month: 'No data available', present: 0, absent: 0, percentage: 0 }
-                ]
-            },
-            'Progress Report': {
-                summary: 'Term-wise progress tracking',
-                data: progressData.length > 0 ? progressData : [
-                    { term: 'No data available', overall: 0, rank: 0, grade: 'N/A' }
-                ]
-            },
-            'Fee Statement': {
-                summary: 'Fee payment history',
-                data: feeData.length > 0 ? feeData : [
-                    { term: 'No data available', amount: 0, status: 'N/A', date: 'N/A' }
-                ]
-            }
-        });
-    };
 
     return (
         <div className="space-y-6">
@@ -177,7 +161,7 @@ const ReportsPage = ({ darkMode }) => {
                 </button>
             </div>
 
-            {}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {reportTypes.map((type) => (
                     <button
@@ -200,7 +184,7 @@ const ReportsPage = ({ darkMode }) => {
                 ))}
             </div>
 
-            {}
+            { }
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-8 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="mb-6">
                     <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>

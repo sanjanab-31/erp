@@ -1,8 +1,6 @@
 
 
-
 const STORAGE_KEY = 'erp_academic_data';
-
 
 const initializeDefaultData = () => {
     return {
@@ -14,7 +12,6 @@ const initializeDefaultData = () => {
         courseMaterials: []
     };
 };
-
 
 export const getAllAcademicData = () => {
     try {
@@ -31,14 +28,10 @@ export const getAllAcademicData = () => {
     }
 };
 
-
 const saveAcademicData = (data) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     window.dispatchEvent(new Event('academicDataUpdated'));
 };
-
-
-
 
 export const createCourse = (courseData) => {
     try {
@@ -67,24 +60,20 @@ export const createCourse = (courseData) => {
     }
 };
 
-
 export const getCoursesByTeacher = (teacherId) => {
     const data = getAllAcademicData();
     return data.courses.filter(c => c.teacherId === teacherId && c.active);
 };
-
 
 export const getCoursesByClass = (className) => {
     const data = getAllAcademicData();
     return data.courses.filter(c => c.class === className && c.active);
 };
 
-
 export const getCourseById = (courseId) => {
     const data = getAllAcademicData();
     return data.courses.find(c => c.id === courseId);
 };
-
 
 export const updateCourse = (courseId, updates) => {
     try {
@@ -105,7 +94,6 @@ export const updateCourse = (courseId, updates) => {
     }
 };
 
-
 export const deleteCourse = (courseId) => {
     try {
         const data = getAllAcademicData();
@@ -125,13 +113,9 @@ export const deleteCourse = (courseId) => {
     }
 };
 
-
-
-
 export const createAssignment = (assignmentData) => {
     try {
         const data = getAllAcademicData();
-
 
         const courseAssignments = data.assignments.filter(a => a.courseId === assignmentData.courseId);
         if (courseAssignments.length >= 2) {
@@ -159,12 +143,10 @@ export const createAssignment = (assignmentData) => {
     }
 };
 
-
 export const getAssignmentsByCourse = (courseId) => {
     const data = getAllAcademicData();
     return data.assignments.filter(a => a.courseId === courseId);
 };
-
 
 export const updateAssignment = (assignmentId, updates) => {
     try {
@@ -185,7 +167,6 @@ export const updateAssignment = (assignmentId, updates) => {
     }
 };
 
-
 export const deleteAssignment = (assignmentId) => {
     try {
         const data = getAllAcademicData();
@@ -205,13 +186,9 @@ export const deleteAssignment = (assignmentId) => {
     }
 };
 
-
-
-
 export const submitAssignment = (submissionData) => {
     try {
         const data = getAllAcademicData();
-
 
         const existingSubmission = data.submissions.find(
             s => s.assignmentId === submissionData.assignmentId && s.studentId === submissionData.studentId
@@ -248,24 +225,20 @@ export const submitAssignment = (submissionData) => {
     }
 };
 
-
 export const getSubmissionsByAssignment = (assignmentId) => {
     const data = getAllAcademicData();
     return data.submissions.filter(s => s.assignmentId === assignmentId);
 };
-
 
 export const getSubmissionsByStudent = (studentId) => {
     const data = getAllAcademicData();
     return data.submissions.filter(s => s.studentId === studentId);
 };
 
-
 export const getSubmission = (studentId, assignmentId) => {
     const data = getAllAcademicData();
     return data.submissions.find(s => s.studentId === studentId && s.assignmentId === assignmentId);
 };
-
 
 export const createSubmission = (submissionData) => {
     try {
@@ -294,7 +267,6 @@ export const createSubmission = (submissionData) => {
     }
 };
 
-
 export const gradeSubmission = (submissionId, marks, feedback = '') => {
     try {
         const data = getAllAcademicData();
@@ -318,9 +290,6 @@ export const gradeSubmission = (submissionId, marks, feedback = '') => {
     }
 };
 
-
-
-
 export const enterExamMarks = (marksData) => {
     try {
         const data = getAllAcademicData();
@@ -336,7 +305,6 @@ export const enterExamMarks = (marksData) => {
             enteredBy: marksData.enteredBy,
             enteredAt: new Date().toISOString()
         };
-
 
         const existingMarksIndex = data.marks.findIndex(
             m => m.courseId === marksData.courseId && m.studentId === marksData.studentId
@@ -357,32 +325,24 @@ export const enterExamMarks = (marksData) => {
     }
 };
 
-
 export const getExamMarksByCourse = (courseId) => {
     const data = getAllAcademicData();
     return data.marks.filter(m => m.courseId === courseId);
 };
-
 
 export const getExamMarksByStudent = (studentId) => {
     const data = getAllAcademicData();
     return data.marks.filter(m => m.studentId === studentId);
 };
 
-
 export const getStudentCourseMarks = (studentId, courseId) => {
     const data = getAllAcademicData();
     return data.marks.find(m => m.studentId === studentId && m.courseId === courseId);
 };
 
-
-
-
 export const calculateFinalMarks = (studentId, courseId) => {
     const data = getAllAcademicData();
 
-    // 1. Assignment Marks
-    // Only graded assignments count
     const submissions = data.submissions.filter(
         s => s.studentId === studentId && s.courseId === courseId && s.marks !== null && s.marks !== undefined && s.status === 'graded'
     );
@@ -397,31 +357,22 @@ export const calculateFinalMarks = (studentId, courseId) => {
         }
     });
 
-    // 25% weight for assignments (Average of assignments * 0.25)
-    // If no assignments, it's 0. If assignments exist, we average them to 100 scale then take 25%.
-    // Actually, usually it's (TotalObtained / TotalMax) * Weighing. 
-    // Assuming each assignment is max 100.
     const assignmentMarks = assignmentCount > 0 ? (assignmentTotal / assignmentCount) * 0.25 : 0;
 
-    // 2. Exam Marks
-    // We might have multiple mark entries if they are entered separately, but usually it's one object per student-course.
-    // However, the previous implementation used .find() which returns the first match.
-    // We should ensure we get the correct one.
     const examMarks = data.marks.find(m => m.studentId === studentId && m.courseId === courseId);
 
-    // 75% weight for exams
     let examTotal = 0;
     let examScores = { exam1: 0, exam2: 0, exam3: 0 };
 
     if (examMarks) {
-        // Check if marks are stored as strings or numbers and handle accordingly
+
         examScores = {
             exam1: parseFloat(examMarks.exam1 || 0),
             exam2: parseFloat(examMarks.exam2 || 0),
             exam3: parseFloat(examMarks.exam3 || 0)
         };
         const totalExamMarks = examScores.exam1 + examScores.exam2 + examScores.exam3;
-        // Assuming 3 exams max 100 each -> Total 300.
+
         examTotal = (totalExamMarks / 300) * 75;
     }
 
@@ -438,11 +389,9 @@ export const calculateFinalMarks = (studentId, courseId) => {
     };
 };
 
-
 export const getStudentFinalMarks = (studentId) => {
     const data = getAllAcademicData();
     const studentCourses = new Set();
-
 
     data.submissions.filter(s => s.studentId === studentId).forEach(s => studentCourses.add(s.courseId));
     data.marks.filter(m => m.studentId === studentId).forEach(m => studentCourses.add(m.courseId));
@@ -462,9 +411,6 @@ export const getStudentFinalMarks = (studentId) => {
 
     return finalMarks;
 };
-
-
-
 
 export const createExamSchedule = (scheduleData) => {
     try {
@@ -496,7 +442,6 @@ export const createExamSchedule = (scheduleData) => {
     }
 };
 
-
 export const createBulkExamSchedules = (schedulesData) => {
     try {
         const data = getAllAcademicData();
@@ -526,20 +471,17 @@ export const createBulkExamSchedules = (schedulesData) => {
     }
 };
 
-
 export const getExamSchedulesByClass = (className) => {
     const data = getAllAcademicData();
     return data.examSchedules.filter(s => s.class === className)
         .sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
 };
 
-
 export const getExamSchedulesByCourse = (courseId) => {
     const data = getAllAcademicData();
     return data.examSchedules.filter(s => s.courseId === courseId)
         .sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
 };
-
 
 export const updateExamSchedule = (scheduleId, updates) => {
     try {
@@ -560,7 +502,6 @@ export const updateExamSchedule = (scheduleId, updates) => {
     }
 };
 
-
 export const deleteExamSchedule = (scheduleId) => {
     try {
         const data = getAllAcademicData();
@@ -579,9 +520,6 @@ export const deleteExamSchedule = (scheduleId) => {
         throw error;
     }
 };
-
-
-
 
 export const uploadCourseMaterial = (materialData) => {
     try {
@@ -608,13 +546,11 @@ export const uploadCourseMaterial = (materialData) => {
     }
 };
 
-
 export const getCourseMaterials = (courseId) => {
     const data = getAllAcademicData();
     return data.courseMaterials.filter(m => m.courseId === courseId)
         .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
 };
-
 
 export const deleteCourseMaterial = (materialId) => {
     try {
@@ -635,16 +571,12 @@ export const deleteCourseMaterial = (materialId) => {
     }
 };
 
-
-
 export const subscribeToAcademicUpdates = (callback) => {
     const handler = () => callback(getAllAcademicData());
     window.addEventListener('academicDataUpdated', handler);
 
     return () => window.removeEventListener('academicDataUpdated', handler);
 };
-
-
 
 export const getAcademicStatistics = () => {
     const data = getAllAcademicData();
@@ -669,12 +601,10 @@ export default {
     updateCourse,
     deleteCourse,
 
-
     createAssignment,
     getAssignmentsByCourse,
     updateAssignment,
     deleteAssignment,
-
 
     submitAssignment,
     getSubmissionsByAssignment,
@@ -682,16 +612,13 @@ export default {
     getSubmission,
     gradeSubmission,
 
-
     enterExamMarks,
     getExamMarksByCourse,
     getExamMarksByStudent,
     getStudentCourseMarks,
 
-
     calculateFinalMarks,
     getStudentFinalMarks,
-
 
     createExamSchedule,
     createBulkExamSchedules,
@@ -700,11 +627,9 @@ export default {
     updateExamSchedule,
     deleteExamSchedule,
 
-
     uploadCourseMaterial,
     getCourseMaterials,
     deleteCourseMaterial,
-
 
     subscribeToAcademicUpdates,
     getAcademicStatistics,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Megaphone,
     Plus,
@@ -13,7 +13,7 @@ import {
     Filter,
     RotateCcw
 } from 'lucide-react';
-import * as announcementStore from '../../../utils/announcementStore';
+import { announcementApi } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 
 const AnnouncementsPage = ({ darkMode }) => {
@@ -22,21 +22,25 @@ const AnnouncementsPage = ({ darkMode }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterAudience, setFilterAudience] = useState('All');
     const [showModal, setShowModal] = useState(false);
-    const [modalType, setModalType] = useState('add'); 
+    const [modalType, setModalType] = useState('add');
     const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
 
     const availableClasses = ['Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
 
-    useEffect(() => {
-        const loadData = () => {
-            const allAnnouncements = announcementStore.getAllAnnouncements();
-            setAnnouncements(allAnnouncements);
-        };
+    const loadAnnouncements = useCallback(async () => {
+        try {
+            const response = await announcementApi.getAll();
+            setAnnouncements(response.data || []);
+        } catch (error) {
+            console.error('Failed to load announcements:', error);
 
-        loadData();
-        const unsubscribe = announcementStore.subscribeToUpdates(loadData);
-        return () => unsubscribe();
+            setAnnouncements([]);
+        }
     }, []);
+
+    useEffect(() => {
+        loadAnnouncements();
+    }, [loadAnnouncements]);
 
     const handleAdd = () => {
         setModalType('add');
@@ -52,31 +56,38 @@ const AnnouncementsPage = ({ darkMode }) => {
 
     const handleDelete = (id) => {
         setModalType('delete');
-        setSelectedAnnouncement({ id }); 
+        setSelectedAnnouncement({ id });
         setShowModal(true);
     };
 
-    const handleArchive = (id) => {
+    const handleArchive = async (id) => {
         try {
-            announcementStore.archiveAnnouncement(id);
+            await announcementApi.archive(id);
             showSuccess('Announcement archived successfully!');
+            loadAnnouncements();
         } catch (error) {
-            showError('Failed to archive: ' + error.message);
+            showError('Failed to archive: ' + (error.response?.data?.message || error.message));
         }
     };
 
-    const handleUnarchive = (id) => {
+    const handleUnarchive = async (id) => {
         try {
-            announcementStore.unarchiveAnnouncement(id);
+
+            await announcementApi.update(id, { status: 'Published' });
             showSuccess('Announcement restored successfully!');
+            loadAnnouncements();
         } catch (error) {
-            showError('Failed to unarchive: ' + error.message);
+            showError('Failed to unarchive: ' + (error.response?.data?.message || error.message));
         }
     };
 
     const filteredAnnouncements = announcements.filter(a => {
-        const matchesSearch = a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            a.description.toLowerCase().includes(searchQuery.toLowerCase());
+
+        const title = a.title || '';
+        const desc = a.description || '';
+
+        const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            desc.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesAudience = filterAudience === 'All' || a.targetAudience === filterAudience;
         return matchesSearch && matchesAudience;
     });
@@ -95,22 +106,40 @@ const AnnouncementsPage = ({ darkMode }) => {
             }
         );
 
-        const handleSubmit = (e) => {
+        const handleSubmit = async (e) => {
             e.preventDefault();
             try {
                 if (modalType === 'delete') {
-                    announcementStore.deleteAnnouncement(selectedAnnouncement.id);
+                    await announcementApi.delete(selectedAnnouncement.id);
                     showSuccess('Announcement deleted successfully!');
                 } else if (modalType === 'add') {
-                    announcementStore.addAnnouncement(formData);
+
+                    const res = await announcementApi.create(formData);
+
+                    try {
+                        let announcementData = res.data || formData;
+                        await announcementApi.sendNotification({
+
+                            title: announcementData.title,
+                            description: announcementData.description,
+                            attachment: announcementData.attachment,
+                            targetAudience: announcementData.targetAudience,
+                            classes: announcementData.classes
+                        });
+
+                    } catch (notifyErr) {
+                        console.warn('Notification trigger failed', notifyErr);
+                    }
+
                     showSuccess('Announcement created successfully!');
                 } else {
-                    announcementStore.updateAnnouncement(selectedAnnouncement.id, formData);
+                    await announcementApi.update(selectedAnnouncement.id, formData);
                     showSuccess('Announcement updated successfully!');
                 }
                 setShowModal(false);
+                loadAnnouncements();
             } catch (error) {
-                showError(error.message);
+                showError(error.response?.data?.message || error.message);
             }
         };
 
@@ -254,7 +283,7 @@ const AnnouncementsPage = ({ darkMode }) => {
 
     return (
         <div className={`space-y-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            {}
+            { }
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold">Announcements Management</h1>
@@ -269,7 +298,7 @@ const AnnouncementsPage = ({ darkMode }) => {
                 </button>
             </div>
 
-            {}
+            { }
             <div className="flex space-x-3">
                 <div className="relative flex-1">
                     <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
@@ -293,7 +322,7 @@ const AnnouncementsPage = ({ darkMode }) => {
                 </select>
             </div>
 
-            {}
+            { }
             <div className="space-y-4">
                 {filteredAnnouncements.map(announcement => (
                     <div

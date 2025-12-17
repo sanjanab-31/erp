@@ -1,13 +1,10 @@
 
 
-
 const STORAGE_KEY = 'erp_teacher_attendance_data';
-
 
 const initializeDefaultData = () => {
     return [];
 };
-
 
 export const getAllAttendance = () => {
     try {
@@ -24,13 +21,11 @@ export const getAllAttendance = () => {
     }
 };
 
-
 export const markAttendance = (attendanceData) => {
     try {
         const allAttendance = getAllAttendance();
         const { date, teacherId, status, markedBy } = attendanceData;
 
-        
         const existingIndex = allAttendance.findIndex(
             a => a.date === date && a.teacherId === teacherId
         );
@@ -62,7 +57,6 @@ export const markAttendance = (attendanceData) => {
     }
 };
 
-
 export const bulkMarkAttendance = (attendanceList) => {
     try {
         const allAttendance = getAllAttendance();
@@ -70,7 +64,6 @@ export const bulkMarkAttendance = (attendanceList) => {
 
         if (!date) return;
 
-        
         const otherDatesAttendance = allAttendance.filter(a => a.date !== date);
         const existingDateAttendance = allAttendance.filter(a => a.date === date);
 
@@ -82,15 +75,6 @@ export const bulkMarkAttendance = (attendanceList) => {
                 markedAt: new Date().toISOString()
             };
         });
-
-        
-        
-        
-        
-        
-
-        
-        
 
         const teacherIdsToUpdate = attendanceList.map(a => a.teacherId);
 
@@ -110,18 +94,15 @@ export const bulkMarkAttendance = (attendanceList) => {
     }
 };
 
-
 export const getAttendanceByDate = (date) => {
     const allAttendance = getAllAttendance();
     return allAttendance.filter(a => a.date === date);
 };
 
-
 export const getAttendanceByTeacher = (teacherId) => {
     const allAttendance = getAllAttendance();
     return allAttendance.filter(a => a.teacherId === teacherId);
 };
-
 
 export const getAttendanceStats = (date, totalTeachers = 0) => {
     const attendance = getAttendanceByDate(date);
@@ -138,7 +119,6 @@ export const getAttendanceStats = (date, totalTeachers = 0) => {
         unmarked: Math.max(0, totalTeachers - attendance.length)
     };
 };
-
 
 export const subscribeToUpdates = (callback) => {
     const handler = () => callback(getAllAttendance());

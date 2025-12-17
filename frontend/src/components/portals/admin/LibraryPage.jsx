@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Book,
     BookOpen,
@@ -17,7 +17,7 @@ import {
     Filter,
     X
 } from 'lucide-react';
-import * as libraryStore from '../../../utils/libraryStore';
+import { libraryApi } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 
 const LibraryPage = ({ darkMode }) => {
@@ -25,25 +25,64 @@ const LibraryPage = ({ darkMode }) => {
     const [activeTab, setActiveTab] = useState('books');
     const [books, setBooks] = useState([]);
     const [issues, setIssues] = useState([]);
-    const [rules, setRules] = useState(libraryStore.getLibraryRules());
-    const [stats, setStats] = useState(libraryStore.getLibraryStats());
+    const [rules, setRules] = useState({ maxBooksPerUser: 3, issueDurationDays: 14, finePerDay: 5 });
+    const [stats, setStats] = useState({ totalBooks: 0, availableBooks: 0, issuedBooks: 0, pendingFines: 0 });
     const [searchQuery, setSearchQuery] = useState('');
     const [showModal, setShowModal] = useState(false);
-    const [modalType, setModalType] = useState(''); 
+    const [modalType, setModalType] = useState('');
     const [selectedBook, setSelectedBook] = useState(null);
 
-    useEffect(() => {
-        const loadData = () => {
-            setBooks(libraryStore.getAllBooks());
-            setIssues(libraryStore.getAllIssues());
-            setRules(libraryStore.getLibraryRules());
-            setStats(libraryStore.getLibraryStats());
-        };
+    const loadData = useCallback(async () => {
+        try {
+            const [booksRes, issuesRes] = await Promise.all([
+                libraryApi.getAllBooks(),
+                libraryApi.getAllIssues(),
 
+            ]);
+
+            setBooks(booksRes.data || []);
+            setIssues(issuesRes.data || []);
+
+            try {
+                const statsRes = await libraryApi.getStats();
+                setStats(statsRes.data || { totalBooks: 0, availableBooks: 0, issuedBooks: 0, pendingFines: 0 });
+            } catch (e) {
+
+                const b = booksRes.data || [];
+                const i = issuesRes.data || [];
+                setStats({
+                    totalBooks: b.reduce((acc, book) => acc + (book.quantity || 1), 0),
+                    availableBooks: b.reduce((acc, book) => acc + (book.available || 0), 0),
+                    issuedBooks: i.filter(x => x.status === 'Issued').length,
+                    pendingFines: 0
+                });
+            }
+
+            try {
+                const rulesRes = await libraryApi.getSettings();
+                setRules(rulesRes.data || rules);
+            } catch (e) {
+
+            }
+
+        } catch (error) {
+            console.error('Failed to load library data', error);
+        }
+    }, [rules]);
+
+    useEffect(() => {
         loadData();
-        const unsubscribe = libraryStore.subscribeToUpdates(loadData);
-        return () => unsubscribe();
-    }, []);
+    }, [loadData]);
+
+    const calculateFine = (dueDate) => {
+        if (!dueDate) return 0;
+        const due = new Date(dueDate);
+        const today = new Date();
+        if (today <= due) return 0;
+        const diffTime = Math.abs(today - due);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays * (rules.finePerDay || 0);
+    };
 
     const handleAction = (action, item = null) => {
         setModalType(action);
@@ -51,39 +90,52 @@ const LibraryPage = ({ darkMode }) => {
         setShowModal(true);
     };
 
-    const handleDeleteBook = (id) => {
+    const handleDeleteBook = async (id) => {
         if (window.confirm('Are you sure you want to delete this book?')) {
-            libraryStore.deleteBook(id);
+            try {
+                await libraryApi.deleteBook(id);
+                showSuccess('Book deleted successfully');
+                loadData();
+            } catch (error) {
+                showError('Failed to delete book: ' + (error.response?.data?.message || error.message));
+            }
         }
     };
 
-    const handleReturnBook = (issueId) => {
+    const handleReturnBook = async (issueId) => {
         if (window.confirm('Confirm return of this book?')) {
-            libraryStore.returnBook(issueId);
+            try {
+                await libraryApi.returnBook(issueId);
+                showSuccess('Book returned successfully');
+                loadData();
+            } catch (error) {
+                showError('Failed to return book: ' + (error.response?.data?.message || error.message));
+            }
         }
     };
 
-    const handleApproveRequest = (issueId) => {
+    const handleApproveRequest = async (issueId) => {
         try {
-            libraryStore.updateIssueStatus(issueId, 'Issued');
+            await libraryApi.updateIssueStatus(issueId, 'Issued');
+            showSuccess('Request approved');
+            loadData();
         } catch (error) {
             showError(error.message);
         }
     };
 
-    const handleRejectRequest = (issueId) => {
+    const handleRejectRequest = async (issueId) => {
         if (window.confirm('Reject this request?')) {
-            
-            
             try {
-                libraryStore.updateIssueStatus(issueId, 'Rejected');
+                await libraryApi.updateIssueStatus(issueId, 'Rejected');
+                showSuccess('Request rejected');
+                loadData();
             } catch (error) {
                 showError(error.message);
             }
         }
     };
 
-    
     const filteredBooks = books.filter(b =>
         b.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         b.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -91,11 +143,10 @@ const LibraryPage = ({ darkMode }) => {
     );
 
     const filteredIssues = issues.filter(i =>
-        i.bookTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        i.userName.toLowerCase().includes(searchQuery.toLowerCase())
+        (i.bookTitle || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (i.userName || '').toLowerCase().includes(searchQuery.toLowerCase())
     ).sort((a, b) => new Date(b.issueDate) - new Date(a.issueDate));
 
-    
     const Modal = () => {
         const [formData, setFormData] = useState(
             selectedBook || {
@@ -109,40 +160,41 @@ const LibraryPage = ({ darkMode }) => {
             }
         );
 
-        
         const [issueData, setIssueData] = useState({
             userId: '',
             userName: '',
             userRole: 'Student'
         });
 
-        const handleSubmit = (e) => {
+        const handleSubmit = async (e) => {
             e.preventDefault();
             try {
                 if (modalType === 'addBook') {
-                    libraryStore.addBook(formData);
+                    await libraryApi.createBook(formData);
+                    showSuccess('Book added successfully');
                 } else if (modalType === 'editBook') {
-                    libraryStore.updateBook(selectedBook.id, formData);
+                    await libraryApi.updateBook(selectedBook.id, formData);
+                    showSuccess('Book updated successfully');
                 } else if (modalType === 'issueBook') {
-                    
-                    
-                    
-
-                    
                     if (!issueData.userId) {
                         showWarning('User ID is required');
                         return;
                     }
 
-                    libraryStore.issueBook(selectedBook.id, {
-                        id: issueData.userId,
-                        name: issueData.userName || issueData.userId,
-                        role: issueData.userRole
+                    await libraryApi.issueBook({
+                        bookId: selectedBook.id,
+                        userId: issueData.userId,
+                        userName: issueData.userName || issueData.userId,
+                        userRole: issueData.userRole,
+                        issueDate: new Date().toISOString(),
+                        dueDate: new Date(Date.now() + (rules.issueDurationDays * 24 * 60 * 60 * 1000)).toISOString()
                     });
+                    showSuccess('Book issued successfully');
                 }
                 setShowModal(false);
+                loadData();
             } catch (error) {
-                showError(error.message);
+                showError(error.response?.data?.message || 'Operation failed');
             }
         };
 
@@ -155,10 +207,16 @@ const LibraryPage = ({ darkMode }) => {
                             <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Library Settings</h2>
                             <button onClick={() => setShowModal(false)}><X className="text-gray-500" /></button>
                         </div>
-                        <form onSubmit={(e) => {
+                        <form onSubmit={async (e) => {
                             e.preventDefault();
-                            libraryStore.updateLibraryRules(rulesData);
-                            setShowModal(false);
+                            try {
+                                await libraryApi.updateSettings(rulesData);
+                                setRules(rulesData);
+                                showSuccess('Settings updated');
+                                setShowModal(false);
+                            } catch (err) {
+                                showError('Failed to update settings');
+                            }
                         }} className="space-y-4">
                             <div>
                                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Max Books Per User</label>
@@ -333,7 +391,7 @@ const LibraryPage = ({ darkMode }) => {
 
     return (
         <div className={`space-y-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            {}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6 shadow-sm`}>
                     <div className="flex items-center justify-between mb-4">
@@ -369,7 +427,7 @@ const LibraryPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             <div className="flex justify-between items-center">
                 <div className="flex bg-gray-100 p-1 rounded-lg">
                     <button
@@ -413,7 +471,7 @@ const LibraryPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl shadow-sm overflow-hidden`}>
                 {activeTab === 'books' && (
                     <div className="overflow-x-auto">
@@ -512,12 +570,12 @@ const LibraryPage = ({ darkMode }) => {
                                         return i.status === 'Issued' && new Date(i.dueDate) < new Date();
                                     }
                                     if (activeTab === 'issues') {
-                                        return i.status === 'Issued'; 
+                                        return i.status === 'Issued';
                                     }
                                     return true;
                                 }).map((issue) => {
                                     const isOverdue = issue.status === 'Issued' && new Date(issue.dueDate) < new Date();
-                                    const currentFine = issue.status === 'Issued' ? libraryStore.calculateFine(issue.dueDate) : issue.fine;
+                                    const currentFine = issue.status === 'Issued' ? calculateFine(issue.dueDate) : issue.fine;
 
                                     return (
                                         <tr key={issue.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}>

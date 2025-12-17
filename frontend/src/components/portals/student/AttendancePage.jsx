@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, CheckCircle, XCircle, Clock, TrendingUp, AlertCircle, User } from 'lucide-react';
-import { getAllStudents } from '../../../utils/studentStore';
-import { getAllAttendance, subscribeToUpdates } from '../../../utils/attendanceStore';
+import { studentApi, attendanceApi } from '../../../services/api';
 
 const AttendancePage = ({ darkMode }) => {
     const [attendanceRecords, setAttendanceRecords] = useState([]);
@@ -16,41 +15,33 @@ const AttendancePage = ({ darkMode }) => {
 
     useEffect(() => {
         loadAttendance();
-        const unsubscribe = subscribeToUpdates(loadAttendance);
-        return unsubscribe;
-    }, []);
-
-    const loadAttendance = useCallback(() => {
-        setLoading(true);
-        console.log('Loading attendance for student email:', studentEmail);
-
-        
-        const students = getAllStudents();
-        const student = students.find(s => s.email === studentEmail);
-        console.log('Student found:', student);
-
-        if (student) {
-            setStudentName(student.name);
-            setStudentClass(student.class);
-            setStudentId(student.id);
-
-            
-            const allRecords = getAllAttendance();
-            console.log('All attendance records:', allRecords);
-
-            
-            const studentRecords = allRecords.filter(record =>
-                record.studentId.toString() === student.id.toString()
-            );
-            console.log('Student attendance records:', studentRecords);
-
-            setAttendanceRecords(studentRecords);
-        }
-
-        setLoading(false);
     }, [studentEmail]);
 
-    
+    const loadAttendance = useCallback(async () => {
+        if (!studentEmail) return;
+        setLoading(true);
+
+        try {
+            const studentsRes = await studentApi.getAll();
+            const students = studentsRes.data || [];
+            const student = students.find(s => s.email === studentEmail);
+
+            if (student) {
+                setStudentName(student.name);
+                setStudentClass(student.class);
+                setStudentId(student.id);
+
+                const attendanceRes = await attendanceApi.getByStudent(student.id);
+                const studentRecords = attendanceRes.data || [];
+                setAttendanceRecords(studentRecords);
+            }
+        } catch (error) {
+            console.error('Error loading attendance:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [studentEmail]);
+
     const calculateStats = () => {
         let totalDays = attendanceRecords.length;
         let presentDays = attendanceRecords.filter(r => r.status === 'Present').length;
@@ -64,14 +55,12 @@ const AttendancePage = ({ darkMode }) => {
 
     const stats = calculateStats();
 
-    
     const getAttendanceForDate = (date) => {
         const dateStr = date.toISOString().split('T')[0];
         const record = attendanceRecords.find(r => r.date === dateStr);
         return record ? record.status : null;
     };
 
-    
     const generateCalendarDays = () => {
         const firstDay = new Date(selectedYear, selectedMonth, 1);
         const lastDay = new Date(selectedYear, selectedMonth + 1, 0);
@@ -80,12 +69,10 @@ const AttendancePage = ({ darkMode }) => {
 
         const days = [];
 
-        
         for (let i = 0; i < startingDayOfWeek; i++) {
             days.push(null);
         }
 
-        
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(selectedYear, selectedMonth, day);
             const status = getAttendanceForDate(date);
@@ -142,7 +129,7 @@ const AttendancePage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {}
+            { }
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     My Attendance
@@ -152,7 +139,7 @@ const AttendancePage = ({ darkMode }) => {
                 </p>
             </div>
 
-            {}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
@@ -191,7 +178,7 @@ const AttendancePage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-8`}>
                 <div className="flex justify-between items-center mb-2">
                     <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -216,7 +203,7 @@ const AttendancePage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-3 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-8 max-w-2xl mx-auto`}>
                 <div className="flex items-center justify-between mb-3">
                     <h3 className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -244,16 +231,16 @@ const AttendancePage = ({ darkMode }) => {
                     </div>
                 </div>
 
-                {}
+                { }
                 <div className="grid grid-cols-7 gap-0.5">
-                    {}
+                    { }
                     {dayNames.map(day => (
                         <div key={day} className={`text-center text-[10px] font-semibold ${darkMode ? 'text-gray-400' : 'text-gray-600'} py-0.5`}>
                             {day}
                         </div>
                     ))}
 
-                    {}
+                    { }
                     {calendarDays.map((dayData, index) => (
                         <div
                             key={index}
@@ -278,7 +265,7 @@ const AttendancePage = ({ darkMode }) => {
                     ))}
                 </div>
 
-                {}
+                { }
                 <div className="flex items-center justify-center space-x-3 mt-3 pt-3 border-t border-gray-200">
                     <div className="flex items-center space-x-1.5">
                         <div className="w-2.5 h-2.5 rounded bg-green-500"></div>
@@ -299,7 +286,7 @@ const AttendancePage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                     Recent Attendance

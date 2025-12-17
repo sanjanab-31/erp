@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { DollarSign, CreditCard, Calendar, AlertCircle, CheckCircle, Clock, X } from 'lucide-react';
-import { getAllStudents } from '../../../utils/studentStore';
-import { getFeesByStudent, makePayment, subscribeToUpdates } from '../../../utils/feeStore';
+import { studentApi, feeApi } from '../../../services/api';
 import StripePaymentModal from './StripePaymentModal';
 import { useToast } from '../../../context/ToastContext';
 
@@ -20,7 +19,7 @@ const PaymentModal = ({ darkMode, fee, onClose, onPaymentSuccess }) => {
         }
     }, [paymentType, fee.remainingAmount]);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!paymentData.transactionId.trim()) {
@@ -39,14 +38,23 @@ const PaymentModal = ({ darkMode, fee, onClose, onPaymentSuccess }) => {
         }
 
         try {
-            makePayment(fee.id, {
-                ...paymentData,
-                paidBy: 'Parent'
+            await feeApi.update(fee.id, {
+                status: parseFloat(paymentData.amount) >= fee.remainingAmount ? 'Paid' : 'Partial',
+                paidAmount: (fee.paidAmount || 0) + parseFloat(paymentData.amount),
+
+                paymentDetails: {
+                    amount: parseFloat(paymentData.amount),
+                    paymentMethod: paymentData.paymentMethod,
+                    transactionId: paymentData.transactionId,
+                    paidBy: 'Parent',
+                    paymentDate: new Date().toISOString()
+                }
             });
             showSuccess('Payment successful!');
             onPaymentSuccess();
         } catch (error) {
-            showError('Error processing payment: ' + error.message);
+            console.error(error);
+            showError('Error processing payment: ' + (error.response?.data?.message || error.message));
         }
     };
 
@@ -205,39 +213,32 @@ const FeeManagementPage = ({ darkMode }) => {
 
     useEffect(() => {
         loadFees();
-        const unsubscribe = subscribeToUpdates(loadFees);
-        return unsubscribe;
-    }, []);
+    }, [parentEmail]);
 
-    const loadFees = useCallback(() => {
+    const loadFees = useCallback(async () => {
+        if (!parentEmail) return;
         setLoading(true);
-        console.log('Loading fees for parent email:', parentEmail);
 
+        try {
+            const studentRes = await studentApi.getAll();
+            const students = studentRes.data || [];
+            const child = students.find(s => s.parentEmail === parentEmail || s.guardianEmail === parentEmail || s.email === parentEmail);
 
-        const students = getAllStudents();
-        console.log('All students:', students);
-
-        const child = students.find(s => s.parentEmail === parentEmail || s.guardianEmail === parentEmail);
-        console.log('Child found:', child);
-
-        if (child) {
-            setChildName(child.name);
-            console.log('Child ID:', child.id);
-
-            const childFees = getFeesByStudent(child.id);
-            console.log('Child fees found:', childFees);
-            setFees(childFees);
-        } else {
-            console.log('Child not found for parent email:', parentEmail);
-            console.log('Trying to match with student emails...');
-
-
-            students.forEach(s => {
-                console.log(`Student: ${s.name}, Parent Email: ${s.parentEmail}, Guardian Email: ${s.guardianEmail}`);
-            });
+            if (child) {
+                setChildName(child.name);
+                const feesRes = await feeApi.getAll();
+                const allFees = feesRes.data || [];
+                const childFees = allFees.filter(f => f.studentId === child.id);
+                setFees(childFees);
+            } else {
+                console.log('Child not found for parent email:', parentEmail);
+                setFees([]);
+            }
+        } catch (error) {
+            console.error('Error loading fees:', error);
+        } finally {
+            setLoading(false);
         }
-
-        setLoading(false);
     }, [parentEmail]);
 
     const handlePayment = (fee, method = 'manual') => {

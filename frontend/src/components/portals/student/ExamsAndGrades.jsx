@@ -9,14 +9,12 @@ import {
     Clock
 } from 'lucide-react';
 import {
-    getCoursesByClass,
-    calculateFinalMarks,
-    getStudentCourseMarks,
-    getExamSchedulesByClass,
-    getSubmissionsByStudent,
-    subscribeToAcademicUpdates
-} from '../../../utils/academicStore';
-import { getAllStudents } from '../../../utils/studentStore';
+    studentApi,
+    courseApi,
+    resultApi,
+    examApi,
+    assignmentApi
+} from '../../../services/api';
 
 const ExamsAndGrades = ({ darkMode }) => {
     const [activeTab, setActiveTab] = useState('My Grades');
@@ -28,55 +26,95 @@ const ExamsAndGrades = ({ darkMode }) => {
 
     const studentEmail = localStorage.getItem('userEmail') || '';
 
-    
     useEffect(() => {
-        if (studentEmail) {
-            const students = getAllStudents();
-            const student = students.find(s => s.email === studentEmail);
-            if (student) {
-                setStudentId(student.id);
-                setStudentClass(student.class);
-                console.log('Found student for Exams & Grades:', student);
-                console.log('Student ID:', student.id);
-                console.log('Student Class:', student.class);
+        const init = async () => {
+            if (studentEmail) {
+                try {
+                    const studentRes = await studentApi.getAll();
+                    const allStudents = studentRes.data || [];
+                    const student = allStudents.find(s => s.email === studentEmail);
+                    if (student) {
+                        setStudentId(student.id);
+                        setStudentClass(student.class);
+                        loadData(student);
+                    }
+                } catch (e) {
+                    console.error("Error loading student:", e);
+                }
             }
-        }
+        };
+        init();
     }, [studentEmail]);
 
-    useEffect(() => {
-        if (studentId && studentClass) {
-            loadData();
-            const unsubscribe = subscribeToAcademicUpdates(() => {
-                loadData();
-            });
-            return unsubscribe;
+    const loadData = async (student) => {
+        const sClass = student.class;
+        const sId = student.id;
+
+        try {
+            const [coursesRes, examsRes, resultsRes] = await Promise.all([
+                courseApi.getAll(),
+                examApi.getAll(),
+                resultApi.getAll()
+            ]);
+
+            const classCourses = (coursesRes.data || []).filter(c => c.class === sClass);
+            setCourses(classCourses);
+
+            const classSchedules = (examsRes.data || []).filter(e => e.class === sClass);
+            setExamSchedules(classSchedules);
+
+            const allResults = resultsRes.data || [];
+
+            const marksData = await Promise.all(classCourses.map(async (course) => {
+                const result = allResults.find(r => r.courseId === course.id && r.studentId === sId);
+                const assignments = course.assignments || [];
+
+                let assignmentMarks = 0;
+                let assignmentCount = assignments.length;
+
+                await Promise.all(assignments.map(async (assign) => {
+                    try {
+                        const subs = await assignmentApi.getSubmissions(assign.id);
+                        const sub = (subs.data || []).find(s => s.studentId === sId);
+                        if (sub && sub.status === 'graded') {
+                            assignmentMarks += (sub.marks || 0);
+                        }
+                    } catch (e) { }
+                }));
+
+                let scaledAssignment = 0;
+                if (assignmentCount > 0) {
+                    scaledAssignment = (assignmentMarks / (assignmentCount * 100)) * 25;
+                }
+
+                const examTotal = result ?
+                    ((result.examScores?.exam1 || 0) + (result.examScores?.exam2 || 0) + (result.examScores?.exam3 || 0))
+                    : 0;
+                const scaledExam = (examTotal / 300) * 75;
+
+                const finalTotal = parseFloat((scaledAssignment + scaledExam).toFixed(2));
+
+                return {
+                    courseId: course.id,
+                    courseName: course.name,
+                    courseCode: course.code,
+                    finalMarks: {
+                        assignmentMarks: parseFloat(scaledAssignment.toFixed(2)),
+                        assignmentCount: assignmentCount,
+                        examMarks: parseFloat(scaledExam.toFixed(2)),
+                        finalTotal: finalTotal
+                    },
+                    examMarks: result?.examScores || { exam1: 0, exam2: 0, exam3: 0 }
+                };
+            }));
+
+            setAllMarks(marksData.filter(m => m.finalMarks.finalTotal >= 0));
+
+        } catch (error) {
+            console.error(error);
         }
-    }, [studentId, studentClass]);
-
-    const loadData = () => {
-        const classCourses = getCoursesByClass(studentClass);
-        setCourses(classCourses);
-
-        const classSchedules = getExamSchedulesByClass(studentClass);
-        setExamSchedules(classSchedules);
-
-        
-        const marksData = classCourses.map(course => {
-            const finalMarks = calculateFinalMarks(studentId, course.id);
-            const examMarks = getStudentCourseMarks(studentId, course.id);
-            return {
-                courseId: course.id,
-                courseName: course.name,
-                courseCode: course.code,
-                finalMarks,
-                examMarks
-            };
-        }).filter(m => m.finalMarks.finalTotal > 0);
-
-        setAllMarks(marksData);
     };
 
-    
     const calculateStats = () => {
         const totalCourses = allMarks.length;
         const totalMarks = allMarks.reduce((sum, m) => sum + m.finalMarks.finalTotal, 0);
@@ -230,7 +268,7 @@ const ExamsAndGrades = ({ darkMode }) => {
     );
 
     const renderExamSchedule = () => {
-        
+
         const groupedSchedules = {};
         examSchedules.forEach(schedule => {
             if (!groupedSchedules[schedule.examName]) {
@@ -338,7 +376,7 @@ const ExamsAndGrades = ({ darkMode }) => {
                 </div>
             ) : (
                 <div className="space-y-6">
-                    {}
+                    { }
                     <div className={`${darkMode ? 'bg-gradient-to-r from-blue-900 to-purple-900' : 'bg-gradient-to-r from-blue-500 to-purple-600'} rounded-xl p-6 text-white`}>
                         <h4 className="text-lg font-semibold mb-4">Overall Performance</h4>
                         <div className="grid grid-cols-3 gap-4">
@@ -357,7 +395,7 @@ const ExamsAndGrades = ({ darkMode }) => {
                         </div>
                     </div>
 
-                    {}
+                    { }
                     <div>
                         <h4 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                             Subject-wise Performance
@@ -422,7 +460,7 @@ const ExamsAndGrades = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {}
+            { }
             <div className="mb-6">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Exams & Grades
@@ -430,9 +468,9 @@ const ExamsAndGrades = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">View your exam schedules and academic performance</p>
             </div>
 
-            {}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                {}
+                { }
                 <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl p-6 shadow-sm border`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -448,7 +486,7 @@ const ExamsAndGrades = ({ darkMode }) => {
                     <p className="text-sm text-gray-500">{stats.average}% average</p>
                 </div>
 
-                {}
+                { }
                 <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl p-6 shadow-sm border`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -464,7 +502,7 @@ const ExamsAndGrades = ({ darkMode }) => {
                     <p className="text-sm text-gray-500">Out of {courses.length} courses</p>
                 </div>
 
-                {}
+                { }
                 <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl p-6 shadow-sm border`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -480,7 +518,7 @@ const ExamsAndGrades = ({ darkMode }) => {
                     <p className="text-sm text-gray-500">Scheduled exams</p>
                 </div>
 
-                {}
+                { }
                 <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl p-6 shadow-sm border`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -500,7 +538,7 @@ const ExamsAndGrades = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl shadow-sm border`}>
                 <div className="border-b border-gray-200">
                     <div className="flex space-x-8 px-6">
@@ -534,7 +572,7 @@ const ExamsAndGrades = ({ darkMode }) => {
                     </div>
                 </div>
 
-                {}
+                { }
                 {activeTab === 'My Grades' && renderMyGrades()}
                 {activeTab === 'Exam Schedule' && renderExamSchedule()}
                 {activeTab === 'Performance Analysis' && renderPerformanceAnalysis()}

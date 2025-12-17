@@ -1,6 +1,5 @@
 const API_URL = 'http://localhost:5000/api/email';
 
-
 export const sendStudentCredentials = async (data) => {
     try {
         const response = await fetch(`${API_URL}/send-student-creds`, {
@@ -23,7 +22,6 @@ export const sendStudentCredentials = async (data) => {
         return { success: false, error: error.message };
     }
 };
-
 
 export const sendTeacherCredentials = async (data) => {
     try {

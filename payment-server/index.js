@@ -8,19 +8,16 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-
 dotenv.config({ path: join(__dirname, '..', '.env') });
 
 const app = express();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
 
 app.use(cors());
 app.use(express.json());
 
 console.log('🚀 Payment server starting...');
 console.log('📍 Stripe key loaded:', process.env.STRIPE_SECRET_KEY ? 'Yes' : 'No');
-
 
 app.get('/health', (req, res) => {
     res.json({
@@ -30,7 +27,6 @@ app.get('/health', (req, res) => {
     });
 });
 
-
 app.post('/create-checkout-session', async (req, res) => {
     console.log('\n🔔 NEW REQUEST RECEIVED');
     console.log('Request body:', JSON.stringify(req.body, null, 2));
@@ -38,7 +34,6 @@ app.post('/create-checkout-session', async (req, res) => {
     try {
         const { amount, currency, feeId, studentName, feeType } = req.body;
 
-        
         const numAmount = parseFloat(amount);
         console.log('Amount received:', amount, 'Type:', typeof amount);
         console.log('Parsed amount:', numAmount);
@@ -48,7 +43,6 @@ app.post('/create-checkout-session', async (req, res) => {
             return res.status(400).json({ error: 'Invalid amount' });
         }
 
-        
         if (numAmount < 50) {
             console.error('❌ Amount too small for Stripe');
             return res.status(400).json({
@@ -58,7 +52,6 @@ app.post('/create-checkout-session', async (req, res) => {
 
         console.log('✅ Creating Stripe session...');
 
-        
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             line_items: [{

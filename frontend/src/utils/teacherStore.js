@@ -1,13 +1,10 @@
 
 
-
 const STORAGE_KEY = 'erp_teachers_data';
-
 
 const initializeDefaultData = () => {
     return [];
 };
-
 
 export const getAllTeachers = () => {
     try {
@@ -24,7 +21,6 @@ export const getAllTeachers = () => {
     }
 };
 
-
 export const addTeacher = (teacher) => {
     try {
         const teachers = getAllTeachers();
@@ -37,7 +33,6 @@ export const addTeacher = (teacher) => {
         teachers.push(newTeacher);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(teachers));
 
-        
         window.dispatchEvent(new Event('teachersUpdated'));
 
         return newTeacher;
@@ -46,7 +41,6 @@ export const addTeacher = (teacher) => {
         throw error;
     }
 };
-
 
 export const updateTeacher = (id, updates) => {
     try {
@@ -65,7 +59,6 @@ export const updateTeacher = (id, updates) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(teachers));
 
-        
         window.dispatchEvent(new Event('teachersUpdated'));
 
         return teachers[index];
@@ -74,7 +67,6 @@ export const updateTeacher = (id, updates) => {
         throw error;
     }
 };
-
 
 export const deleteTeacher = (id) => {
     try {
@@ -87,7 +79,6 @@ export const deleteTeacher = (id) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredTeachers));
 
-        
         window.dispatchEvent(new Event('teachersUpdated'));
 
         return true;
@@ -96,7 +87,6 @@ export const deleteTeacher = (id) => {
         throw error;
     }
 };
-
 
 export const searchTeachers = (query) => {
     const teachers = getAllTeachers();
@@ -110,7 +100,6 @@ export const searchTeachers = (query) => {
     );
 };
 
-
 export const filterByDepartment = (department) => {
     const teachers = getAllTeachers();
     if (department === 'All Departments' || !department) {
@@ -118,7 +107,6 @@ export const filterByDepartment = (department) => {
     }
     return teachers.filter(teacher => teacher.department === department);
 };
-
 
 export const filterByStatus = (status) => {
     const teachers = getAllTeachers();
@@ -128,12 +116,10 @@ export const filterByStatus = (status) => {
     return teachers.filter(teacher => teacher.status.toLowerCase() === status.toLowerCase());
 };
 
-
 export const getTeacherById = (id) => {
     const teachers = getAllTeachers();
     return teachers.find(t => t.id === id);
 };
-
 
 export const getTeacherStats = () => {
     const teachers = getAllTeachers();
@@ -146,12 +132,10 @@ export const getTeacherStats = () => {
     };
 };
 
-
 export const subscribeToUpdates = (callback) => {
     const handler = () => callback(getAllTeachers());
     window.addEventListener('teachersUpdated', handler);
 
-    
     return () => window.removeEventListener('teachersUpdated', handler);
 };
 

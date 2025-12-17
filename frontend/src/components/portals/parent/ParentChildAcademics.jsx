@@ -8,47 +8,96 @@ import {
     BarChart3
 } from 'lucide-react';
 import {
-    getCoursesByClass,
-    calculateFinalMarks,
-    getStudentCourseMarks,
-    getExamSchedulesByClass,
-    getSubmissionsByStudent,
-    subscribeToAcademicUpdates
-} from '../../../utils/academicStore';
+    courseApi,
+    resultApi,
+    examApi,
+    studentApi
+} from '../../../services/api';
 
 const ParentChildAcademics = ({ darkMode }) => {
     const [courses, setCourses] = useState([]);
     const [examSchedules, setExamSchedules] = useState([]);
+    const [studentResults, setStudentResults] = useState([]);
     const [selectedCourse, setSelectedCourse] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [child, setChild] = useState(null);
 
-    
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-    const childId = currentUser.studentId || 'student_1'; 
-    const childName = currentUser.childName || 'Student Name';
-    const childClass = currentUser.childClass || 'Grade 10-A';
+    const parentEmail = localStorage.getItem('userEmail');
 
     useEffect(() => {
-        loadData();
-        const unsubscribe = subscribeToAcademicUpdates(() => {
-            loadData();
-        });
-        return unsubscribe;
+        const init = async () => {
+            setLoading(true);
+            try {
+                const studentsRes = await studentApi.getAll();
+                const students = studentsRes.data || [];
+                const foundChild = students.find(s => s.parentEmail === parentEmail || s.guardianEmail === parentEmail || s.email === parentEmail);
+
+                if (foundChild) {
+                    setChild(foundChild);
+                    await loadData(foundChild.class, foundChild.id);
+                }
+            } catch (error) {
+                console.error('Error initializing academics:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        init();
     }, []);
 
-    const loadData = () => {
-        const classCourses = getCoursesByClass(childClass);
-        setCourses(classCourses);
+    const loadData = async (className, studentId) => {
+        try {
+            const [coursesRes, examsRes, resultsRes] = await Promise.all([
+                courseApi.getAll({ class: className }),
+                examApi.getAll({ class: className }),
+                resultApi.getAll({ studentId: studentId })
+            ]);
 
-        const classSchedules = getExamSchedulesByClass(childClass);
-        setExamSchedules(classSchedules);
+            setCourses(coursesRes.data || []);
+            setExamSchedules(examsRes.data || []);
+            setStudentResults(resultsRes.data || []);
+        } catch (error) {
+            console.error('Error loading academic data:', error);
+        }
+    };
+
+    const calculateFinalMarks = (studentId, courseId) => {
+        const course = courses.find(c => c.id === courseId);
+        const marks = studentResults.find(r => r.courseId === courseId);
+
+        let assignmentTotal = 0;
+        let assignmentCount = 0;
+        if (course && course.assignments) {
+            course.assignments.forEach(assign => {
+                const sub = assign.submissions?.find(s => s.studentId === studentId);
+                if (sub && sub.status === 'graded') {
+                    assignmentTotal += (sub.marks || 0);
+                    assignmentCount++;
+                }
+            });
+        }
+
+        const avgAssignment = assignmentCount > 0 ? (assignmentTotal / assignmentCount) : 0;
+        const scaledAssignment = Math.round((avgAssignment / 100) * 25);
+
+        const examTotal = marks ? (marks.exam1 + marks.exam2 + marks.exam3) : 0;
+        const scaledExam = Math.round((examTotal / 300) * 75);
+
+        return {
+            assignmentMarks: scaledAssignment,
+            examMarks: scaledExam,
+            finalTotal: scaledAssignment + scaledExam
+        };
     };
 
     const calculateOverallPerformance = () => {
+        if (!child || courses.length === 0) return 0;
+
         let totalMarks = 0;
         let courseCount = 0;
 
         courses.forEach(course => {
-            const finalMarks = calculateFinalMarks(childId, course.id);
+            const finalMarks = calculateFinalMarks(child.id, course.id);
             if (finalMarks.finalTotal > 0) {
                 totalMarks += finalMarks.finalTotal;
                 courseCount++;
@@ -60,9 +109,21 @@ const ParentChildAcademics = ({ darkMode }) => {
 
     const overallAverage = calculateOverallPerformance();
 
+    if (loading) {
+        return <div className="p-8 text-center text-gray-500">Loading academic progress...</div>;
+    }
+
+    if (!child) {
+        return <div className="p-8 text-center text-gray-500">No student profile found for this parent account.</div>;
+    }
+
+    const childId = child.id;
+    const childName = child.name;
+    const childClass = child.class;
+
     return (
         <div className="space-y-6">
-            {}
+            { }
             <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     {childName}'s Academic Progress
@@ -70,7 +131,7 @@ const ParentChildAcademics = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">Class: {childClass}</p>
             </div>
 
-            {/* Overall Performance Card */}
+            {}
             <div className={`${darkMode ? 'bg-gradient-to-r from-blue-900 to-purple-900' : 'bg-gradient-to-r from-blue-500 to-purple-600'} rounded-xl p-6 text-white`}>
                 <div className="flex items-center justify-between">
                     <div>
@@ -89,7 +150,7 @@ const ParentChildAcademics = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Courses Performance */}
+            {}
             <div>
                 <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                     Course-wise Performance
@@ -97,7 +158,7 @@ const ParentChildAcademics = ({ darkMode }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {courses.map((course) => {
                         const finalMarks = calculateFinalMarks(childId, course.id);
-                        const examMarks = getStudentCourseMarks(childId, course.id);
+                        const examMarks = studentResults.find(r => r.courseId === course.id);
 
                         return (
                             <div
@@ -148,7 +209,7 @@ const ParentChildAcademics = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Detailed Course View */}
+            {}
             {selectedCourse && (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6`}>
                     <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-6`}>
@@ -157,12 +218,14 @@ const ParentChildAcademics = ({ darkMode }) => {
 
                     {(() => {
                         const finalMarks = calculateFinalMarks(childId, selectedCourse.id);
-                        const examMarks = getStudentCourseMarks(childId, selectedCourse.id);
-                        const submissions = getSubmissionsByStudent(childId).filter(s => s.courseId === selectedCourse.id);
+                        const examMarks = studentResults.find(r => r.courseId === selectedCourse.id);
+                        const submissions = (selectedCourse.assignments || [])
+                            .map(assign => assign.submissions?.find(s => s.studentId === childId))
+                            .filter(Boolean);
 
                         return (
                             <div className="space-y-6">
-                                {/* Assignment Marks */}
+                                {}
                                 <div>
                                     <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                                         Assignment Marks
@@ -203,7 +266,7 @@ const ParentChildAcademics = ({ darkMode }) => {
                                     )}
                                 </div>
 
-                                {/* Exam Marks */}
+                                {}
                                 <div>
                                     <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                                         Exam Marks
@@ -240,7 +303,7 @@ const ParentChildAcademics = ({ darkMode }) => {
                                     )}
                                 </div>
 
-                                {/* Final Summary */}
+                                {}
                                 <div>
                                     <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                                         Final Score
@@ -272,7 +335,7 @@ const ParentChildAcademics = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Exam Schedules */}
+            {}
             <div>
                 <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                     Upcoming Exam Schedules

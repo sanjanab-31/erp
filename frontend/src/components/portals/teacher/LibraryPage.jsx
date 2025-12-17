@@ -9,7 +9,7 @@ import {
     Calendar,
     Filter
 } from 'lucide-react';
-import * as libraryStore from '../../../utils/libraryStore';
+import { libraryApi } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 
 const TeacherLibraryPage = ({ darkMode }) => {
@@ -18,7 +18,7 @@ const TeacherLibraryPage = ({ darkMode }) => {
     const [books, setBooks] = useState([]);
     const [myIssues, setMyIssues] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
-    const [rules, setRules] = useState(libraryStore.getLibraryRules());
+    const [rules, setRules] = useState({ currency: '₹', maxBooks: 3, issueDays: 14 });
     const [user] = useState({
         email: localStorage.getItem('userEmail') || 'teacher@eshwar.com',
         name: localStorage.getItem('userName') || 'Teacher',
@@ -26,39 +26,44 @@ const TeacherLibraryPage = ({ darkMode }) => {
     });
 
     useEffect(() => {
-        console.log('TeacherLibrary: Loading data for user:', user.email);
+        const loadData = async () => {
+            try {
+                const [booksRes, issuesRes, statsRes] = await Promise.all([
+                    libraryApi.getAllBooks(),
+                    libraryApi.getIssues({ userEmail: user.email }),
+                    libraryApi.getStats()
+                ]);
 
-        const loadData = () => {
-            const allBooks = libraryStore.getAllBooks();
-            const userIssues = libraryStore.getIssuesByUser(user.email);
-            const currentRules = libraryStore.getLibraryRules();
-
-            console.log('TeacherLibrary: Loaded books:', allBooks.length);
-            console.log('TeacherLibrary: Loaded issues:', userIssues.length);
-
-            setBooks(allBooks);
-            setMyIssues(userIssues);
-            setRules(currentRules);
+                setBooks(booksRes.data || []);
+                setMyIssues(issuesRes.data || []);
+                if (statsRes.data?.rules) {
+                    setRules(statsRes.data.rules);
+                }
+            } catch (error) {
+                console.error('Error loading library data:', error);
+            }
         };
 
         loadData();
-        const unsubscribe = libraryStore.subscribeToUpdates(() => {
-            console.log('TeacherLibrary: Received update event');
-            loadData();
-        });
-
-        return () => unsubscribe();
     }, [user.email]);
 
-    const handleIssueBook = (book) => {
+    const handleIssueBook = async (book) => {
         if (window.confirm(`Issue "${book.title}" to yourself?`)) {
             try {
-                libraryStore.issueBook(book.id, {
-                    id: user.email,
-                    name: user.name,
-                    role: user.role
+                await libraryApi.issueBook({
+                    bookId: book.id,
+                    userEmail: user.email,
+                    userName: user.name,
+                    userRole: user.role
                 });
                 showSuccess('Book issued successfully!');
+
+                const [booksRes, issuesRes] = await Promise.all([
+                    libraryApi.getAllBooks(),
+                    libraryApi.getIssues({ userEmail: user.email })
+                ]);
+                setBooks(booksRes.data || []);
+                setMyIssues(issuesRes.data || []);
             } catch (error) {
                 showError(error.message);
             }
@@ -81,7 +86,7 @@ const TeacherLibraryPage = ({ darkMode }) => {
                 <Book className="w-8 h-8 text-green-600" />
             </div>
 
-            {}
+            { }
             <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
                 <button
                     onClick={() => setActiveTab('browse')}
@@ -97,7 +102,7 @@ const TeacherLibraryPage = ({ darkMode }) => {
                 </button>
             </div>
 
-            {}
+            { }
             {activeTab === 'browse' && (
                 <div className="space-y-4">
                     <div className="relative">

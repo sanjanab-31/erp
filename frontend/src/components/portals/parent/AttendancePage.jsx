@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, CheckCircle, XCircle, Clock, TrendingUp, AlertCircle, User } from 'lucide-react';
-import { getAllStudents } from '../../../utils/studentStore';
-import { getAllAttendance, subscribeToUpdates } from '../../../utils/attendanceStore';
+import { studentApi, attendanceApi } from '../../../services/api';
 
 const AttendancePage = ({ darkMode }) => {
     const [attendanceRecords, setAttendanceRecords] = useState([]);
@@ -16,40 +15,34 @@ const AttendancePage = ({ darkMode }) => {
 
     useEffect(() => {
         loadAttendance();
-        const unsubscribe = subscribeToUpdates(loadAttendance);
-        return unsubscribe;
     }, []);
 
-    const loadAttendance = useCallback(() => {
+    const loadAttendance = useCallback(async () => {
         setLoading(true);
-        console.log('Loading attendance for parent email:', parentEmail);
+        try {
+            const studentsRes = await studentApi.getAll();
+            const students = studentsRes.data || [];
+            const child = students.find(s => s.parentEmail === parentEmail || s.guardianEmail === parentEmail || s.email === parentEmail);
 
+            if (child) {
+                setChildName(child.name);
+                setChildClass(child.class);
+                setChildId(child.id);
 
-        const students = getAllStudents();
-        const child = students.find(s => s.parentEmail === parentEmail || s.guardianEmail === parentEmail);
-        console.log('Child found:', child);
+                const attendanceRes = await attendanceApi.getAll();
+                const allRecords = attendanceRes.data || [];
 
-        if (child) {
-            setChildName(child.name);
-            setChildClass(child.class);
-            setChildId(child.id);
-
-
-            const allRecords = getAllAttendance();
-            console.log('All attendance records:', allRecords);
-
-
-            const childRecords = allRecords.filter(record =>
-                record.studentId.toString() === child.id.toString()
-            );
-            console.log('Child attendance records:', childRecords);
-
-            setAttendanceRecords(childRecords);
+                const childRecords = allRecords.filter(record =>
+                    record.studentId.toString() === child.id.toString()
+                );
+                setAttendanceRecords(childRecords);
+            }
+        } catch (error) {
+            console.error('Error loading attendance:', error);
+        } finally {
+            setLoading(false);
         }
-
-        setLoading(false);
     }, [parentEmail]);
-
 
     const calculateStats = () => {
         let totalDays = attendanceRecords.length;
@@ -64,13 +57,11 @@ const AttendancePage = ({ darkMode }) => {
 
     const stats = calculateStats();
 
-
     const getAttendanceForDate = (date) => {
         const dateStr = date.toISOString().split('T')[0];
         const record = attendanceRecords.find(r => r.date === dateStr);
         return record ? record.status : null;
     };
-
 
     const generateCalendarDays = () => {
         const firstDay = new Date(selectedYear, selectedMonth, 1);
@@ -80,11 +71,9 @@ const AttendancePage = ({ darkMode }) => {
 
         const days = [];
 
-
         for (let i = 0; i < startingDayOfWeek; i++) {
             days.push(null);
         }
-
 
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(selectedYear, selectedMonth, day);
@@ -341,8 +330,8 @@ const AttendancePage = ({ darkMode }) => {
                                 </div>
                                 <div>
                                     <span className={`px-3 py-1 rounded-full text-sm font-semibold ${record.status === 'Present' ? 'bg-green-100 text-green-800' :
-                                            record.status === 'Absent' ? 'bg-red-100 text-red-800' :
-                                                'bg-yellow-100 text-yellow-800'
+                                        record.status === 'Absent' ? 'bg-red-100 text-red-800' :
+                                            'bg-yellow-100 text-yellow-800'
                                         }`}>
                                         {record.status}
                                     </span>

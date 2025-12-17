@@ -15,7 +15,7 @@ import {
     Database,
     LogOut
 } from 'lucide-react';
-import { getSettings, updateSettingsSection, changePassword, subscribeToSettingsUpdates } from '../../../utils/settingsStore';
+import { settingsApi } from '../../../services/api';
 
 const SettingsPage = ({ darkMode }) => {
     const navigate = useNavigate();
@@ -23,6 +23,7 @@ const SettingsPage = ({ darkMode }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [saved, setSaved] = useState(false);
     const [saveMessage, setSaveMessage] = useState('');
+    const [loading, setLoading] = useState(true);
 
     const [settings, setSettings] = useState({
         schoolName: 'ABC International School',
@@ -43,71 +44,75 @@ const SettingsPage = ({ darkMode }) => {
         confirmPassword: ''
     });
 
-    
     useEffect(() => {
-        const storedSettings = getSettings('admin');
-        if (storedSettings.general) {
-            setSettings(prev => ({ ...prev, ...storedSettings.general }));
-        }
-        if (storedSettings.notifications) {
-            setSettings(prev => ({ ...prev, ...storedSettings.notifications }));
-        }
-
-        
-        const unsubscribe = subscribeToSettingsUpdates('admin', (updatedSettings) => {
-            if (updatedSettings.general) {
-                setSettings(prev => ({ ...prev, ...updatedSettings.general }));
+        const loadSettings = async () => {
+            setLoading(true);
+            try {
+                const res = await settingsApi.get('admin');
+                if (res.data) {
+                    setSettings(prev => ({
+                        ...prev,
+                        ...(res.data.general || {}),
+                        ...(res.data.notifications || {})
+                    }));
+                }
+            } catch (error) {
+                console.error('Error loading admin settings:', error);
+            } finally {
+                setLoading(false);
             }
-            if (updatedSettings.notifications) {
-                setSettings(prev => ({ ...prev, ...updatedSettings.notifications }));
-            }
-        });
-
-        return () => unsubscribe();
+        };
+        loadSettings();
     }, []);
 
     const handleLogout = () => {
-        localStorage.removeItem('authToken'); 
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userName');
-        localStorage.removeItem('token');
+        localStorage.clear();
         navigate('/login');
     };
 
-    const handleSave = () => {
-        
-        updateSettingsSection('admin', 'general', {
-            schoolName: settings.schoolName,
-            email: settings.email,
-            phone: settings.phone,
-            address: settings.address,
-            timezone: settings.timezone,
-            language: settings.language,
-            currency: settings.currency
-        });
+    const handleSave = async () => {
+        setLoading(true);
+        try {
+            const generalData = {
+                schoolName: settings.schoolName,
+                email: settings.email,
+                phone: settings.phone,
+                address: settings.address,
+                timezone: settings.timezone,
+                language: settings.language,
+                currency: settings.currency
+            };
 
-        
-        updateSettingsSection('admin', 'notifications', {
-            emailNotifications: settings.emailNotifications,
-            smsNotifications: settings.smsNotifications,
-            systemUpdates: settings.systemUpdates
-        });
+            const notifData = {
+                emailNotifications: settings.emailNotifications,
+                smsNotifications: settings.smsNotifications,
+                systemUpdates: settings.systemUpdates
+            };
 
-        setSaved(true);
-        setSaveMessage('Settings saved successfully!');
-        setTimeout(() => {
-            setSaved(false);
-            setSaveMessage('');
-        }, 3000);
+            await Promise.all([
+                settingsApi.update('admin', 'general', generalData),
+                settingsApi.update('admin', 'notifications', notifData)
+            ]);
+
+            setSaved(true);
+            setSaveMessage('Settings saved successfully!');
+            setTimeout(() => {
+                setSaved(false);
+                setSaveMessage('');
+            }, 3000);
+        } catch (error) {
+            setSaveMessage('Error saving settings');
+            setTimeout(() => setSaveMessage(''), 3000);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const sections = [
         { id: 'general', name: 'General', icon: SettingsIcon },
         { id: 'notifications', name: 'Notifications', icon: Bell },
         { id: 'security', name: 'Security', icon: Lock },
-        // { id: 'system', name: 'System', icon: Database }
+
     ];
 
     const renderContent = () => {
@@ -128,10 +133,9 @@ const SettingsPage = ({ darkMode }) => {
                                     type="text"
                                     value={settings.schoolName}
                                     onChange={(e) => {
-                                        const updated = { ...settings, schoolName: e.target.value };
-                                        setSettings(updated);
-                                        updateSettingsSection('admin', 'general', { schoolName: e.target.value });
+                                        setSettings({ ...settings, schoolName: e.target.value });
                                     }}
+
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -147,10 +151,9 @@ const SettingsPage = ({ darkMode }) => {
                                     type="email"
                                     value={settings.email}
                                     onChange={(e) => {
-                                        const updated = { ...settings, email: e.target.value };
-                                        setSettings(updated);
-                                        updateSettingsSection('admin', 'general', { email: e.target.value });
+                                        setSettings({ ...settings, email: e.target.value });
                                     }}
+
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -166,10 +169,9 @@ const SettingsPage = ({ darkMode }) => {
                                     type="tel"
                                     value={settings.phone}
                                     onChange={(e) => {
-                                        const updated = { ...settings, phone: e.target.value };
-                                        setSettings(updated);
-                                        updateSettingsSection('admin', 'general', { phone: e.target.value });
+                                        setSettings({ ...settings, phone: e.target.value });
                                     }}
+
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -184,10 +186,9 @@ const SettingsPage = ({ darkMode }) => {
                                 <select
                                     value={settings.timezone}
                                     onChange={(e) => {
-                                        const updated = { ...settings, timezone: e.target.value };
-                                        setSettings(updated);
-                                        updateSettingsSection('admin', 'general', { timezone: e.target.value });
+                                        setSettings({ ...settings, timezone: e.target.value });
                                     }}
+
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
@@ -207,10 +208,9 @@ const SettingsPage = ({ darkMode }) => {
                                 <textarea
                                     value={settings.address}
                                     onChange={(e) => {
-                                        const updated = { ...settings, address: e.target.value };
-                                        setSettings(updated);
-                                        updateSettingsSection('admin', 'general', { address: e.target.value });
+                                        setSettings({ ...settings, address: e.target.value });
                                     }}
+
                                     rows="3"
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
@@ -242,10 +242,9 @@ const SettingsPage = ({ darkMode }) => {
                                     </div>
                                     <button
                                         onClick={() => {
-                                            const updated = { ...settings, [key]: !value };
-                                            setSettings(updated);
-                                            updateSettingsSection('admin', 'notifications', { [key]: !value });
+                                            setSettings({ ...settings, [key]: !value });
                                         }}
+
                                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${value ? 'bg-purple-600' : 'bg-gray-300'
                                             }`}
                                     >
@@ -314,7 +313,7 @@ const SettingsPage = ({ darkMode }) => {
                             </div>
 
                             <button
-                                onClick={() => {
+                                onClick={async () => {
                                     if (!securitySettings.currentPassword || !securitySettings.newPassword || !securitySettings.confirmPassword) {
                                         setSaveMessage('Please fill all password fields');
                                         setTimeout(() => setSaveMessage(''), 3000);
@@ -325,15 +324,24 @@ const SettingsPage = ({ darkMode }) => {
                                         setTimeout(() => setSaveMessage(''), 3000);
                                         return;
                                     }
-                                    changePassword('admin', securitySettings.currentPassword, securitySettings.newPassword);
-                                    setSecuritySettings({ currentPassword: '', newPassword: '', confirmPassword: '' });
-                                    setSaveMessage('Password updated successfully!');
+                                    try {
+                                        await settingsApi.changePassword({
+                                            role: 'admin',
+                                            currentPassword: securitySettings.currentPassword,
+                                            newPassword: securitySettings.newPassword
+                                        });
+                                        setSecuritySettings({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                                        setSaveMessage('Password updated successfully!');
+                                    } catch (err) {
+                                        setSaveMessage(err.response?.data?.message || 'Error updating password');
+                                    }
                                     setTimeout(() => setSaveMessage(''), 3000);
                                 }}
                                 className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                             >
                                 Update Password
                             </button>
+
                         </div>
                     </div>
                 );
@@ -345,7 +353,7 @@ const SettingsPage = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {}
+            { }
             <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Settings
@@ -354,7 +362,7 @@ const SettingsPage = ({ darkMode }) => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                {}
+                { }
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} h-fit`}>
                     <nav className="space-y-2">
                         {sections.map((section) => (
@@ -371,7 +379,7 @@ const SettingsPage = ({ darkMode }) => {
                             </button>
                         ))}
 
-                        {}
+                        { }
                         <div className="pt-4 mt-4 border-t border-gray-200">
                             <button
                                 onClick={handleLogout}
@@ -384,12 +392,12 @@ const SettingsPage = ({ darkMode }) => {
                     </nav>
                 </div>
 
-                {}
+                { }
                 <div className="lg:col-span-3">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-8 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                         {renderContent()}
 
-                        {}
+                        { }
                         <div className="flex items-center justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
                             {(saved || saveMessage) && (
                                 <span className={`text-sm font-medium ${saveMessage.includes('success') || saveMessage.includes('updated') || saved ? 'text-green-600' : 'text-red-600'}`}>

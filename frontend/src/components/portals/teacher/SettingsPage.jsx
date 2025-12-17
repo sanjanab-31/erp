@@ -17,8 +17,7 @@ import {
     EyeOff,
     LogOut
 } from 'lucide-react';
-import { getSettings, updateSettingsSection, changePassword, subscribeToSettingsUpdates } from '../../../utils/settingsStore';
-import { getAllTeachers } from '../../../utils/teacherStore';
+import { teacherApi, settingsApi } from '../../../services/api';
 
 const SettingsPage = ({ darkMode }) => {
     const navigate = useNavigate();
@@ -61,6 +60,11 @@ const SettingsPage = ({ darkMode }) => {
         twoFactorAuth: false
     });
 
+    const handleLogout = () => {
+        localStorage.clear();
+        navigate('/login');
+    };
+
     const [preferenceSettings, setPreferenceSettings] = useState({
         language: 'English',
         timezone: 'UTC-5 (EST)',
@@ -68,75 +72,77 @@ const SettingsPage = ({ darkMode }) => {
         theme: 'System Default'
     });
 
-    const handleLogout = () => {
-        localStorage.removeItem('authToken'); 
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userName');
-        localStorage.removeItem('token');
-        navigate('/login');
-    };
-
-    
-    useEffect(() => {
+    const loadData = async () => {
         const teacherEmail = localStorage.getItem('userEmail');
 
         if (teacherEmail) {
-            
-            const teachers = getAllTeachers();
-            const teacher = teachers.find(t => t.email === teacherEmail);
+            try {
+                const res = await teacherApi.getAll();
+                const teachers = res.data || [];
+                const teacher = teachers.find(t => t.email === teacherEmail);
 
-            console.log('Loading settings for teacher:', teacher);
-
-            if (teacher) {
-                setProfileData({
-                    name: teacher.name || '',
-                    email: teacher.email || '',
-                    phone: teacher.phone || '',
-                    address: teacher.address || '',
-                    dateOfBirth: teacher.dateOfBirth || '',
-                    employeeId: teacher.employeeId || teacher.id || '',
-                    department: teacher.department || '',
-                    qualification: teacher.qualification || '',
-                    experience: teacher.experience || '',
-                    subject: teacher.subject || '',
-                    joiningDate: teacher.joiningDate || '',
-                    gender: teacher.gender || '',
-                    bloodGroup: teacher.bloodGroup || ''
-                });
+                if (teacher) {
+                    setProfileData({
+                        id: teacher.id,
+                        name: teacher.name || '',
+                        email: teacher.email || '',
+                        phone: teacher.phone || '',
+                        address: teacher.address || '',
+                        dateOfBirth: teacher.dateOfBirth || '',
+                        employeeId: teacher.employeeId || teacher.id || '',
+                        department: teacher.department || '',
+                        qualification: teacher.qualification || '',
+                        experience: teacher.experience || '',
+                        subject: teacher.subject || '',
+                        joiningDate: teacher.joiningDate || '',
+                        gender: teacher.gender || '',
+                        bloodGroup: teacher.bloodGroup || ''
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading teacher settings:', error);
             }
         }
 
-        
-        const settings = getSettings('teacher');
-        if (settings.notifications) setNotificationSettings(settings.notifications);
-        if (settings.preferences) setPreferenceSettings(settings.preferences);
-        if (settings.security) setSecuritySettings(prev => ({ ...prev, twoFactorAuth: settings.security.twoFactorAuth || false }));
+        try {
+            const settings = await settingsApi.get('teacher');
+            if (settings.data) {
+                if (settings.data.notifications) setNotificationSettings(settings.data.notifications);
+                if (settings.data.preferences) setPreferenceSettings(settings.data.preferences);
+                if (settings.data.security) setSecuritySettings(prev => ({ ...prev, twoFactorAuth: settings.data.security.twoFactorAuth || false }));
+            }
+        } catch (error) {
+            console.error('Error loading settings from API:', error);
+        }
 
         setLoading(false);
+    };
 
-        
-        const unsubscribe = subscribeToSettingsUpdates('teacher', (updatedSettings) => {
-            if (updatedSettings.notifications) setNotificationSettings(updatedSettings.notifications);
-            if (updatedSettings.preferences) setPreferenceSettings(updatedSettings.preferences);
-            if (updatedSettings.security) setSecuritySettings(prev => ({ ...prev, twoFactorAuth: updatedSettings.security.twoFactorAuth || false }));
-        });
-
-        return () => unsubscribe();
+    useEffect(() => {
+        loadData();
     }, []);
 
-    const handleSave = () => {
-        updateSettingsSection('teacher', 'profile', profileData);
-        updateSettingsSection('teacher', 'notifications', notificationSettings);
-        updateSettingsSection('teacher', 'preferences', preferenceSettings);
+    const handleSave = async () => {
+        try {
+            if (profileData.id) {
+                await teacherApi.update(profileData.id, profileData);
+            }
 
-        setSaved(true);
-        setSaveMessage('Settings saved successfully!');
-        setTimeout(() => {
-            setSaved(false);
-            setSaveMessage('');
-        }, 3000);
+            await Promise.all([
+                settingsApi.update('teacher', 'notifications', notificationSettings),
+                settingsApi.update('teacher', 'preferences', preferenceSettings)
+            ]);
+
+            setSaved(true);
+            setSaveMessage('Settings saved successfully!');
+            setTimeout(() => {
+                setSaved(false);
+                setSaveMessage('');
+            }, 3000);
+        } catch (error) {
+            setSaveMessage('Error saving settings: ' + error.message);
+            setTimeout(() => setSaveMessage(''), 3000);
+        }
     };
 
     const sections = [
@@ -303,7 +309,7 @@ const SettingsPage = ({ darkMode }) => {
                                 />
                             </div>
 
-                            {}
+                            { }
                             <div>
                                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                                     Subject
@@ -319,7 +325,7 @@ const SettingsPage = ({ darkMode }) => {
                                 />
                             </div>
 
-                            {}
+                            { }
                             <div>
                                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                                     Experience
@@ -339,7 +345,7 @@ const SettingsPage = ({ darkMode }) => {
                                 />
                             </div>
 
-                            {}
+                            { }
                             <div>
                                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                                     Employee ID
@@ -355,7 +361,7 @@ const SettingsPage = ({ darkMode }) => {
                                 />
                             </div>
 
-                            {}
+                            { }
                             <div>
                                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                                     Joining Date
@@ -371,7 +377,7 @@ const SettingsPage = ({ darkMode }) => {
                                 />
                             </div>
 
-                            {}
+                            { }
                             <div>
                                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                                     Gender
@@ -387,7 +393,7 @@ const SettingsPage = ({ darkMode }) => {
                                 />
                             </div>
 
-                            {}
+                            { }
                             <div>
                                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                                     Blood Group
@@ -424,11 +430,12 @@ const SettingsPage = ({ darkMode }) => {
                                     </p>
                                 </div>
                                 <button
-                                    onClick={() => {
+                                    onClick={async () => {
                                         const updated = { ...notificationSettings, [key]: !value };
                                         setNotificationSettings(updated);
-                                        updateSettingsSection('teacher', 'notifications', updated);
+                                        await settingsApi.update('teacher', 'notifications', updated);
                                     }}
+
                                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${value ? 'bg-green-600' : 'bg-gray-300'
                                         }`}
                                 >
@@ -503,7 +510,7 @@ const SettingsPage = ({ darkMode }) => {
                         </div>
 
                         <button
-                            onClick={() => {
+                            onClick={async () => {
                                 if (!securitySettings.currentPassword || !securitySettings.newPassword || !securitySettings.confirmPassword) {
                                     setSaveMessage('Please fill all password fields');
                                     setTimeout(() => setSaveMessage(''), 3000);
@@ -514,11 +521,20 @@ const SettingsPage = ({ darkMode }) => {
                                     setTimeout(() => setSaveMessage(''), 3000);
                                     return;
                                 }
-                                changePassword('teacher', securitySettings.currentPassword, securitySettings.newPassword);
-                                setSecuritySettings({ currentPassword: '', newPassword: '', confirmPassword: '', twoFactorAuth: securitySettings.twoFactorAuth });
-                                setSaveMessage('Password updated successfully!');
+                                try {
+                                    await settingsApi.changePassword({
+                                        role: 'teacher',
+                                        currentPassword: securitySettings.currentPassword,
+                                        newPassword: securitySettings.newPassword
+                                    });
+                                    setSecuritySettings({ currentPassword: '', newPassword: '', confirmPassword: '', twoFactorAuth: securitySettings.twoFactorAuth });
+                                    setSaveMessage('Password updated successfully!');
+                                } catch (err) {
+                                    setSaveMessage(err.response?.data?.message || 'Error updating password');
+                                }
                                 setTimeout(() => setSaveMessage(''), 3000);
                             }}
+
                             className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                         >
                             Update Password
@@ -534,11 +550,12 @@ const SettingsPage = ({ darkMode }) => {
                                 </p>
                             </div>
                             <button
-                                onClick={() => {
+                                onClick={async () => {
                                     const updated = !securitySettings.twoFactorAuth;
                                     setSecuritySettings({ ...securitySettings, twoFactorAuth: updated });
-                                    updateSettingsSection('teacher', 'security', { twoFactorAuth: updated });
+                                    await settingsApi.update('teacher', 'security', { twoFactorAuth: updated });
                                 }}
+
                                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${securitySettings.twoFactorAuth ? 'bg-green-600' : 'bg-gray-300'
                                     }`}
                             >
@@ -564,11 +581,12 @@ const SettingsPage = ({ darkMode }) => {
                             </label>
                             <select
                                 value={preferenceSettings.language}
-                                onChange={(e) => {
+                                onChange={async (e) => {
                                     const updated = { ...preferenceSettings, language: e.target.value };
                                     setPreferenceSettings(updated);
-                                    updateSettingsSection('teacher', 'preferences', updated);
+                                    await settingsApi.update('teacher', 'preferences', updated);
                                 }}
+
                                 className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                     ? 'bg-gray-700 border-gray-600 text-white'
                                     : 'bg-white border-gray-300 text-gray-900'
@@ -657,7 +675,7 @@ const SettingsPage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {}
+            { }
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Settings
@@ -666,7 +684,7 @@ const SettingsPage = ({ darkMode }) => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                {}
+                { }
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} h-fit`}>
                     <nav className="space-y-2">
                         {sections.map((section) => (
@@ -683,7 +701,7 @@ const SettingsPage = ({ darkMode }) => {
                             </button>
                         ))}
 
-                        {}
+                        { }
                         <div className="pt-4 mt-4 border-t border-gray-200">
                             <button
                                 onClick={handleLogout}
@@ -696,12 +714,12 @@ const SettingsPage = ({ darkMode }) => {
                     </nav>
                 </div>
 
-                {}
+                { }
                 <div className="lg:col-span-3">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-8 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                         {renderContent()}
 
-                        {}
+                        { }
                         <div className="flex items-center justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
                             {(saved || saveMessage) && (
                                 <span className={`text-sm font-medium ${saveMessage.includes('success') || saveMessage.includes('updated') || saved ? 'text-green-600' : 'text-red-600'}`}>

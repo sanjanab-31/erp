@@ -1,17 +1,14 @@
 <<<<<<< HEAD
-// Centralized Announcements Data Store
-// Provides real-time synchronization for Announcements across all portals
+
 import { getAllStudents } from './studentStore';
 import { getAllTeachers } from './teacherStore';
 
 const API_URL = 'http://localhost:5000/api/email';
 =======
 
-
 >>>>>>> ca4d5f083cccc81b5d341dfda6e13663770f9d72
 
 const STORAGE_KEY = 'erp_announcements';
-
 
 const initializeDefaultData = () => {
     if (!localStorage.getItem(STORAGE_KEY)) {
@@ -60,7 +57,6 @@ const initializeDefaultData = () => {
     }
 };
 
-
 export const getAllAnnouncements = () => {
     try {
         const data = localStorage.getItem(STORAGE_KEY);
@@ -75,7 +71,6 @@ export const getAllAnnouncements = () => {
     }
 };
 
-
 export const addAnnouncement = (announcementData) => {
     try {
         const announcements = getAllAnnouncements();
@@ -89,7 +84,6 @@ export const addAnnouncement = (announcementData) => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(announcements));
         window.dispatchEvent(new Event('announcementsUpdated'));
 
-        // Trigger Notifications (Async)
         triggerNotifications(newAnnouncement);
 
         return newAnnouncement;
@@ -100,7 +94,7 @@ export const addAnnouncement = (announcementData) => {
 };
 
 <<<<<<< HEAD
-// Internal function to handle notifications
+
 const triggerNotifications = async (announcement) => {
     try {
         const recipients = [];
@@ -108,33 +102,29 @@ const triggerNotifications = async (announcement) => {
 
         console.log(`Preparing notifications for: ${targetAudience} (Classes: ${classes.join(', ') || 'All'})`);
 
-        // 1. Teachers
         if (targetAudience === 'Teachers' || targetAudience === 'All') {
             const teachers = getAllTeachers();
             teachers.forEach(t => {
-                // Determine if we need to filter teachers (usually filter applies to students/classes, 
-                // but if teacher is class teacher, maybe? For now send to all active teachers if audience is Teachers)
+
                 if (t.status !== 'Updates' && t.email) {
                     recipients.push({
                         name: t.name,
                         email: t.email,
-                        phone: t.phone || t.mobile // Handle generic mobile field
+                        phone: t.phone || t.mobile
                     });
                 }
             });
         }
 
-        // 2. Students & Parents
         if (targetAudience === 'Students' || targetAudience === 'Parents' || targetAudience === 'All') {
             let students = getAllStudents();
 
-            // Filter by Class
             if (classes && classes.length > 0) {
                 students = students.filter(s => classes.includes(s.class));
             }
 
             students.forEach(s => {
-                // Student
+
                 if (targetAudience === 'Students' || targetAudience === 'All') {
                     if (s.email) {
                         recipients.push({
@@ -145,7 +135,6 @@ const triggerNotifications = async (announcement) => {
                     }
                 }
 
-                // Parent
                 if (targetAudience === 'Parents' || targetAudience === 'All') {
                     if (s.parentEmail) {
                         recipients.push({
@@ -165,7 +154,6 @@ const triggerNotifications = async (announcement) => {
 
         console.log(`Sending notifications to ${recipients.length} recipients via Backend...`);
 
-        // Call Backend API
         const response = await fetch(`${API_URL}/send-announcement`, {
             method: 'POST',
             headers: {
@@ -187,11 +175,10 @@ const triggerNotifications = async (announcement) => {
 
     } catch (error) {
         console.error('Error triggering notifications:', error);
-        // Do not throw, this is a distinct process
+
     }
 };
 
-// Update announcement
 =======
 
 >>>>>>> ca4d5f083cccc81b5d341dfda6e13663770f9d72
@@ -216,7 +203,6 @@ export const updateAnnouncement = (id, updates) => {
     }
 };
 
-
 export const deleteAnnouncement = (id) => {
     try {
         const announcements = getAllAnnouncements();
@@ -230,7 +216,6 @@ export const deleteAnnouncement = (id) => {
     }
 };
 
-
 export const archiveAnnouncement = (id) => {
     try {
         return updateAnnouncement(id, { status: 'Archived' });
@@ -239,7 +224,6 @@ export const archiveAnnouncement = (id) => {
         throw error;
     }
 };
-
 
 export const unarchiveAnnouncement = (id) => {
     try {
@@ -250,7 +234,6 @@ export const unarchiveAnnouncement = (id) => {
     }
 };
 
-
 export const getAnnouncementsForAudience = (audience, userClass = null) => {
     const announcements = getAllAnnouncements();
 
@@ -258,11 +241,9 @@ export const getAnnouncementsForAudience = (audience, userClass = null) => {
         
         if (a.status !== 'Published') return false;
 
-        
         const audienceMatch = a.targetAudience === 'All' || a.targetAudience === audience;
         if (!audienceMatch) return false;
 
-        
         if (a.classes && a.classes.length > 0 && userClass) {
             return a.classes.includes(userClass);
         }
@@ -271,12 +252,10 @@ export const getAnnouncementsForAudience = (audience, userClass = null) => {
     });
 };
 
-
 export const getLatestAnnouncements = (audience, userClass = null, limit = 3) => {
     const announcements = getAnnouncementsForAudience(audience, userClass);
     return announcements.slice(0, limit);
 };
-
 
 export const autoArchiveOldAnnouncements = () => {
     try {
@@ -302,7 +281,6 @@ export const autoArchiveOldAnnouncements = () => {
     }
 };
 
-
 export const subscribeToUpdates = (callback) => {
     const handler = () => {
         callback(getAllAnnouncements());
@@ -317,9 +295,7 @@ export const subscribeToUpdates = (callback) => {
     };
 };
 
-
 initializeDefaultData();
-
 
 autoArchiveOldAnnouncements();
 

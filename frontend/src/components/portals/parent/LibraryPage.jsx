@@ -6,38 +6,47 @@ import {
     CheckCircle,
     Info
 } from 'lucide-react';
-import * as libraryStore from '../../../utils/libraryStore';
+import { libraryApi, studentApi } from '../../../services/api';
 
 const ParentLibraryPage = ({ darkMode }) => {
     const [childIssues, setChildIssues] = useState([]);
-    const [rules, setRules] = useState(libraryStore.getLibraryRules());
+    const [loading, setLoading] = useState(true);
+    const [rules, setRules] = useState({
+        maxBooks: 5,
+        issuePeriod: 14,
+        finePerDay: 5,
+        currency: '₹'
+    });
 
-    
-    
-    const childId = 'student@eshwar.com';
+    const parentEmail = localStorage.getItem('userEmail');
 
     useEffect(() => {
-        console.log('ParentLibrary: Loading data for child:', childId);
+        const loadData = async () => {
+            setLoading(true);
+            try {
 
-        const loadData = () => {
-            
-            const issues = libraryStore.getIssuesByUser(childId);
-            const currentRules = libraryStore.getLibraryRules();
+                const studentRes = await studentApi.getAll();
+                const students = studentRes.data || [];
+                const child = students.find(s => s.parentEmail === parentEmail || s.guardianEmail === parentEmail || s.email === parentEmail);
 
-            console.log('ParentLibrary: Loaded issues:', issues.length);
+                if (child) {
 
-            setChildIssues(issues);
-            setRules(currentRules);
+                    const res = await libraryApi.getAllIssues();
+                    const allIssues = res.data || [];
+                    const childRecords = allIssues.filter(i =>
+                        i.userId === child.email || i.studentId === child.id
+                    );
+                    setChildIssues(childRecords);
+                }
+            } catch (error) {
+                console.error('Error loading library data:', error);
+            } finally {
+                setLoading(false);
+            }
         };
 
         loadData();
-        const unsubscribe = libraryStore.subscribeToUpdates(() => {
-            console.log('ParentLibrary: Received update event');
-            loadData();
-        });
-
-        return () => unsubscribe();
-    }, []);
+    }, [parentEmail]);
 
     const overdueCount = childIssues.filter(i => i.status === 'Issued' && new Date(i.dueDate) < new Date()).length;
     const totalFines = childIssues.reduce((sum, i) => sum + (i.fine || 0), 0);
@@ -53,7 +62,7 @@ const ParentLibraryPage = ({ darkMode }) => {
                 <Book className="w-8 h-8 text-orange-600" />
             </div>
 
-            {/* Alerts */}
+            {}
             {overdueCount > 0 && (
                 <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg flex items-center shadow-sm">
                     <AlertTriangle className="w-5 h-5 text-red-500 mr-3 flex-shrink-0" />
@@ -88,7 +97,7 @@ const ParentLibraryPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Content */}
+            {}
             <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl overflow-hidden`}>
                 <div className="p-4 border-b">
                     <h3 className="font-bold">Issue History</h3>
@@ -120,8 +129,8 @@ const ParentLibraryPage = ({ darkMode }) => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 rounded-full text-xs font-semibold ${issue.status === 'Returned' ? 'bg-green-100 text-green-700' :
-                                                    issue.status === 'Requested' ? 'bg-yellow-100 text-yellow-700' :
-                                                        isOverdue ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                                                issue.status === 'Requested' ? 'bg-yellow-100 text-yellow-700' :
+                                                    isOverdue ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
                                                 }`}>
                                                 {issue.status === 'Returned' ? 'Returned' :
                                                     issue.status === 'Requested' ? 'Pending Approval' :

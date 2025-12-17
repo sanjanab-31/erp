@@ -1,17 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Clock, Plus, Edit, Trash2, Save, X, Calendar as CalendarIcon, Users, GraduationCap, ChevronDown, ChevronUp, MapPin, Search } from 'lucide-react';
-import { getAllTeachers } from '../../../utils/teacherStore';
-import { useToast } from '../../../context/ToastContext';
 import {
-    saveTeacherTimetable,
-    saveClassTimetable,
-    getAllTeacherTimetables,
-    getAllClassTimetables,
-    deleteTeacherTimetable,
-    deleteClassTimetable,
-    subscribeToUpdates,
-    getTimetableStats
-} from '../../../utils/timetableStore';
+    Clock,
+    Plus,
+    Edit,
+    Trash2,
+    Save,
+    X,
+    Calendar as CalendarIcon,
+    Users,
+    GraduationCap,
+    ChevronDown,
+    ChevronUp,
+    MapPin,
+    Search
+} from 'lucide-react';
+import { teacherApi, timetableApi } from '../../../services/api';
+import { useToast } from '../../../context/ToastContext';
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const timeSlots = [
@@ -42,7 +46,6 @@ const getSubjectColor = (subject) => {
 };
 
 const TimetableTableView = ({ schedule, darkMode }) => {
-    
     const scheduleMap = {};
     if (schedule) {
         schedule.forEach(entry => {
@@ -155,14 +158,13 @@ const TimetableItem = ({ item, type, darkMode, onEdit, onDelete }) => {
     );
 };
 
-
 const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onClose, onSave }) => {
-    const { showSuccess, showError, showWarning, showInfo } = useToast();
+    const { showSuccess, showError, showWarning } = useToast();
     const [selectedEntity, setSelectedEntity] = useState('');
     const [timetableGrid, setTimetableGrid] = useState({});
 
     useEffect(() => {
-        
+
         const grid = {};
         days.forEach(day => {
             timeSlots.forEach(slot => {
@@ -179,7 +181,7 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
                     room: entry.room || ''
                 };
             });
-            setSelectedEntity(activeView === 'teacher' ? editingTimetable.teacherId.toString() : editingTimetable.className);
+            setSelectedEntity(activeView === 'teacher' ? editingTimetable.teacherId?.toString() : editingTimetable.className);
         }
         setTimetableGrid(grid);
     }, [editingTimetable, activeView]);
@@ -195,7 +197,7 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
         }));
     }, []);
 
-    const handleSubmit = useCallback((e) => {
+    const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
 
         if (!selectedEntity) {
@@ -222,21 +224,27 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
             });
 
             if (activeView === 'teacher') {
-                const teacher = teachers.find(t => t.id.toString() === selectedEntity);
-                saveTeacherTimetable(selectedEntity, {
-                    teacherName: teacher?.name || 'Unknown',
+                const teacher = teachers.find(t => t.id.toString() === selectedEntity.toString());
+                const teacherName = teacher?.name || 'Unknown';
+
+                await timetableApi.saveTeacherTimetable({
+                    teacherId: selectedEntity,
+                    teacherName,
                     schedule
                 });
             } else {
-                saveClassTimetable(selectedEntity, { schedule });
+                await timetableApi.saveClassTimetable({
+                    className: selectedEntity,
+                    schedule
+                });
             }
 
             showSuccess('Timetable saved successfully!');
             onSave();
         } catch (error) {
-            showError('Error saving timetable: ' + error.message);
+            showError('Error saving timetable: ' + (error.response?.data?.message || error.message));
         }
-    }, [selectedEntity, timetableGrid, activeView, teachers, onSave]);
+    }, [selectedEntity, timetableGrid, activeView, teachers, onSave, showSuccess, showError, showWarning]);
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -253,7 +261,7 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                    {}
+                    { }
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Select {activeView === 'teacher' ? 'Teacher' : 'Class'} *
@@ -282,7 +290,7 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
                         </select>
                     </div>
 
-                    {}
+                    { }
                     <div className="overflow-x-auto">
                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                             Weekly Schedule
@@ -337,7 +345,7 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
                         </table>
                     </div>
 
-                    {}
+                    { }
                     <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <button
                             type="button"
@@ -362,7 +370,7 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
 
 const TimetablePage = ({ darkMode }) => {
     const { showSuccess, showError, showWarning } = useToast();
-    const [activeView, setActiveView] = useState('teacher'); 
+    const [activeView, setActiveView] = useState('teacher');
     const [teachers, setTeachers] = useState([]);
     const [teacherTimetables, setTeacherTimetables] = useState([]);
     const [classTimetables, setClassTimetables] = useState([]);
@@ -370,27 +378,45 @@ const TimetablePage = ({ darkMode }) => {
     const [editingTimetable, setEditingTimetable] = useState(null);
     const [stats, setStats] = useState({ totalTeachers: 0, totalClasses: 0 });
 
-    
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const loadTeachers = useCallback(async () => {
+        try {
+            const response = await teacherApi.getAll();
+            setTeachers(response.data || []);
+        } catch (error) {
+            console.error(error);
+        }
+    }, []);
+
+    const loadTimetables = useCallback(async () => {
+        try {
+
+            const [tResult, cResult] = await Promise.all([
+                timetableApi.getTeacherTimetables(),
+                timetableApi.getClassTimetables()
+            ]);
+
+            const tTimetables = tResult.data || [];
+            const cTimetables = cResult.data || [];
+
+            setTeacherTimetables(tTimetables);
+            setClassTimetables(cTimetables);
+
+            setStats({
+                totalTeachers: tTimetables.length,
+                totalClasses: cTimetables.length
+            });
+
+        } catch (error) {
+            console.error("Failed to load timetables", error);
+        }
+    }, []);
+
     useEffect(() => {
         loadTeachers();
         loadTimetables();
-
-        const unsubscribe = subscribeToUpdates(loadTimetables);
-        return unsubscribe;
-    }, []);
-
-    const loadTeachers = useCallback(() => {
-        const teacherData = getAllTeachers();
-        setTeachers(teacherData);
-    }, []);
-
-    const loadTimetables = useCallback(() => {
-        const teacherTT = getAllTeacherTimetables();
-        const classTT = getAllClassTimetables();
-        setTeacherTimetables(teacherTT);
-        setClassTimetables(classTT);
-        setStats(getTimetableStats());
-    }, []);
+    }, [loadTeachers, loadTimetables]);
 
     const handleModalClose = useCallback(() => {
         setShowAddModal(false);
@@ -400,22 +426,24 @@ const TimetablePage = ({ darkMode }) => {
     const handleModalSave = useCallback(() => {
         setShowAddModal(false);
         setEditingTimetable(null);
-    }, []);
+        loadTimetables();
+    }, [loadTimetables]);
 
-    const handleDelete = useCallback((id, type) => {
+    const handleDelete = useCallback(async (id, type) => {
         if (window.confirm('Are you sure you want to delete this timetable?')) {
             try {
                 if (type === 'teacher') {
-                    deleteTeacherTimetable(id);
+                    await timetableApi.deleteTeacherTimetable(id);
                 } else {
-                    deleteClassTimetable(id);
+                    await timetableApi.deleteClassTimetable(id);
                 }
                 showSuccess('Timetable deleted successfully!');
+                loadTimetables();
             } catch (error) {
-                showError('Error deleting timetable: ' + error.message);
+                showError('Error deleting timetable: ' + (error.response?.data?.message || error.message));
             }
         }
-    }, []);
+    }, [showSuccess, showError, loadTimetables]);
 
     const handleEdit = useCallback((timetable) => {
         setShowAddModal(false);
@@ -430,8 +458,6 @@ const TimetablePage = ({ darkMode }) => {
         setEditingTimetable(null);
         setShowAddModal(true);
     }, []);
-
-    const [searchTerm, setSearchTerm] = useState('');
 
     const currentTimetables = activeView === 'teacher' ? teacherTimetables : classTimetables;
 
@@ -448,15 +474,15 @@ const TimetablePage = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {}
+            { }
             <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Timetable Management
                 </h1>
-                <p className="text-sm text-gray-500">Create and manage timetables for teachers and students (Real-time sync)</p>
+                <p className="text-sm text-gray-500">Create and manage timetables for teachers and students</p>
             </div>
 
-            {}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
@@ -475,7 +501,7 @@ const TimetablePage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
                     <div className={`inline-flex rounded-lg border ${darkMode ? 'border-gray-600' : 'border-gray-300'} p-1`}>
@@ -499,7 +525,7 @@ const TimetablePage = ({ darkMode }) => {
                         </button>
                     </div>
 
-                    {}
+                    { }
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                         <input
@@ -521,7 +547,7 @@ const TimetablePage = ({ darkMode }) => {
                 </button>
             </div>
 
-            {}
+            { }
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
                 {filteredTimetables.length === 0 ? (
                     <div className="p-12 text-center">
@@ -544,14 +570,14 @@ const TimetablePage = ({ darkMode }) => {
                                 type={activeView}
                                 darkMode={darkMode}
                                 onEdit={() => handleEdit(timetable)}
-                                onDelete={() => handleDelete(activeView === 'teacher' ? timetable.teacherId : timetable.className, activeView)}
+                                onDelete={() => handleDelete(activeView === 'teacher' ? timetable.teacherId : timetable.id, activeView)}
                             />
                         ))}
                     </div>
                 )}
             </div>
 
-            {}
+            { }
             {showAddModal && (
                 <TimetableModal
                     key={editingTimetable ? editingTimetable.id : 'new'}
@@ -568,4 +594,3 @@ const TimetablePage = ({ darkMode }) => {
 };
 
 export default TimetablePage;
-

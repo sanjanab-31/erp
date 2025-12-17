@@ -1,13 +1,10 @@
 import { loadStripe } from '@stripe/stripe-js';
 
-
-
 const stripePromise = loadStripe('pk_test_51SeqXZGwQi5RLnDThhAPcctzcxHTZdUtrGSSTYt48vr2I6rOZJc98b3fV9WJwlWpw4QD8IfwkQjXbht3Uf5uHVtQ00sKykAhzR');
 
 export const PAYMENT_SERVER_URL = 'http://localhost:4242';
 
 export const getStripe = () => stripePromise;
-
 
 export const createCheckoutSession = async (amount, feeId, studentName, feeType) => {
     try {
@@ -36,7 +33,6 @@ export const createCheckoutSession = async (amount, feeId, studentName, feeType)
         throw error;
     }
 };
-
 
 export const getCheckoutSession = async (sessionId) => {
     try {

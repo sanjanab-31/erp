@@ -1,8 +1,6 @@
 
 
-
 const STORAGE_KEY = 'erp_timetable_data';
-
 
 const initializeDefaultData = () => {
     return {
@@ -10,7 +8,6 @@ const initializeDefaultData = () => {
         students: []   
     };
 };
-
 
 export const getAllTimetables = () => {
     try {
@@ -26,7 +23,6 @@ export const getAllTimetables = () => {
         return initializeDefaultData();
     }
 };
-
 
 export const saveTeacherTimetable = (teacherId, timetableData) => {
     try {
@@ -50,7 +46,6 @@ export const saveTeacherTimetable = (teacherId, timetableData) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(allTimetables));
 
-        
         window.dispatchEvent(new Event('timetableUpdated'));
 
         return timetableEntry;
@@ -59,7 +54,6 @@ export const saveTeacherTimetable = (teacherId, timetableData) => {
         throw error;
     }
 };
-
 
 export const saveClassTimetable = (className, timetableData) => {
     try {
@@ -82,7 +76,6 @@ export const saveClassTimetable = (className, timetableData) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(allTimetables));
 
-        
         window.dispatchEvent(new Event('timetableUpdated'));
 
         return timetableEntry;
@@ -92,30 +85,25 @@ export const saveClassTimetable = (className, timetableData) => {
     }
 };
 
-
 export const getTeacherTimetable = (teacherId) => {
     const allTimetables = getAllTimetables();
     return allTimetables.teachers.find(t => t.teacherId === teacherId);
 };
-
 
 export const getClassTimetable = (className) => {
     const allTimetables = getAllTimetables();
     return allTimetables.students.find(t => t.className === className);
 };
 
-
 export const getAllTeacherTimetables = () => {
     const allTimetables = getAllTimetables();
     return allTimetables.teachers;
 };
 
-
 export const getAllClassTimetables = () => {
     const allTimetables = getAllTimetables();
     return allTimetables.students;
 };
-
 
 export const deleteTeacherTimetable = (teacherId) => {
     try {
@@ -124,7 +112,6 @@ export const deleteTeacherTimetable = (teacherId) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(allTimetables));
 
-        
         window.dispatchEvent(new Event('timetableUpdated'));
 
         return true;
@@ -134,7 +121,6 @@ export const deleteTeacherTimetable = (teacherId) => {
     }
 };
 
-
 export const deleteClassTimetable = (className) => {
     try {
         const allTimetables = getAllTimetables();
@@ -142,7 +128,6 @@ export const deleteClassTimetable = (className) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(allTimetables));
 
-        
         window.dispatchEvent(new Event('timetableUpdated'));
 
         return true;
@@ -151,7 +136,6 @@ export const deleteClassTimetable = (className) => {
         throw error;
     }
 };
-
 
 export const getTimetableStats = () => {
     const allTimetables = getAllTimetables();
@@ -162,21 +146,17 @@ export const getTimetableStats = () => {
     };
 };
 
-
 export const subscribeToUpdates = (callback) => {
     const handler = () => callback(getAllTimetables());
     window.addEventListener('timetableUpdated', handler);
 
-    
     return () => window.removeEventListener('timetableUpdated', handler);
 };
-
 
 export const getScheduleForDay = (schedule, day) => {
     if (!schedule || !Array.isArray(schedule)) return [];
     return schedule.filter(entry => entry.day === day);
 };
-
 
 export const formatTime = (time) => {
     if (!time) return '';

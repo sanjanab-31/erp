@@ -36,12 +36,8 @@ import AdminExamSchedules from './AdminExamSchedules';
 import LibraryPage from './LibraryPage';
 import AnnouncementsPage from './AnnouncementsPage';
 import ReportsPage from './ReportsPage';
-import { getStudentStats, subscribeToUpdates as subscribeToStudents } from '../../../utils/studentStore';
-import { getTeacherStats, subscribeToUpdates as subscribeToTeachers } from '../../../utils/teacherStore';
-import { getFeeStats, subscribeToUpdates as subscribeToFees } from '../../../utils/feeStore';
-import { getOverallAttendanceStats, subscribeToUpdates as subscribeToAttendance } from '../../../utils/attendanceStore';
-import { logAdminActivity, initializeActivityLog } from '../../../utils/activityLogger';
-import { getLatestAnnouncements, subscribeToUpdates as subscribeToAnnouncements } from '../../../utils/announcementStore';
+import { studentApi, teacherApi, feeApi, attendanceApi, announcementApi } from '../../../services/api';
+import { initializeActivityLog } from '../../../utils/activityLogger';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -57,7 +53,6 @@ const AdminDashboard = () => {
     const [modalType, setModalType] = useState('');
     const [showNotificationPanel, setShowNotificationPanel] = useState(false);
 
-    
     const [dashboardData, setDashboardData] = useState({
         totalStudents: 0,
         totalTeachers: 0,
@@ -111,57 +106,44 @@ const AdminDashboard = () => {
         { icon: Settings, label: 'Settings' }
     ];
 
-    
     const [recentAnnouncements, setRecentAnnouncements] = useState([]);
 
-    
     useEffect(() => {
-        const fetchDashboardData = () => {
-            
-            const studentStats = getStudentStats();
+        const fetchDashboardData = async () => {
+            try {
 
-            
-            const teacherStats = getTeacherStats();
+                const [studentRes, teacherRes, feeRes, attendanceRes] = await Promise.allSettled([
+                    studentApi.getStats(),
+                    teacherApi.getStats(),
+                    feeApi.getStats(),
+                    attendanceApi.getStats()
+                ]);
 
-            
-            const feeStats = getFeeStats();
+                const studentStats = studentRes.status === 'fulfilled' ? studentRes.value.data : { total: 0, active: 0 };
+                const teacherStats = teacherRes.status === 'fulfilled' ? teacherRes.value.data : { total: 0, active: 0 };
+                const feeStats = feeRes.status === 'fulfilled' ? feeRes.value.data : { paidAmount: 0, collectionRate: 0 };
+                const attendanceStats = attendanceRes.status === 'fulfilled' ? attendanceRes.value.data : { totalRecords: 0, present: 0, late: 0 };
 
-            
-            const attendanceStats = getOverallAttendanceStats();
+                const attendanceRate = attendanceStats.totalRecords > 0
+                    ? Math.round(((attendanceStats.present + attendanceStats.late) / attendanceStats.totalRecords) * 100)
+                    : 0;
 
-            
-            const attendanceRate = attendanceStats.totalRecords > 0
-                ? Math.round(((attendanceStats.present + attendanceStats.late) / attendanceStats.totalRecords) * 100)
-                : 0;
-
-            setDashboardData({
-                totalStudents: studentStats.total,
-                totalTeachers: teacherStats.total,
-                revenue: feeStats.paidAmount || 0,
-                attendanceRate: attendanceRate,
-                studentsChange: `${studentStats.active} active students`,
-                teachersChange: `${teacherStats.active} active staff members`,
-                revenueChange: `${feeStats.collectionRate}% collection rate`,
-                attendanceChange: 'Overall attendance rate'
-            });
+                setDashboardData({
+                    totalStudents: studentStats.total || 0,
+                    totalTeachers: teacherStats.total || 0,
+                    revenue: feeStats.paidAmount || 0,
+                    attendanceRate: attendanceRate,
+                    studentsChange: `${studentStats.active || 0} active students`,
+                    teachersChange: `${teacherStats.active || 0} active staff members`,
+                    revenueChange: `${feeStats.collectionRate || 0}% collection rate`,
+                    attendanceChange: 'Overall attendance rate'
+                });
+            } catch (error) {
+                console.error('Error fetching dashboard data', error);
+            }
         };
 
-        
         fetchDashboardData();
-
-        
-        const unsubscribeStudents = subscribeToStudents(fetchDashboardData);
-        const unsubscribeTeachers = subscribeToTeachers(fetchDashboardData);
-        const unsubscribeFees = subscribeToFees(fetchDashboardData);
-        const unsubscribeAttendance = subscribeToAttendance(fetchDashboardData);
-
-        
-        return () => {
-            unsubscribeStudents();
-            unsubscribeTeachers();
-            unsubscribeFees();
-            unsubscribeAttendance();
-        };
     }, []);
 
     const getGreeting = () => {
@@ -171,16 +153,14 @@ const AdminDashboard = () => {
         return 'Good evening';
     };
 
-    
     useEffect(() => {
-        
+
         initializeActivityLog();
 
         const fetchRecentActivities = () => {
             try {
                 const activityLog = JSON.parse(localStorage.getItem('adminActivityLog') || '[]');
 
-                
                 const recentActivitiesData = activityLog.slice(0, 3).map(activity => ({
                     id: activity.id || Date.now(),
                     type: activity.type || 'info',
@@ -201,14 +181,12 @@ const AdminDashboard = () => {
 
         fetchRecentActivities();
 
-        
         const handleNewActivity = () => {
             fetchRecentActivities();
         };
 
         window.addEventListener('adminActivityAdded', handleNewActivity);
 
-        
         const interval = setInterval(fetchRecentActivities, 30000);
 
         return () => {
@@ -217,27 +195,23 @@ const AdminDashboard = () => {
         };
     }, []);
 
-    
     useEffect(() => {
-        const fetchAnnouncements = () => {
-            const announcements = getLatestAnnouncements('All', null, 3);
-            setRecentAnnouncements(announcements);
+        const fetchAnnouncements = async () => {
+            try {
+                const response = await announcementApi.getAll();
+                const announcements = response.data || [];
+
+                setRecentAnnouncements(announcements.slice(0, 3));
+            } catch (error) {
+                console.error('Failed to fetch announcements', error);
+            }
         };
 
         fetchAnnouncements();
-
-        
-        const unsubscribe = subscribeToAnnouncements(fetchAnnouncements);
-
-        return unsubscribe;
     }, []);
 
     const handleLogout = () => {
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userName');
-        localStorage.removeItem('token');
+        localStorage.clear();
         navigate('/login');
     };
 
@@ -259,10 +233,9 @@ const AdminDashboard = () => {
 
         const handleSubmit = (e) => {
             e.preventDefault();
-            
+
             console.log('Form submitted:', type, formData);
 
-            
             const newActivity = {
                 id: Date.now(),
                 type: 'success',
@@ -629,9 +602,9 @@ const AdminDashboard = () => {
 
     return (
         <div className={`flex h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-            {}
+            { }
             <aside className={`w-64 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r flex flex-col`}>
-                {}
+                { }
                 <div className={`px-6 py-3 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg flex items-center justify-center">
@@ -644,7 +617,7 @@ const AdminDashboard = () => {
                     </div>
                 </div>
 
-                {}
+                { }
                 <nav className="flex-1 p-4 overflow-y-auto">
                     <ul className="space-y-1">
                         {menuItems.map((item, index) => (
@@ -665,9 +638,9 @@ const AdminDashboard = () => {
                 </nav>
             </aside>
 
-            {}
+            { }
             <main className="flex-1 flex flex-col overflow-hidden">
-                {}
+                { }
                 <header className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b px-8 py-4`}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
@@ -681,7 +654,7 @@ const AdminDashboard = () => {
                         </div>
 
                         <div className="flex items-center space-x-4">
-                            {}
+                            { }
                             <div className="relative">
                                 <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                                 <input
@@ -696,7 +669,7 @@ const AdminDashboard = () => {
                                 />
                             </div>
 
-                            {}
+                            { }
                             <div className="relative">
                                 <button
                                     onClick={() => setShowNotificationPanel(!showNotificationPanel)}
@@ -710,7 +683,7 @@ const AdminDashboard = () => {
                                     )}
                                 </button>
 
-                                {}
+                                { }
                                 {showNotificationPanel && (
                                     <div className={`absolute top-full right-0 mt-2 w-80 rounded-xl shadow-2xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} z-50 overflow-hidden`}>
                                         <div className={`p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
@@ -748,7 +721,7 @@ const AdminDashboard = () => {
                                 )}
                             </div>
 
-                            {}
+                            { }
                             <button
                                 onClick={() => setDarkMode(!darkMode)}
                                 className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}
@@ -756,7 +729,7 @@ const AdminDashboard = () => {
                                 {darkMode ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-gray-700" />}
                             </button>
 
-                            {}
+                            { }
                             <button
                                 onClick={() => setActiveTab('Settings')}
                                 className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}
@@ -767,13 +740,13 @@ const AdminDashboard = () => {
                     </div>
                 </header>
 
-                {}
+                { }
                 <div className="flex-1 overflow-y-auto p-8">
                     {renderContent()}
                 </div>
             </main>
 
-            {}
+            { }
             {showModal && <Modal type={modalType} onClose={() => setShowModal(false)} />}
         </div>
     );

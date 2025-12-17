@@ -16,105 +16,97 @@ import {
     UserCheck,
     Save
 } from 'lucide-react';
-import { getAllStudents, subscribeToUpdates as subscribeToStudentUpdates } from '../../../utils/studentStore';
-import {
-    getAllAttendance,
-    getAttendanceByDate,
-    getAttendanceStats,
-    subscribeToUpdates as subscribeToAttendanceUpdates
-} from '../../../utils/attendanceStore';
-import { getAllTeachers } from '../../../utils/teacherStore';
-import {
-    getAttendanceByDate as getTeacherAttendanceByDate,
-    bulkMarkAttendance as bulkMarkTeacherAttendance,
-    subscribeToUpdates as subscribeToTeacherAttendanceUpdates,
-    getAttendanceStats as getTeacherAttendanceStats
-} from '../../../utils/teacherAttendanceStore';
+import { attendanceApi, teacherAttendanceApi, studentApi, teacherApi } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 
 const AttendancePage = ({ darkMode }) => {
     const { showSuccess, showError } = useToast();
-    
-    const [activeTab, setActiveTab] = useState('teachers'); 
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-    const [saveStatus, setSaveStatus] = useState(null); 
 
-    
-    const [studentViewMode, setStudentViewMode] = useState('summary'); 
+    const [activeTab, setActiveTab] = useState('teachers');
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [saveStatus, setSaveStatus] = useState(null);
+
+    const [studentViewMode, setStudentViewMode] = useState('summary');
     const [selectedClassDetail, setSelectedClassDetail] = useState(null);
     const [allStudents, setAllStudents] = useState([]);
     const [studentAttendanceRecords, setStudentAttendanceRecords] = useState([]);
     const [studentStats, setStudentStats] = useState({ total: 0, present: 0, absent: 0, late: 0 });
 
-    
     const [allTeachers, setAllTeachers] = useState([]);
-    
+
     const [localTeacherAttendance, setLocalTeacherAttendance] = useState({});
-    
+
     const [dbTeacherAttendance, setDbTeacherAttendance] = useState([]);
     const [teacherStats, setTeacherStats] = useState({ total: 0, present: 0, absent: 0, late: 0 });
 
     const classes = ['Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
 
-    
+    const loadStudentData = useCallback(async () => {
+        try {
+            const response = await studentApi.getAll();
+            setAllStudents(response.data || []);
+        } catch (error) {
+            console.error("Failed to load students", error);
+        }
+    }, []);
+
+    const loadTeacherData = useCallback(async () => {
+        try {
+            const response = await teacherApi.getAll();
+            setAllTeachers(response.data || []);
+        } catch (error) {
+            console.error("Failed to load teachers", error);
+        }
+    }, []);
+
+    const loadAttendanceData = useCallback(async () => {
+        try {
+
+            const [sStatsRes, sRecsRes, tStatsRes, tRecsRes] = await Promise.allSettled([
+                attendanceApi.getStats(selectedDate),
+                attendanceApi.getAll({ date: selectedDate }),
+                teacherAttendanceApi.getStats(selectedDate),
+                teacherAttendanceApi.getAll({ date: selectedDate })
+            ]);
+
+            if (sStatsRes.status === 'fulfilled') {
+                setStudentStats(sStatsRes.value.data || { total: 0, present: 0, absent: 0, late: 0 });
+            }
+            if (sRecsRes.status === 'fulfilled') {
+                setStudentAttendanceRecords(sRecsRes.value.data || []);
+            }
+
+            if (tStatsRes.status === 'fulfilled') {
+                setTeacherStats(tStatsRes.value.data || { total: 0, present: 0, absent: 0, late: 0 });
+            }
+
+            let tAttendance = [];
+            if (tRecsRes.status === 'fulfilled') {
+                tAttendance = tRecsRes.value.data || [];
+                setDbTeacherAttendance(tAttendance);
+            }
+
+            const initialMap = {};
+            tAttendance.forEach(r => {
+                initialMap[String(r.teacherId)] = r.status;
+            });
+            setLocalTeacherAttendance(initialMap);
+
+        } catch (error) {
+            console.error("Error loading attendance data", error);
+        }
+    }, [selectedDate]);
+
     useEffect(() => {
         loadStudentData();
         loadTeacherData();
-        loadAttendanceData();
-
-        const unsubStudents = subscribeToStudentUpdates(loadStudentData);
-        const unsubStudentAtt = subscribeToAttendanceUpdates(loadAttendanceData);
-        const unsubTeacherAtt = subscribeToTeacherAttendanceUpdates(loadAttendanceData);
-
-        return () => {
-            unsubStudents();
-            unsubStudentAtt();
-            unsubTeacherAtt();
-        };
-    }, []);
+    }, [loadStudentData, loadTeacherData]);
 
     useEffect(() => {
         loadAttendanceData();
-        
         setSaveStatus(null);
-    }, [selectedDate]);
+    }, [selectedDate, loadAttendanceData]);
 
-    const loadStudentData = () => {
-        setAllStudents(getAllStudents());
-    };
-
-    const loadTeacherData = () => {
-        const teachers = getAllTeachers();
-        setAllTeachers(teachers);
-        return teachers;
-    };
-
-    const loadAttendanceData = () => {
-        
-        const currentTeachers = getAllTeachers();
-
-        
-        const sAttendance = getAttendanceByDate(selectedDate);
-        setStudentAttendanceRecords(sAttendance);
-        setStudentStats(getAttendanceStats(selectedDate));
-
-        
-        const tAttendance = getTeacherAttendanceByDate(selectedDate);
-        setDbTeacherAttendance(tAttendance);
-
-        
-        const tStats = getTeacherAttendanceStats(selectedDate, currentTeachers.length);
-        setTeacherStats(tStats);
-
-        
-        const initialMap = {};
-        tAttendance.forEach(r => {
-            initialMap[String(r.teacherId)] = r.status;
-        });
-        setLocalTeacherAttendance(initialMap);
-    };
-
-    
     const getStudentAttendanceRecord = (studentId) => {
         return studentAttendanceRecords.find(r => r.studentId === studentId);
     };
@@ -141,48 +133,41 @@ const AttendancePage = ({ darkMode }) => {
         });
     };
 
-    
     const handleLocalStatusChange = (teacherId, status) => {
         setLocalTeacherAttendance(prev => ({
             ...prev,
             [String(teacherId)]: status
         }));
-        setSaveStatus(null); 
+        setSaveStatus(null);
     };
 
-    const saveTeacherAttendance = () => {
+    const saveTeacherAttendance = async () => {
         setSaveStatus('saving');
         try {
-            
-            
             const attendanceList = allTeachers
-                .filter(teacher => localTeacherAttendance[String(teacher.id)]) 
+                .filter(teacher => localTeacherAttendance[String(teacher.id)])
                 .map(teacher => ({
                     date: selectedDate,
-                    teacherId: teacher.id, 
+                    teacherId: teacher.id,
                     status: localTeacherAttendance[String(teacher.id)],
                     markedBy: 'Admin'
                 }));
 
-            if (attendanceList.length === 0 && Object.keys(localTeacherAttendance).length > 0) {
-                
-                console.warn("Mismatch between teachers list and attendance map");
-            }
+            await teacherAttendanceApi.markBulk({ attendanceList });
 
-            bulkMarkTeacherAttendance(attendanceList);
             setSaveStatus('saved');
             showSuccess('Teacher attendance saved successfully!');
             setTimeout(() => setSaveStatus(null), 3000);
 
-            
+            loadAttendanceData();
+
         } catch (error) {
             console.error(error);
             setSaveStatus('error');
-            showError('Error saving attendance: ' + error.message);
+            showError('Error saving attendance: ' + (error.response?.data?.message || error.message));
         }
     };
 
-    
     const getStatusStyle = (status, isSelected) => {
         if (!isSelected) return 'bg-transparent border-gray-300 text-gray-500 hover:bg-gray-50';
 
@@ -205,7 +190,7 @@ const AttendancePage = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {}
+            { }
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -238,7 +223,7 @@ const AttendancePage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} p-4 rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="flex items-center gap-4">
                     <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -260,10 +245,10 @@ const AttendancePage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {}
+            { }
             {activeTab === 'teachers' && (
                 <div className="space-y-6">
-                    {}
+                    { }
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <StatCard title="Total Staff" value={allTeachers.length} icon={Users} color="blue" darkMode={darkMode} />
                         <StatCard title="Present" value={teacherStats.present} icon={CheckCircle} color="green" darkMode={darkMode} />
@@ -276,7 +261,7 @@ const AttendancePage = ({ darkMode }) => {
                             <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                 Teacher Attendance Records
                             </h3>
-                            {}
+                            { }
                             <button
                                 onClick={saveTeacherAttendance}
                                 disabled={saveStatus === 'saved'}
@@ -345,12 +330,12 @@ const AttendancePage = ({ darkMode }) => {
                 </div>
             )}
 
-            {}
+            { }
             {activeTab === 'students' && (
                 <div className="space-y-6">
                     {studentViewMode === 'summary' ? (
                         <>
-                            {}
+                            { }
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <StatCard title="Total Students" value={allStudents.length} icon={School} color="blue" darkMode={darkMode} />
                                 <StatCard title="Present Today" value={studentStats.present} icon={CheckCircle} color="green" darkMode={darkMode} />
@@ -358,7 +343,7 @@ const AttendancePage = ({ darkMode }) => {
                                 <StatCard title="Late Today" value={studentStats.late} icon={Clock} color="yellow" darkMode={darkMode} />
                             </div>
 
-                            {}
+                            { }
                             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
                                 <div className="p-6 border-b border-gray-200">
                                     <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -405,7 +390,7 @@ const AttendancePage = ({ darkMode }) => {
                             </div>
                         </>
                     ) : (
-                        
+
                         <div className="space-y-4">
                             <button
                                 onClick={() => setStudentViewMode('summary')}

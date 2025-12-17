@@ -31,14 +31,17 @@ import TimetablePage from './TimetablePage';
 import SettingsPage from './SettingsPage';
 import LibraryPage from './LibraryPage';
 import AnnouncementsPage from './AnnouncementsPage';
-import { getChildrenByParentEmail } from '../../../utils/userStore';
-import { calculateAttendancePercentage, getAttendanceByDate, subscribeToUpdates as subscribeToAttendance } from '../../../utils/attendanceStore';
-import { getStudentFinalMarks, getExamSchedulesByClass, subscribeToAcademicUpdates } from '../../../utils/academicStore';
-import { getFeesByStudent, makePayment, subscribeToUpdates as subscribeToFees } from '../../../utils/feeStore';
+import {
+    studentApi,
+    attendanceApi,
+    resultApi,
+    examApi,
+    feeApi,
+    courseApi,
+    timetableApi,
+    announcementApi
+} from '../../../services/api';
 import { getCheckoutSession } from '../../../utils/stripeConfig';
-import { getClassTimetable, getScheduleForDay, subscribeToUpdates as subscribeToTimetable } from '../../../utils/timetableStore';
-import { getCoursesForStudent, subscribeToUpdates as subscribeToCourses } from '../../../utils/courseStore';
-import { getLatestAnnouncements, subscribeToUpdates as subscribeToAnnouncements } from '../../../utils/announcementStore';
 import { useToast } from '../../../context/ToastContext';
 
 const ParentDashboard = () => {
@@ -76,143 +79,144 @@ const ParentDashboard = () => {
 
     ];
 
-    // const handleLogout = () => {
-    //     localStorage.removeItem('authToken');
-    //     localStorage.removeItem('isAuthenticated');
-    //     localStorage.removeItem('userRole');
-    //     localStorage.removeItem('userEmail');
-    //     localStorage.removeItem('userName');
-    //     navigate('/login');
-    // };
-
     useEffect(() => {
-        const fetchDashboardData = () => {
-            const parentEmail = userEmail;
-            const myChildren = getChildrenByParentEmail(parentEmail);
+        const fetchDashboardData = async () => {
+            if (!userEmail) return;
 
-            if (myChildren.length === 0) {
-                setDashboardData({
-                    children: [],
-                    feeStatus: { total: 0, paid: 0, pending: 0, nextDue: 'N/A' }
-                });
-                return;
-            }
+            try {
 
-            const today = new Date().toISOString().split('T')[0];
-            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            const currentDayName = days[new Date().getDay()];
+                const studentsRes = await studentApi.getAll();
+                const allStudents = studentsRes.data || [];
 
-            const childrenData = myChildren.map(student => {
-                const studentId = student.id;
+                const myChildren = allStudents.filter(s => s.parentEmail === userEmail || s.email === userEmail);
 
-                // 1. Attendance
-                const attendance = calculateAttendancePercentage(studentId);
-                const todaysAttendanceRecord = getAttendanceByDate(today).find(a => a.studentId === studentId);
-                let attendanceStatus = 'Not Marked';
-                if (todaysAttendanceRecord) {
-                    attendanceStatus = todaysAttendanceRecord.status;
-                }
-
-                // 2. Grades & Exams
-                const finalMarks = getStudentFinalMarks(studentId);
-                const avgGrade = finalMarks.length > 0
-                    ? finalMarks.reduce((sum, m) => sum + m.finalTotal, 0) / finalMarks.length
-                    : 0;
-                const currentGrade = avgGrade >= 90 ? 'A' : avgGrade >= 80 ? 'B+' : avgGrade >= 70 ? 'B' : avgGrade >= 60 ? 'C' : 'D';
-
-                // Fetch specific exam schedules
-                const examSchedules = getExamSchedulesByClass(student.class);
-                // Filter specifically for "Upcoming" (future dates)
-                const upcomingExams = examSchedules.filter(exam => new Date(exam.examDate) >= new Date(today));
-
-
-                // 3. Fees
-                const fees = getFeesByStudent(studentId);
-                const pendingFeesAmount = fees.reduce((sum, f) => sum + f.remainingAmount, 0);
-                const feeStatus = pendingFeesAmount <= 0 ? 'Paid' : 'Due';
-
-                // 4. Assignments
-                const courses = getCoursesForStudent(studentId);
-                let assignmentsPending = 0;
-                let assignmentsSubmitted = 0;
-                courses.forEach(course => {
-                    const courseAssignments = course.assignments || [];
-                    courseAssignments.forEach(assignment => {
-                        const submission = assignment.submissions?.find(s => s.studentId === studentId);
-                        if (submission || new Date(assignment.dueDate) < new Date()) {
-                            // Consider submitted if record exists or past due (simplified logic)
-                            // Strictly speaking, if submission exists it is submitted.
-                            if (submission) assignmentsSubmitted++;
-                            else assignmentsPending++; // Past due counts as pending/missed here or generic pending
-                        } else {
-                            assignmentsPending++;
-                        }
+                if (myChildren.length === 0) {
+                    setDashboardData({
+                        children: [],
+                        feeStatus: { total: 0, paid: 0, pending: 0, nextDue: 'N/A' }
                     });
+                    return;
+                }
+
+                const today = new Date().toISOString().split('T')[0];
+                const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                const currentDayName = days[new Date().getDay()];
+
+                const [
+                    attendanceRes,
+                    examsRes,
+                    feesRes,
+                    coursesRes,
+                    timetableRes,
+                    announcementsRes,
+                    resultsRes
+                ] = await Promise.all([
+                    attendanceApi.getAll(),
+                    examApi.getAll(),
+                    feeApi.getAll(),
+                    courseApi.getAll(),
+                    timetableApi.getClassTimetables(),
+                    announcementApi.getAll(),
+                    resultApi.getAll()
+                ]);
+
+                const allAttendance = attendanceRes.data || [];
+                const allExams = examsRes.data || [];
+                const allFees = feesRes.data || [];
+                const allCourses = coursesRes.data || [];
+                const allTimetables = timetableRes.data || [];
+                const allAnnouncements = announcementsRes.data || [];
+                const allResults = resultsRes.data || [];
+
+                const childrenData = myChildren.map(student => {
+                    const studentId = student.id;
+
+                    const studentAttendance = allAttendance.filter(a => a.studentId === studentId);
+                    const totalDays = studentAttendance.length;
+                    const presentDays = studentAttendance.filter(a => a.status === 'Present').length;
+                    const attendancePct = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
+
+                    const todaysAttendanceRecord = studentAttendance.find(a => a.date === today);
+                    const attendanceStatus = todaysAttendanceRecord ? todaysAttendanceRecord.status : 'Not Marked';
+
+                    const studentResults = allResults.filter(r => r.studentId === studentId);
+                    const avgGradeValue = studentResults.length > 0
+                        ? studentResults.reduce((sum, r) => sum + (r.percentage || 0), 0) / studentResults.length
+                        : 0;
+                    const currentGrade = avgGradeValue >= 90 ? 'A' : avgGradeValue >= 80 ? 'B+' : avgGradeValue >= 70 ? 'B' : avgGradeValue >= 60 ? 'C' : 'D';
+
+                    const upcomingExams = allExams.filter(e =>
+                        e.class === student.class && new Date(e.examDate) >= new Date(today)
+                    ).sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
+
+                    const studentFees = allFees.filter(f => f.studentId === studentId);
+                    const pendingFeesAmount = studentFees.reduce((sum, f) =>
+                        sum + (f.amount - (f.paidAmount || 0)), 0);
+                    const feeStatus = pendingFeesAmount <= 0 ? 'Paid' : 'Due';
+
+                    const studentCourses = allCourses.filter(c => c.class === student.class);
+                    let assignmentsPending = 0;
+                    let assignmentsSubmitted = 0;
+
+                    studentCourses.forEach(course => {
+                        const courseAssignments = course.assignments || [];
+                        courseAssignments.forEach(assignment => {
+                            const isSubmitted = assignment.submissions && assignment.submissions.some(sub => sub.studentId === studentId);
+                            if (isSubmitted) assignmentsSubmitted++;
+                            else assignmentsPending++;
+                        });
+                    });
+
+                    const classTimetable = allTimetables.find(t => t.className === student.class);
+                    const todaysSchedule = classTimetable && classTimetable.schedule ? (classTimetable.schedule[currentDayName] || []) : [];
+
+                    const studentAnnouncements = allAnnouncements.filter(a =>
+                        (a.targetAudience === 'Parents' || a.targetAudience === 'Students' || a.targetAudience === 'All') &&
+                        (!a.classes || a.classes.length === 0 || a.classes.includes(student.class))
+                    ).slice(0, 3);
+
+                    return {
+                        id: student.id,
+                        name: student.name,
+                        class: student.class,
+                        attendancePct,
+                        currentGrade,
+                        pendingFees: pendingFeesAmount,
+                        upcomingTestsCount: upcomingExams.length,
+                        attendanceStatus,
+                        todaysSchedule,
+                        upcomingExamsList: upcomingExams.slice(0, 3),
+                        assignmentsPending,
+                        assignmentsSubmitted,
+                        feeStatus,
+                        announcements: studentAnnouncements
+                    };
                 });
 
-                // 5. Timetable
-                const classTimetable = getClassTimetable(student.class);
-                const todaysSchedule = classTimetable ? getScheduleForDay(classTimetable.schedule, currentDayName) : [];
+                const myChildrenFees = allFees.filter(f => myChildren.some(c => c.id === f.studentId));
+                const totalFees = myChildrenFees.reduce((sum, f) => sum + f.amount, 0);
+                const paidFees = myChildrenFees.reduce((sum, f) => sum + (f.paidAmount || 0), 0);
+                const pendingFees = myChildrenFees.reduce((sum, f) => sum + (f.amount - (f.paidAmount || 0)), 0);
 
-                // 6. Announcements (Targeted)
-                const announcements = getLatestAnnouncements('Parents', student.class, 3);
+                setDashboardData({
+                    children: childrenData,
+                    feeStatus: {
+                        total: totalFees,
+                        paid: paidFees,
+                        pending: pendingFees,
+                        nextDue: pendingFees > 0 ? 'Due Now' : 'N/A'
+                    }
+                });
 
-                return {
-                    id: student.id,
-                    name: student.name,
-                    class: student.class,
-                    // Card Data
-                    attendancePct: attendance,
-                    currentGrade: currentGrade,
-                    pendingFees: pendingFeesAmount,
-                    upcomingTestsCount: upcomingExams.length,
-                    // Daily Status Data
-                    attendanceStatus: attendanceStatus,
-                    todaysSchedule: todaysSchedule,
-                    upcomingExamsList: upcomingExams.slice(0, 3), // Show top 3
-                    assignmentsPending: assignmentsPending,
-                    assignmentsSubmitted: assignmentsSubmitted,
-                    feeStatus: feeStatus,
-                    announcements: announcements
-                };
-            });
-
-            const allFees = myChildren.flatMap(s => getFeesByStudent(s.id));
-            const totalFees = allFees.reduce((sum, f) => sum + f.amount, 0);
-            const paidFees = allFees.reduce((sum, f) => sum + f.paidAmount, 0);
-            const pendingFees = allFees.reduce((sum, f) => sum + f.remainingAmount, 0);
-
-            setDashboardData({
-                children: childrenData,
-                feeStatus: {
-                    total: totalFees,
-                    paid: paidFees,
-                    pending: pendingFees,
-                    nextDue: 'Check Fee Management'
-                }
-            });
+            } catch (error) {
+                console.error('Failed to load parent dashboard data', error);
+                showError('Failed to load dashboard data');
+            }
         };
 
         fetchDashboardData();
-
-        const unsubscribeAttendance = subscribeToAttendance(fetchDashboardData);
-        const unsubscribeAcademic = subscribeToAcademicUpdates(fetchDashboardData);
-        const unsubscribeFees = subscribeToFees(fetchDashboardData);
-        const unsubscribeTimetable = subscribeToTimetable(fetchDashboardData);
-        const unsubscribeCourses = subscribeToCourses(fetchDashboardData);
-        const unsubscribeAnn = subscribeToAnnouncements(fetchDashboardData);
-
-        return () => {
-            unsubscribeAttendance();
-            unsubscribeAcademic();
-            unsubscribeFees();
-            unsubscribeTimetable();
-            unsubscribeCourses();
-            unsubscribeAnn();
-        };
     }, [userEmail]);
 
-    // Payment Return Handler (Keep existing)
     useEffect(() => {
         const handlePaymentReturn = async () => {
             const urlParams = new URLSearchParams(window.location.search);
@@ -230,16 +234,19 @@ const ParentDashboard = () => {
                 if (pendingPaymentStr) {
                     try {
                         const pendingPayment = JSON.parse(pendingPaymentStr);
+
                         const session = await getCheckoutSession(sessionId);
 
                         if (session.status === 'paid') {
-                            makePayment(pendingPayment.feeId, {
-                                amount: pendingPayment.amount,
+                            await feeApi.update(pendingPayment.feeId, {
+                                status: 'Paid',
+                                paidAmount: pendingPayment.amount,
                                 paymentMethod: 'Stripe (Card)',
                                 transactionId: session.paymentIntentId || sessionId,
                                 paidBy: 'Parent',
                                 stripeSessionId: sessionId,
                             });
+
                             processedSessions.push(sessionId);
                             sessionStorage.setItem('processedSessions', JSON.stringify(processedSessions));
                             sessionStorage.removeItem('pendingPayment');
@@ -290,14 +297,14 @@ const ParentDashboard = () => {
 
                 {dashboardData.children.map((child) => (
                     <div key={child.id} className="mb-12 border-b pb-8 last:border-0">
-                        {/* Header for Child Section if multiple children, otherwise redundant but good structure */}
+                        {}
                         {dashboardData.children.length > 1 && (
                             <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-6`}>{child.name}'s Dashboard</h2>
                         )}
 
-                        {/* Top Overview Cards */}
+                        {}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                            {/* Attendance Card */}
+                            {}
                             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Attendance</h3>
@@ -309,7 +316,7 @@ const ParentDashboard = () => {
                                 </div>
                             </div>
 
-                            {/* Grades Card */}
+                            {}
                             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Current Grade</h3>
@@ -319,7 +326,7 @@ const ParentDashboard = () => {
                                 <p className="text-sm text-green-500 mt-2">Excellent performance</p>
                             </div>
 
-                            {/* Fees Card */}
+                            {}
                             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Pending Fees</h3>
@@ -331,7 +338,7 @@ const ParentDashboard = () => {
                                 </p>
                             </div>
 
-                            {/* Upcoming Tests Card */}
+                            {}
                             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Upcoming Tests</h3>
@@ -342,16 +349,16 @@ const ParentDashboard = () => {
                             </div>
                         </div>
 
-                        {/* Student Daily Status Section */}
+                        {}
                         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
                             <div className="p-6 border-b border-gray-200">
                                 <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Student Daily Status</h3>
                                 <p className="text-sm text-gray-500">Real-time updates for {new Date().toLocaleDateString()}</p>
                             </div>
                             <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                {/* Left Column: Identity & Status */}
+                                {}
                                 <div className="space-y-6">
-                                    {/* Identity */}
+                                    {}
                                     <div className="flex items-center space-x-4">
                                         <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-2xl font-bold">
                                             {child.name.charAt(0)}
@@ -362,7 +369,7 @@ const ParentDashboard = () => {
                                         </div>
                                     </div>
 
-                                    {/* Today's Attendance */}
+                                    {}
                                     <div className={`p-4 rounded-lg flex items-center justify-between ${child.attendanceStatus === 'Present' ? 'bg-green-50 border border-green-200' :
                                         child.attendanceStatus === 'Absent' ? 'bg-red-50 border border-red-200' :
                                             child.attendanceStatus === 'Late' ? 'bg-yellow-50 border border-yellow-200' :
@@ -384,7 +391,7 @@ const ParentDashboard = () => {
                                         {child.attendanceStatus === 'Not Marked' && <Clock className="w-8 h-8 text-gray-400" />}
                                     </div>
 
-                                    {/* Assignment Status */}
+                                    {}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
                                             <p className="text-sm text-gray-600">Pending Assignments</p>
@@ -396,7 +403,7 @@ const ParentDashboard = () => {
                                         </div>
                                     </div>
 
-                                    {/* Fee Status */}
+                                    {}
                                     <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
                                         <span className="text-gray-700 font-medium">Fee Status</span>
                                         <span className={`px-3 py-1 rounded-full text-sm font-semibold ${child.feeStatus === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
@@ -406,9 +413,9 @@ const ParentDashboard = () => {
                                     </div>
                                 </div>
 
-                                {/* Right Column: Alerts & Schedule */}
+                                {}
                                 <div className="space-y-6">
-                                    {/* Exam Alerts */}
+                                    {}
                                     <div>
                                         <h4 className={`text-sm font-bold uppercase tracking-wider mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Upcoming Exams</h4>
                                         {child.upcomingExamsList.length > 0 ? (
@@ -431,7 +438,7 @@ const ParentDashboard = () => {
                                         )}
                                     </div>
 
-                                    {/* Today's Schedule */}
+                                    {}
                                     <div>
                                         <h4 className={`text-sm font-bold uppercase tracking-wider mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Today's Schedule</h4>
                                         {child.todaysSchedule.length > 0 ? (
@@ -449,7 +456,7 @@ const ParentDashboard = () => {
                                         )}
                                     </div>
 
-                                    {/* Latest Announcement */}
+                                    {}
                                     <div>
                                         <h4 className={`text-sm font-bold uppercase tracking-wider mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Latest Announcements</h4>
                                         {child.announcements.length > 0 ? (
@@ -474,7 +481,6 @@ const ParentDashboard = () => {
             </>
         );
     };
-
 
     return (
         <div className={`flex h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
@@ -510,15 +516,7 @@ const ParentDashboard = () => {
                     </ul>
                 </nav>
 
-                {/* <div className="p-4 border-t border-gray-200">
-                    <button
-                        onClick={handleLogout}
-                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 text-red-600 hover:bg-red-50`}
-                    >
-                        <LogOut className="w-5 h-5" />
-                        <span className="text-sm font-medium">Logout</span>
-                    </button>
-                </div> */}
+                {}
             </aside>
 
             <main className="flex-1 flex flex-col overflow-hidden">

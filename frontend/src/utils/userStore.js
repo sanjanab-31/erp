@@ -1,9 +1,7 @@
 
 
-
 const STORAGE_KEY = 'erp_users';
 const DEFAULT_PASSWORD = 'password';
-
 
 const initializeDefaultUsers = () => {
     return {
@@ -22,7 +20,6 @@ const initializeDefaultUsers = () => {
     };
 };
 
-
 export const getAllUsers = () => {
     try {
         const data = localStorage.getItem(STORAGE_KEY);
@@ -38,18 +35,15 @@ export const getAllUsers = () => {
     }
 };
 
-
 export const getUserByEmail = (email) => {
     const users = getAllUsers();
     return users.find(user => user.email.toLowerCase() === email.toLowerCase());
 };
 
-
 export const getUserById = (id) => {
     const users = getAllUsers();
     return users.find(user => user.id === id);
 };
-
 
 export const authenticateUser = (email, password, role) => {
     const user = getUserByEmail(email);
@@ -73,12 +67,10 @@ export const authenticateUser = (email, password, role) => {
     return user;
 };
 
-
 export const addStudent = (studentData) => {
     try {
         const users = getAllUsers();
 
-        
         if (getUserByEmail(studentData.email)) {
             throw new Error('Email already exists');
         }
@@ -102,11 +94,9 @@ export const addStudent = (studentData) => {
 
         users.push(newStudent);
 
-        
         if (studentData.parentEmail && studentData.parentEmail.trim()) {
             const parentEmail = studentData.parentEmail.trim();
 
-            
             const existingParent = getUserByEmail(parentEmail);
 
             if (!existingParent) {
@@ -130,8 +120,7 @@ export const addStudent = (studentData) => {
 
                 users.push(newParent);
             } else if (existingParent.role === 'parent') {
-                
-                
+
                 console.log(`Parent account already exists for ${parentEmail}`);
             }
         }
@@ -146,12 +135,10 @@ export const addStudent = (studentData) => {
     }
 };
 
-
 export const addTeacher = (teacherData) => {
     try {
         const users = getAllUsers();
 
-        
         if (getUserByEmail(teacherData.email)) {
             throw new Error('Email already exists');
         }
@@ -184,12 +171,10 @@ export const addTeacher = (teacherData) => {
     }
 };
 
-
 export const addParent = (parentData) => {
     try {
         const users = getAllUsers();
 
-        
         if (getUserByEmail(parentData.email)) {
             throw new Error('Email already exists');
         }
@@ -220,7 +205,6 @@ export const addParent = (parentData) => {
     }
 };
 
-
 export const updateUser = (userId, updates) => {
     try {
         const users = getAllUsers();
@@ -230,7 +214,6 @@ export const updateUser = (userId, updates) => {
             throw new Error('User not found');
         }
 
-        
         if (updates.email && updates.email !== users[userIndex].email) {
             const existingUser = getUserByEmail(updates.email);
             if (existingUser && existingUser.id !== userId) {
@@ -249,7 +232,6 @@ export const updateUser = (userId, updates) => {
     }
 };
 
-
 export const deleteUser = (userId) => {
     try {
         const users = getAllUsers();
@@ -259,7 +241,6 @@ export const deleteUser = (userId) => {
             throw new Error('User not found');
         }
 
-        
         if (users[userIndex].role === 'admin') {
             throw new Error('Cannot delete admin user');
         }
@@ -275,7 +256,6 @@ export const deleteUser = (userId) => {
     }
 };
 
-
 export const permanentlyDeleteUser = (userId) => {
     try {
         const users = getAllUsers();
@@ -285,7 +265,6 @@ export const permanentlyDeleteUser = (userId) => {
             throw new Error('User not found');
         }
 
-        
         if (users[userIndex].role === 'admin') {
             throw new Error('Cannot delete admin user');
         }
@@ -301,12 +280,10 @@ export const permanentlyDeleteUser = (userId) => {
     }
 };
 
-
 export const deleteStudentAndParent = (studentEmail, parentEmail) => {
     try {
         const users = getAllUsers();
 
-        
         const studentIndex = users.findIndex(u =>
             u.email.toLowerCase() === studentEmail.toLowerCase() && u.role === 'student'
         );
@@ -315,7 +292,6 @@ export const deleteStudentAndParent = (studentEmail, parentEmail) => {
             users.splice(studentIndex, 1);
         }
 
-        
         if (parentEmail && parentEmail.trim()) {
             const parentIndex = users.findIndex(u =>
                 u.email.toLowerCase() === parentEmail.toLowerCase() && u.role === 'parent'
@@ -329,7 +305,6 @@ export const deleteStudentAndParent = (studentEmail, parentEmail) => {
                     u.parentEmail.toLowerCase() === parentEmail.toLowerCase()
                 );
 
-                
                 if (otherChildren.length === 0) {
                     users.splice(parentIndex, 1);
                 }
@@ -346,12 +321,10 @@ export const deleteStudentAndParent = (studentEmail, parentEmail) => {
     }
 };
 
-
 export const deleteTeacherByEmail = (teacherEmail) => {
     try {
         const users = getAllUsers();
 
-        
         const teacherIndex = users.findIndex(u =>
             u.email.toLowerCase() === teacherEmail.toLowerCase() && u.role === 'teacher'
         );
@@ -368,7 +341,6 @@ export const deleteTeacherByEmail = (teacherEmail) => {
         throw error;
     }
 };
-
 
 export const activateUser = (userId) => {
     try {
@@ -390,7 +362,6 @@ export const activateUser = (userId) => {
     }
 };
 
-
 export const changeUserPassword = (userId, newPassword) => {
     try {
         const users = getAllUsers();
@@ -411,38 +382,31 @@ export const changeUserPassword = (userId, newPassword) => {
     }
 };
 
-
 export const resetUserPassword = (userId) => {
     return changeUserPassword(userId, DEFAULT_PASSWORD);
 };
-
 
 export const getUsersByRole = (role) => {
     const users = getAllUsers();
     return users.filter(u => u.role.toLowerCase() === role.toLowerCase());
 };
 
-
 export const getActiveUsers = () => {
     const users = getAllUsers();
     return users.filter(u => u.active);
 };
-
 
 export const getActiveUsersByRole = (role) => {
     const users = getAllUsers();
     return users.filter(u => u.role.toLowerCase() === role.toLowerCase() && u.active);
 };
 
-
 export const subscribeToUserUpdates = (callback) => {
     const handler = () => callback(getAllUsers());
     window.addEventListener('usersUpdated', handler);
 
-    
     return () => window.removeEventListener('usersUpdated', handler);
 };
-
 
 export const getChildrenByParentEmail = (parentEmail) => {
     const users = getAllUsers();
@@ -452,14 +416,12 @@ export const getChildrenByParentEmail = (parentEmail) => {
         return [];
     }
 
-    
     return users.filter(u =>
         u.role === 'student' &&
         u.parentEmail &&
         u.parentEmail.toLowerCase() === parentEmail.toLowerCase()
     );
 };
-
 
 export const getChildrenByParentId = (parentId) => {
     const parent = getUserById(parentId);
@@ -469,11 +431,9 @@ export const getChildrenByParentId = (parentId) => {
     return getChildrenByParentEmail(parent.email);
 };
 
-
 export const getStudentsByParentEmail = (parentEmail) => {
     return getChildrenByParentEmail(parentEmail);
 };
-
 
 export const getUserStatistics = () => {
     const users = getAllUsers();
