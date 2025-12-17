@@ -3,6 +3,7 @@ import { Search, Filter, Plus, MoreVertical, Mail, Phone, Edit, Trash2, X, Save,
 import { getAllStudents, addStudent, updateStudent, deleteStudent, subscribeToUpdates, getStudentStats } from '../../../utils/studentStore';
 import { addStudent as addUserStudent, deleteStudentAndParent } from '../../../utils/userStore';
 import { useToast } from '../../../context/ToastContext';
+import { sendStudentCredentials } from '../../../utils/emailService';
 
 // Move modal components outside to prevent re-creation on every render
 const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, darkMode }) => {
@@ -285,6 +286,20 @@ const Students = ({ darkMode }) => {
                 message += 'Email: ' + formData.parentEmail + '\n';
                 message += 'Password: password';
             }
+
+            // Send Email Notifications (Async)
+            sendStudentCredentials({
+                email: formData.email,
+                password: 'password', // Default password
+                name: formData.name,
+                parentEmail: formData.parentEmail
+            }).then(response => {
+                if (response.success) {
+                    showSuccess('📧 Credentials emailed successfully!');
+                } else {
+                    console.warn('Email sending failed. Is backend running?');
+                }
+            });
 
             showSuccess(message);
         } catch (error) {

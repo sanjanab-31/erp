@@ -45,7 +45,7 @@ import { getLatestAnnouncements, subscribeToUpdates as subscribeToAnnouncements 
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
-    
+
     const userName = localStorage.getItem('userName') || 'John Admin';
     const userRole = localStorage.getItem('userRole') || 'Admin';
 
@@ -55,7 +55,7 @@ const AdminDashboard = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [modalType, setModalType] = useState('');
-    // const [showNotificationPanel, setShowNotificationPanel] = useState(false);
+    const [showNotificationPanel, setShowNotificationPanel] = useState(false);
 
     // Real-time dashboard data with live updates
     const [dashboardData, setDashboardData] = useState({
@@ -697,17 +697,56 @@ const AdminDashboard = () => {
                             </div> */}
 
                             {/* Notifications */}
-                            <button
-                                onClick={() => navigate('/announcements')}
-                                className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                            >
-                                <Bell className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`} />
-                                {notifications > 0 && (
-                                    <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
-                                        {notifications}
-                                    </span>
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowNotificationPanel(!showNotificationPanel)}
+                                    className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                                >
+                                    <Bell className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`} />
+                                    {notifications > 0 && (
+                                        <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
+                                            {notifications}
+                                        </span>
+                                    )}
+                                </button>
+
+                                {/* Notification Panel */}
+                                {showNotificationPanel && (
+                                    <div className={`absolute top-full right-0 mt-2 w-80 rounded-xl shadow-2xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} z-50 overflow-hidden`}>
+                                        <div className={`p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                                            <div className="flex justify-between items-center">
+                                                <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Recent Activities</h3>
+                                                <button onClick={() => setShowNotificationPanel(false)} className="text-gray-400 hover:text-gray-500">
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="max-h-96 overflow-y-auto">
+                                            {recentActivities.length === 0 ? (
+                                                <div className="p-4 text-center text-gray-500 text-sm">No recent activities</div>
+                                            ) : (
+                                                recentActivities.map((activity) => (
+                                                    <div key={activity.id} className={`p-3 border-b ${darkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-gray-50 hover:bg-gray-50'} transition-colors flex items-start space-x-3`}>
+                                                        <div className={`p-2 rounded-full ${getActivityColor(activity.type)} bg-opacity-20`}>
+                                                            <activity.icon className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'} truncate`}>{activity.title}</p>
+                                                            <p className="text-xs text-gray-500 mt-0.5">{activity.description}</p>
+                                                            <p className="text-xs text-gray-400 mt-1">{activity.time}</p>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                        <div className={`p-2 text-center border-t ${darkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-100 bg-gray-50'}`}>
+                                            <button onClick={() => { setActiveTab('Reports'); setShowNotificationPanel(false); }} className="text-xs text-purple-600 hover:text-purple-700 font-medium">
+                                                View All Activity
+                                            </button>
+                                        </div>
+                                    </div>
                                 )}
-                            </button>
+                            </div>
 
                             {/* Dark Mode Toggle */}
                             <button
@@ -718,7 +757,10 @@ const AdminDashboard = () => {
                             </button>
 
                             {/* Settings */}
-                            <button className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}>
+                            <button
+                                onClick={() => setActiveTab('Settings')}
+                                className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}
+                            >
                                 <Settings className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`} />
                             </button>
                         </div>

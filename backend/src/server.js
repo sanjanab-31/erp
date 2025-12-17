@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import authRoutes from './routes/auth.js';
+import emailRoutes from './routes/emailRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -30,6 +31,7 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/email', emailRoutes);
 // Add more routes here as needed
 // import userRoutes from './routes/users.js';
 // app.use('/api/users', userRoutes);

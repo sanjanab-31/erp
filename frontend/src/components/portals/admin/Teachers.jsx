@@ -3,6 +3,7 @@ import { Search, Filter, Plus, MoreVertical, Mail, Phone, Edit, Trash2, X, Save,
 import { getAllTeachers, addTeacher, updateTeacher, deleteTeacher, subscribeToUpdates, getTeacherStats } from '../../../utils/teacherStore';
 import { addTeacher as addUserTeacher, deleteTeacherByEmail } from '../../../utils/userStore';
 import { useToast } from '../../../context/ToastContext';
+import { sendTeacherCredentials } from '../../../utils/emailService';
 
 // Move modal components outside to prevent re-creation on every render
 const TeacherFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, darkMode }) => {
@@ -281,7 +282,20 @@ const Teachers = ({ darkMode }) => {
 
             setShowAddModal(false);
             resetForm();
-            showSuccess('Teacher added successfully! Login credentials:\nEmail: ' + formData.email + '\nPassword: password');
+            // Send Email Notifications (Async)
+            sendTeacherCredentials({
+                email: formData.email,
+                password: 'password', // Default
+                name: formData.name
+            }).then(response => {
+                if (response.success) {
+                    showSuccess('📧 Credentials emailed successfully to Faculty!');
+                } else {
+                    console.warn('Email sending failed. Is backend running?');
+                }
+            });
+
+            showSuccess('Teacher added successfully!');
         } catch (error) {
             showError('Error adding teacher: ' + error.message);
         }
