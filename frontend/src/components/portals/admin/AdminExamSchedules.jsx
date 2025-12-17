@@ -148,7 +148,7 @@ const AdminExamSchedules = ({ darkMode }) => {
                         <select
                             value={selectedClass}
                             onChange={(e) => setSelectedClass(e.target.value)}
-                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
                         >
                             {classes.map(cls => (
                                 <option key={cls} value={cls}>{cls}</option>
@@ -167,7 +167,7 @@ const AdminExamSchedules = ({ darkMode }) => {
                             placeholder="Search by name or subject..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className={`w-full pl-9 pr-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                            className={`w-full pl-9 pr-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
                         />
                     </div>
                 </div>
@@ -178,7 +178,7 @@ const AdminExamSchedules = ({ darkMode }) => {
                             setEditData(null);
                             setShowCreateModal(true);
                         }}
-                        className="w-full md:w-auto flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="w-full md:w-auto flex items-center justify-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                     >
                         <Plus className="w-5 h-5" />
                         <span>Create Multiple Exams</span>
@@ -196,7 +196,7 @@ const AdminExamSchedules = ({ darkMode }) => {
                                 {Object.keys(groupedSchedules).length}
                             </h3>
                         </div>
-                        <div className={`p-3 rounded-full ${darkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
+                        <div className={`p-3 rounded-full ${darkMode ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-600'}`}>
                             <FileText className="w-6 h-6" />
                         </div>
                     </div>
@@ -252,7 +252,7 @@ const AdminExamSchedules = ({ darkMode }) => {
                                 onClick={() => setExpandedExam(expandedExam === examName ? null : examName)}
                             >
                                 <div className="flex items-center space-x-4">
-                                    <div className={`p-2 rounded-lg ${darkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
+                                    <div className={`p-2 rounded-lg ${darkMode ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-600'}`}>
                                         <FileText className="w-6 h-6" />
                                     </div>
                                     <div>
@@ -267,7 +267,7 @@ const AdminExamSchedules = ({ darkMode }) => {
                                 <div className="flex items-center space-x-3">
                                     <button
                                         onClick={(e) => handleEditExam(examName, e)}
-                                        className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-600 text-blue-400' : 'hover:bg-white text-blue-600'}`}
+                                        className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-600 text-purple-400' : 'hover:bg-white text-purple-600'}`}
                                         title="Edit exam"
                                     >
                                         <Edit className="w-5 h-5" />
@@ -480,7 +480,7 @@ const CreateExamModal = ({ darkMode, selectedClass, subjects, editData, onClose,
                             value={examName}
                             onChange={(e) => setExamName(e.target.value)}
                             placeholder="Enter Exam Name"
-                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
                         />
                     </div>
 
@@ -490,7 +490,7 @@ const CreateExamModal = ({ darkMode, selectedClass, subjects, editData, onClose,
                             <button
                                 type="button"
                                 onClick={addRow}
-                                className="text-sm text-blue-500 hover:text-blue-600 font-medium flex items-center"
+                                className="text-sm text-purple-500 hover:text-purple-600 font-medium flex items-center"
                             >
                                 <Plus className="w-4 h-4 mr-1" /> Add Paper
                             </button>
@@ -506,7 +506,7 @@ const CreateExamModal = ({ darkMode, selectedClass, subjects, editData, onClose,
                                         value={row.subject}
                                         onChange={(e) => updateRow(row.id, 'subject', e.target.value)}
                                         placeholder="Subject"
-                                        className={`w-full px-3 py-2 text-sm rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-1 focus:ring-blue-500`}
+                                        className={`w-full px-3 py-2 text-sm rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-1 focus:ring-purple-500`}
                                     />
                                     <datalist id={`subjects-${row.id}`}>
                                         {subjects.map(s => <option key={s} value={s} />)}
@@ -519,7 +519,7 @@ const CreateExamModal = ({ darkMode, selectedClass, subjects, editData, onClose,
                                         min={minDate}
                                         value={row.date}
                                         onChange={(e) => updateRow(row.id, 'date', e.target.value)}
-                                        className={`w-full px-3 py-2 text-sm rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-1 focus:ring-blue-500`}
+                                        className={`w-full px-3 py-2 text-sm rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-1 focus:ring-purple-500`}
                                     />
                                 </div>
                                 <div className="md:col-span-2">
@@ -528,7 +528,7 @@ const CreateExamModal = ({ darkMode, selectedClass, subjects, editData, onClose,
                                         type="time"
                                         value={row.startTime}
                                         onChange={(e) => updateRow(row.id, 'startTime', e.target.value)}
-                                        className={`w-full px-3 py-2 text-sm rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-1 focus:ring-blue-500`}
+                                        className={`w-full px-3 py-2 text-sm rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-1 focus:ring-purple-500`}
                                     />
                                 </div>
                                 <div className="md:col-span-2">
@@ -537,7 +537,7 @@ const CreateExamModal = ({ darkMode, selectedClass, subjects, editData, onClose,
                                         type="time"
                                         value={row.endTime}
                                         onChange={(e) => updateRow(row.id, 'endTime', e.target.value)}
-                                        className={`w-full px-3 py-2 text-sm rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-1 focus:ring-blue-500`}
+                                        className={`w-full px-3 py-2 text-sm rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-1 focus:ring-purple-500`}
                                     />
                                 </div>
                                 <div className="md:col-span-2">
@@ -547,7 +547,7 @@ const CreateExamModal = ({ darkMode, selectedClass, subjects, editData, onClose,
                                         value={row.venue}
                                         onChange={(e) => updateRow(row.id, 'venue', e.target.value)}
                                         placeholder="Room"
-                                        className={`w-full px-3 py-2 text-sm rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-1 focus:ring-blue-500`}
+                                        className={`w-full px-3 py-2 text-sm rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-1 focus:ring-purple-500`}
                                     />
                                 </div>
                                 <div className="md:col-span-1 flex justify-center pb-2">
@@ -571,7 +571,7 @@ const CreateExamModal = ({ darkMode, selectedClass, subjects, editData, onClose,
                     </button>
                     <button
                         onClick={handleSubmit}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                        className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium"
                     >
                         {editData ? 'Update Schedule' : 'Save Schedule'}
                     </button>

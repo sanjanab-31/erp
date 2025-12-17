@@ -125,7 +125,7 @@ const AnnouncementsPage = ({ darkMode }) => {
 
         if (modalType === 'delete') {
             return (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0  bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-2xl max-w-md w-full p-6`}>
                         <h2 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Delete Announcement</h2>
                         <p className={`mb-6 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Are you sure you want to delete this announcement? This action cannot be undone.</p>
@@ -139,7 +139,7 @@ const AnnouncementsPage = ({ darkMode }) => {
         }
 
         return (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto`}>
                     <div className="flex justify-between items-center mb-6">
                         <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>

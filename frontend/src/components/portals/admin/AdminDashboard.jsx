@@ -45,6 +45,7 @@ import { getLatestAnnouncements, subscribeToUpdates as subscribeToAnnouncements 
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
+    
     const userName = localStorage.getItem('userName') || 'John Admin';
     const userRole = localStorage.getItem('userRole') || 'Admin';
 
@@ -54,7 +55,7 @@ const AdminDashboard = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [modalType, setModalType] = useState('');
-    const [showNotificationPanel, setShowNotificationPanel] = useState(false);
+    // const [showNotificationPanel, setShowNotificationPanel] = useState(false);
 
     // Real-time dashboard data with live updates
     const [dashboardData, setDashboardData] = useState({
@@ -681,7 +682,7 @@ const AdminDashboard = () => {
 
                         <div className="flex items-center space-x-4">
                             {/* Search */}
-                            <div className="relative">
+                            {/* <div className="relative">
                                 <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                                 <input
                                     type="text"
@@ -693,11 +694,11 @@ const AdminDashboard = () => {
                                         : 'bg-gray-50 border-gray-300 text-gray-900'
                                         } focus:outline-none focus:ring-2 focus:ring-purple-500 w-64`}
                                 />
-                            </div>
+                            </div> */}
 
                             {/* Notifications */}
                             <button
-                                onClick={() => setShowNotificationPanel(!showNotificationPanel)}
+                                onClick={() => navigate('/announcements')}
                                 className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
                             >
                                 <Bell className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`} />
