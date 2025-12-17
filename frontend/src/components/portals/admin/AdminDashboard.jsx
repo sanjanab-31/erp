@@ -45,6 +45,7 @@ import { getLatestAnnouncements, subscribeToUpdates as subscribeToAnnouncements 
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
+
     const userName = localStorage.getItem('userName') || 'John Admin';
     const userRole = localStorage.getItem('userRole') || 'Admin';
 
