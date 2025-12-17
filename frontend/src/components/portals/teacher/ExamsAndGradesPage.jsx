@@ -75,9 +75,10 @@ const ExamsAndGradesPage = ({ darkMode }) => {
 
         // Load existing marks for each student
         const marksMap = {};
+        const assignments = getAssignmentsByCourse(courseId);
+
         classStudents.forEach(student => {
             const examMarks = getExamMarksByCourse(courseId).find(m => m.studentId === student.id);
-            const assignments = getAssignmentsByCourse(courseId);
 
             // Get assignment marks
             let assignment1 = 0;
@@ -85,11 +86,11 @@ const ExamsAndGradesPage = ({ darkMode }) => {
 
             if (assignments.length > 0) {
                 const sub1 = getSubmissionsByAssignment(assignments[0].id).find(s => s.studentId === student.id);
-                assignment1 = sub1 && sub1.status === 'graded' ? sub1.marks : 0;
+                assignment1 = sub1 && sub1.status === 'graded' ? parseFloat(sub1.marks) || 0 : 0;
             }
             if (assignments.length > 1) {
                 const sub2 = getSubmissionsByAssignment(assignments[1].id).find(s => s.studentId === student.id);
-                assignment2 = sub2 && sub2.status === 'graded' ? sub2.marks : 0;
+                assignment2 = sub2 && sub2.status === 'graded' ? parseFloat(sub2.marks) || 0 : 0;
             }
 
             marksMap[student.id] = {
@@ -119,10 +120,10 @@ const ExamsAndGradesPage = ({ darkMode }) => {
         const marks = marksData[studentId] || {};
 
         // Exam Total: Sum of 3 exams, scaled to 75
-        const examTotal = ((marks.exam1 || 0) + (marks.exam2 || 0) + (marks.exam3 || 0)) / 300 * 75;
+        const examTotal = ((parseFloat(marks.exam1) || 0) + (parseFloat(marks.exam2) || 0) + (parseFloat(marks.exam3) || 0)) / 300 * 75;
 
         // Assignment Total: Sum of 2 assignments, scaled to 25
-        const assignmentTotal = ((marks.assignment1 || 0) + (marks.assignment2 || 0)) / 200 * 25;
+        const assignmentTotal = ((parseFloat(marks.assignment1) || 0) + (parseFloat(marks.assignment2) || 0)) / 200 * 25;
 
         // Final Total: Exam (75) + Assignment (25) = 100
         const finalTotal = examTotal + assignmentTotal;
@@ -151,6 +152,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
         setSaving(true);
         try {
             const assignments = getAssignmentsByCourse(selectedCourse.id);
+            console.log('Assignments found for save:', assignments);
 
             // Save marks for each student
             for (const student of students) {
@@ -169,47 +171,53 @@ const ExamsAndGradesPage = ({ darkMode }) => {
 
                     // Save assignment 1 marks
                     if (assignments.length > 0) {
-                        const submissions1 = getSubmissionsByAssignment(assignments[0].id);
-                        const existingSub1 = submissions1.find(s => s.studentId === student.id);
+                        const assignmentId = assignments[0].id;
+                        const submissions = getSubmissionsByAssignment(assignmentId);
+                        const existingSub = submissions.find(s => s.studentId === student.id);
+                        const markToSave = marks.assignment1 || 0;
+                        console.log(`Saving Assignment 1 for ${student.name}: ID=${assignmentId}, Mark=${markToSave}`);
 
-                        if (existingSub1) {
-                            // Update existing submission
-                            gradeSubmission(existingSub1.id, marks.assignment1 || 0, 'Graded by teacher');
+                        if (existingSub) {
+                            console.log('Updating existing submission 1:', existingSub.id);
+                            gradeSubmission(existingSub.id, markToSave, 'Graded by teacher');
                         } else {
-                            // Create new submission if it doesn't exist
+                            console.log('Creating new submission 1');
                             const newSub = await createSubmission({
-                                assignmentId: assignments[0].id,
+                                assignmentId: assignmentId,
                                 courseId: selectedCourse.id,
                                 studentId: student.id,
                                 studentName: student.name,
                                 link: '',
                                 submittedBy: student.id
                             });
-                            // Grade the newly created submission
-                            gradeSubmission(newSub.id, marks.assignment1 || 0, 'Graded by teacher');
+                            console.log('New submission 1 created:', newSub.id);
+                            gradeSubmission(newSub.id, markToSave, 'Graded by teacher');
                         }
                     }
 
                     // Save assignment 2 marks
                     if (assignments.length > 1) {
-                        const submissions2 = getSubmissionsByAssignment(assignments[1].id);
-                        const existingSub2 = submissions2.find(s => s.studentId === student.id);
+                        const assignmentId = assignments[1].id;
+                        const submissions = getSubmissionsByAssignment(assignmentId);
+                        const existingSub = submissions.find(s => s.studentId === student.id);
+                        const markToSave = marks.assignment2 || 0;
+                        console.log(`Saving Assignment 2 for ${student.name}: ID=${assignmentId}, Mark=${markToSave}`);
 
-                        if (existingSub2) {
-                            // Update existing submission
-                            gradeSubmission(existingSub2.id, marks.assignment2 || 0, 'Graded by teacher');
+                        if (existingSub) {
+                            console.log('Updating existing submission 2:', existingSub.id);
+                            gradeSubmission(existingSub.id, markToSave, 'Graded by teacher');
                         } else {
-                            // Create new submission if it doesn't exist
+                            console.log('Creating new submission 2');
                             const newSub = await createSubmission({
-                                assignmentId: assignments[1].id,
+                                assignmentId: assignmentId,
                                 courseId: selectedCourse.id,
                                 studentId: student.id,
                                 studentName: student.name,
                                 link: '',
                                 submittedBy: student.id
                             });
-                            // Grade the newly created submission
-                            gradeSubmission(newSub.id, marks.assignment2 || 0, 'Graded by teacher');
+                            console.log('New submission 2 created:', newSub.id);
+                            gradeSubmission(newSub.id, markToSave, 'Graded by teacher');
                         }
                     }
                 }
@@ -219,6 +227,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
             setEditMode(false);
             loadCourseData(selectedCourse.id); // Reload to show updated marks
         } catch (error) {
+            console.error(error);
             showError('Error saving marks: ' + error.message);
         } finally {
             setSaving(false);

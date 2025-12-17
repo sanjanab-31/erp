@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import AttendancePage from './AttendancePage';
 import FeePage from './FeePage';
 import ExamsAndGrades from './ExamsAndGrades';
-import StudentCoursesPage from './StudentCoursesPage';
+// import StudentCoursesPage from './StudentCoursesPage';
 import CoursesPage from './CoursesPage';
 import TimetablePage from './TimetablePage';
 import LibraryPage from './LibraryPage';
@@ -72,7 +72,7 @@ const StudentPortal = () => {
         { icon: BookMarked, label: 'Library' },
         { icon: Bus, label: 'Transport' },
         { icon: Settings, label: 'Settings' },
-        { icon: BookOpen, label: 'My Courses' }
+        // { icon: BookOpen, label: 'My Courses' }
 
     ];
 
@@ -185,9 +185,9 @@ const StudentPortal = () => {
         if (activeTab === 'Settings') {
             return <SettingsPage darkMode={darkMode} />;
         }
-        if (activeTab === 'My Courses') {
-            return <StudentCoursesPage darkMode={darkMode} />;
-        }
+        // if (activeTab === 'My Courses') {
+        //     return <StudentCoursesPage darkMode={darkMode} />;
+        // }
         // Default Dashboard Content
         return (
             <div className="flex-1 overflow-y-auto p-8">
