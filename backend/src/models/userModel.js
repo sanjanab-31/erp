@@ -1,78 +1,33 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import mongoose from "mongoose";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const DATA_FILE = path.join(__dirname, '../../data/users.json');
-
-// Ensure data directory exists
-const ensureDataDir = () => {
-    const dir = path.dirname(DATA_FILE);
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+const userSchema = new mongoose.Schema({
+    email: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    password: {
+        type: String,
+        required: true
+    },
+    role: {
+        type: String,
+        required: true,
+        enum: ['admin', 'student', 'teacher', 'parent']
+    },
+    name: {
+        type: String,
+        required: false
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
+    active: {
+        type: Boolean,
+        default: true
     }
-    if (!fs.existsSync(DATA_FILE)) {
-        fs.writeFileSync(DATA_FILE, JSON.stringify([], null, 2));
-    }
-};
+});
 
-class User {
-    constructor(data) {
-        this.id = data.id;
-        this.email = data.email;
-        this.password = data.password;
-        this.role = data.role;
-        this.name = data.name || '';
-        this.createdAt = data.createdAt || new Date().toISOString();
-        this.updatedAt = new Date().toISOString();
-    }
-
-    // Helper to read users
-    static _readUsers() {
-        ensureDataDir();
-        try {
-            const data = fs.readFileSync(DATA_FILE, 'utf8');
-            return JSON.parse(data);
-        } catch (error) {
-            return [];
-        }
-    }
-
-    // Helper to write users
-    static _writeUsers(users) {
-        ensureDataDir();
-        fs.writeFileSync(DATA_FILE, JSON.stringify(users, null, 2));
-    }
-
-    // Create a new user
-    static async create(userData) {
-        const users = this._readUsers();
-        // Simulate ID generation
-        const id = userData.id || Math.random().toString(36).substr(2, 9);
-        const newUser = new User({ ...userData, id });
-
-        users.push(newUser);
-        this._writeUsers(users);
-
-        return newUser;
-    }
-
-    // Find user by Email
-    static findOne(query) {
-        const users = this._readUsers();
-        // Simple query support for email
-        if (query.email) {
-            return users.find(u => u.email === query.email);
-        }
-        return null;
-    }
-
-    // Find user by ID
-    static async findById(id) {
-        const users = this._readUsers();
-        return users.find(u => u.id === id);
-    }
-}
-
+const User = mongoose.model('User', userSchema);
 export default User;

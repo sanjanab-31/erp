@@ -19,7 +19,7 @@ export const login = async (req, res) => {
         }
 
         // 2. Find user in database (JSON file)
-        const user = User.findOne({ email });
+        const user = await User.findOne({ email });
 
         if (!user) {
             return res.status(400).json({
@@ -77,7 +77,7 @@ export const register = async (req, res) => {
         }
 
         // 2. Check if user already exists
-        const existingUser = User.findOne({ email });
+        const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({
                 success: false,
@@ -114,6 +114,7 @@ export const register = async (req, res) => {
                 token
             }
         });
+
     } catch (error) {
         console.error('Registration error:', error);
         res.status(500).json({
@@ -168,5 +169,38 @@ export const verifyToken = async (req, res) => {
             success: false,
             message: 'Invalid token'
         });
+    }
+};
+
+export const changePassword = async (req, res) => {
+    try {
+        // Get user from auth middleware
+        const userId = req.user.id;
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ success: false, message: 'Please provide current and new password' });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Verify current password
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ success: false, message: 'Invalid current password' });
+        }
+
+        // Hash new password
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+        await user.save();
+
+        res.json({ success: true, message: 'Password updated successfully' });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
     }
 };

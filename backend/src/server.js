@@ -1,10 +1,30 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+
 // Load environment variables
 dotenv.config();
 
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/erp_db')
+    .then(() => console.log('✅ MongoDB Connected'))
+    .catch((err) => console.error('❌ MongoDB Connection Error:', err));
+
 import authRoutes from './routes/auth.js';
+import studentRoutes from './routes/studentRoutes.js';
+import teacherRoutes from './routes/teacherRoutes.js';
+import parentRoutes from './routes/parentRoutes.js';
+import courseRoutes from './routes/courses.js';
+import materialRoutes from './routes/materials.js';
+import assignmentRoutes from './routes/assignments.js';
+import submissionRoutes from './routes/submissions.js';
+import examRoutes from './routes/exams.js';
+import attendanceRoutes from './routes/attendance.js';
+import feeRoutes from './routes/fees.js';
+import communicationRoutes from './routes/communication.js';
+import timetableRoutes from './routes/timetable.js';
+import settingsRoutes from './routes/settings.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -30,9 +50,19 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
-// Add more routes here as needed
-// import userRoutes from './routes/users.js';
-// app.use('/api/users', userRoutes);
+app.use('/api/students', studentRoutes);
+app.use('/api/teachers', teacherRoutes);
+app.use('/api/parents', parentRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/materials', materialRoutes);
+app.use('/api/assignments', assignmentRoutes);
+app.use('/api/submissions', submissionRoutes);
+app.use('/api/exams', examRoutes);
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/fees', feeRoutes);
+app.use('/api/communication', communicationRoutes);
+app.use('/api/timetable', timetableRoutes);
+app.use('/api/settings', settingsRoutes);
 
 
 // Error handling middleware

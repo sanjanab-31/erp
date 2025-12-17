@@ -2,9 +2,6 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';
 
-// Authentication Middleware
-// Verifies JWT tokens and protects routes
-
 export const authenticateToken = async (req, res, next) => {
     try {
         // Get token from header
