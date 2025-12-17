@@ -34,6 +34,7 @@ import FeesAndFinancePage from './FeesAndFinancePage';
 import TimetablePage from './TimetablePage';
 import SettingsPage from './SettingsPage';
 import AdminExamSchedules from './AdminExamSchedules';
+import LibraryPage from './LibraryPage';
 import { getStudentStats, subscribeToUpdates as subscribeToStudents } from '../../../utils/studentStore';
 import { getTeacherStats, subscribeToUpdates as subscribeToTeachers } from '../../../utils/teacherStore';
 import { getFeeStats, subscribeToUpdates as subscribeToFees } from '../../../utils/feeStore';
@@ -413,6 +414,8 @@ const AdminDashboard = () => {
                 return <TimetablePage darkMode={darkMode} />;
             case 'Settings':
                 return <SettingsPage darkMode={darkMode} />;
+            case 'Library':
+                return <LibraryPage darkMode={darkMode} />;
             case 'Dashboard':
             default:
                 return (

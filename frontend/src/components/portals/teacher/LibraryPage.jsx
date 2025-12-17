@@ -1,384 +1,207 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-    BookMarked,
-    Search,
-    Filter,
-    Plus,
-    Edit,
-    Trash2,
-    Download,
-    Upload,
+    Book,
     BookOpen,
-    Users,
+    Search,
     Clock,
     CheckCircle,
-    AlertCircle,
-    Calendar
+    Info,
+    Calendar,
+    Filter
 } from 'lucide-react';
+import * as libraryStore from '../../../utils/libraryStore';
 
-const LibraryPage = ({ darkMode }) => {
+const TeacherLibraryPage = ({ darkMode }) => {
+    const [activeTab, setActiveTab] = useState('browse');
+    const [books, setBooks] = useState([]);
+    const [myIssues, setMyIssues] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('All');
-    const [activeTab, setActiveTab] = useState('books');
-
-    const categories = ['All', 'Mathematics', 'Physics', 'Chemistry', 'Computer Science', 'General'];
-
-    const [books, setBooks] = useState([
-        {
-            id: 1,
-            title: 'Advanced Calculus',
-            author: 'James Stewart',
-            category: 'Mathematics',
-            isbn: '978-1285741550',
-            totalCopies: 10,
-            available: 7,
-            issued: 3,
-            status: 'available'
-        },
-        {
-            id: 2,
-            title: 'Physics for Scientists',
-            author: 'Raymond Serway',
-            category: 'Physics',
-            isbn: '978-1133954057',
-            totalCopies: 8,
-            available: 5,
-            issued: 3,
-            status: 'available'
-        },
-        {
-            id: 3,
-            title: 'Introduction to Algorithms',
-            author: 'Thomas Cormen',
-            category: 'Computer Science',
-            isbn: '978-0262033848',
-            totalCopies: 5,
-            available: 0,
-            issued: 5,
-            status: 'unavailable'
-        },
-        {
-            id: 4,
-            title: 'Organic Chemistry',
-            author: 'Paula Bruice',
-            category: 'Chemistry',
-            isbn: '978-0321803221',
-            totalCopies: 6,
-            available: 4,
-            issued: 2,
-            status: 'available'
-        }
-    ]);
-
-    const [issuedBooks, setIssuedBooks] = useState([
-        {
-            id: 1,
-            bookTitle: 'Advanced Calculus',
-            studentName: 'John Doe',
-            rollNo: '10A-001',
-            issueDate: '2025-12-01',
-            dueDate: '2025-12-15',
-            status: 'active',
-            daysLeft: 0
-        },
-        {
-            id: 2,
-            bookTitle: 'Physics for Scientists',
-            studentName: 'Jane Smith',
-            rollNo: '10A-002',
-            issueDate: '2025-11-25',
-            dueDate: '2025-12-10',
-            status: 'overdue',
-            daysLeft: -5
-        },
-        {
-            id: 3,
-            bookTitle: 'Introduction to Algorithms',
-            studentName: 'Mike Wilson',
-            rollNo: '11B-015',
-            issueDate: '2025-12-05',
-            dueDate: '2025-12-20',
-            status: 'active',
-            daysLeft: 5
-        }
-    ]);
-
-    const filteredBooks = books.filter(book => {
-        const matchesSearch = book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            book.isbn.includes(searchQuery);
-        const matchesCategory = selectedCategory === 'All' || book.category === selectedCategory;
-        return matchesSearch && matchesCategory;
+    const [rules, setRules] = useState(libraryStore.getLibraryRules());
+    const [user] = useState({
+        email: localStorage.getItem('userEmail') || 'teacher@eshwar.com',
+        name: localStorage.getItem('userName') || 'Teacher',
+        role: 'Teacher'
     });
 
-    const totalBooks = books.reduce((acc, book) => acc + book.totalCopies, 0);
-    const totalIssued = books.reduce((acc, book) => acc + book.issued, 0);
-    const totalAvailable = books.reduce((acc, book) => acc + book.available, 0);
-    const overdueCount = issuedBooks.filter(b => b.status === 'overdue').length;
+    useEffect(() => {
+        console.log('TeacherLibrary: Loading data for user:', user.email);
+
+        const loadData = () => {
+            const allBooks = libraryStore.getAllBooks();
+            const userIssues = libraryStore.getIssuesByUser(user.email);
+            const currentRules = libraryStore.getLibraryRules();
+
+            console.log('TeacherLibrary: Loaded books:', allBooks.length);
+            console.log('TeacherLibrary: Loaded issues:', userIssues.length);
+
+            setBooks(allBooks);
+            setMyIssues(userIssues);
+            setRules(currentRules);
+        };
+
+        loadData();
+        const unsubscribe = libraryStore.subscribeToUpdates(() => {
+            console.log('TeacherLibrary: Received update event');
+            loadData();
+        });
+
+        return () => unsubscribe();
+    }, [user.email]);
+
+    const handleIssueBook = (book) => {
+        if (window.confirm(`Issue "${book.title}" to yourself?`)) {
+            try {
+                libraryStore.issueBook(book.id, {
+                    id: user.email,
+                    name: user.name,
+                    role: user.role
+                });
+                alert('Book issued successfully!');
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+    };
+
+    const filteredBooks = books.filter(b =>
+        b.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        b.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        b.subject.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
-        <div className="flex-1 overflow-y-auto p-8">
-            {/* Header */}
-            <div className="mb-8">
-                <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
-                    Library Management
-                </h1>
-                <p className="text-sm text-gray-500">Manage books and track issued materials</p>
-            </div>
-
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Books</h3>
-                        <BookOpen className="w-5 h-5 text-green-500" />
-                    </div>
-                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{totalBooks}</p>
+        <div className={`space-y-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            <div className="flex justify-between items-center bg-green-50 p-4 rounded-xl border border-green-100">
+                <div>
+                    <h2 className="text-xl font-bold text-green-900">Teacher Library Portal</h2>
+                    <p className="text-sm text-green-700">Browse and issue books for your reference</p>
                 </div>
-
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Available</h3>
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-                    </div>
-                    <p className={`text-3xl font-bold text-green-600`}>{totalAvailable}</p>
-                </div>
-
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Issued</h3>
-                        <Users className="w-5 h-5 text-purple-500" />
-                    </div>
-                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{totalIssued}</p>
-                </div>
-
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Overdue</h3>
-                        <AlertCircle className="w-5 h-5 text-red-500" />
-                    </div>
-                    <p className={`text-3xl font-bold text-red-600`}>{overdueCount}</p>
-                </div>
+                <Book className="w-8 h-8 text-green-600" />
             </div>
 
             {/* Tabs */}
-            <div className="flex space-x-4 mb-6">
+            <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
                 <button
-                    onClick={() => setActiveTab('books')}
-                    className={`px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === 'books'
-                        ? 'bg-green-600 text-white'
-                        : `${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-white text-gray-700'} hover:bg-green-50`
-                        }`}
+                    onClick={() => setActiveTab('browse')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'browse' ? 'bg-white shadow-sm text-green-600' : 'text-gray-600'}`}
                 >
-                    Book Catalog
+                    Browse Books ({books.length})
                 </button>
                 <button
-                    onClick={() => setActiveTab('issued')}
-                    className={`px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === 'issued'
-                        ? 'bg-green-600 text-white'
-                        : `${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-white text-gray-700'} hover:bg-green-50`
-                        }`}
+                    onClick={() => setActiveTab('myIssues')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'myIssues' ? 'bg-white shadow-sm text-green-600' : 'text-gray-600'}`}
                 >
-                    Issued Books
+                    My Issued Books ({myIssues.filter(i => i.status === 'Issued').length})
                 </button>
             </div>
 
-            {/* Book Catalog Tab */}
-            {activeTab === 'books' && (
-                <>
-                    {/* Filters */}
-                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6`}>
-                        <div className="flex flex-col md:flex-row gap-4">
-                            <div className="flex-1 relative">
-                                <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                                <input
-                                    type="text"
-                                    placeholder="Search by title, author, or ISBN..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className={`w-full pl-10 pr-4 py-2 rounded-lg border ${darkMode
-                                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                                        : 'bg-gray-50 border-gray-300 text-gray-900'
-                                        } focus:outline-none focus:ring-2 focus:ring-green-500`}
-                                />
-                            </div>
-
-                            <select
-                                value={selectedCategory}
-                                onChange={(e) => setSelectedCategory(e.target.value)}
-                                className={`px-4 py-2 rounded-lg border ${darkMode
-                                    ? 'bg-gray-700 border-gray-600 text-white'
-                                    : 'bg-gray-50 border-gray-300 text-gray-900'
-                                    } focus:outline-none focus:ring-2 focus:ring-green-500`}
-                            >
-                                {categories.map((category) => (
-                                    <option key={category} value={category}>{category}</option>
-                                ))}
-                            </select>
-
-                            <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2">
-                                <Plus className="w-5 h-5" />
-                                <span>Add Book</span>
-                            </button>
-                        </div>
+            {/* Content */}
+            {activeTab === 'browse' && (
+                <div className="space-y-4">
+                    <div className="relative">
+                        <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                        <input
+                            type="text"
+                            placeholder="Search by title, author, or subject..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className={`w-full pl-10 pr-4 py-3 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'} focus:ring-2 focus:ring-green-500 outline-none`}
+                        />
                     </div>
 
-                    {/* Books Table */}
-                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead className={darkMode ? 'bg-gray-700' : 'bg-gray-50'}>
-                                    <tr>
-                                        <th className={`px-6 py-4 text-left text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                            Book Details
-                                        </th>
-                                        <th className={`px-6 py-4 text-left text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                            Category
-                                        </th>
-                                        <th className={`px-6 py-4 text-left text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                            ISBN
-                                        </th>
-                                        <th className={`px-6 py-4 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                            Total
-                                        </th>
-                                        <th className={`px-6 py-4 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                            Available
-                                        </th>
-                                        <th className={`px-6 py-4 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                            Issued
-                                        </th>
-                                        <th className={`px-6 py-4 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                            Status
-                                        </th>
-                                        <th className={`px-6 py-4 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                            Actions
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
-                                    {filteredBooks.map((book) => (
-                                        <tr key={book.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}>
-                                            <td className="px-6 py-4">
-                                                <div>
-                                                    <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                        {book.title}
-                                                    </div>
-                                                    <div className="text-sm text-gray-500">{book.author}</div>
-                                                </div>
-                                            </td>
-                                            <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                                {book.category}
-                                            </td>
-                                            <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                                {book.isbn}
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                    {book.totalCopies}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className="text-sm font-medium text-green-600">
-                                                    {book.available}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className="text-sm font-medium text-purple-600">
-                                                    {book.issued}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${book.status === 'available'
-                                                    ? 'bg-green-100 text-green-600'
-                                                    : 'bg-red-100 text-red-600'
-                                                    }`}>
-                                                    {book.status === 'available' ? 'Available' : 'Unavailable'}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <button className="text-green-600 hover:text-green-900 mr-3">
-                                                    <Edit className="w-5 h-5" />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                    {filteredBooks.length === 0 ? (
+                        <div className="text-center py-12 text-gray-500">
+                            <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                            <p>No books found. {searchQuery ? 'Try a different search.' : 'The library is empty.'}</p>
                         </div>
-                    </div>
-                </>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredBooks.map(book => (
+                                <div key={book.id} className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-5 hover:shadow-lg transition-shadow`}>
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div className="p-2 bg-green-50 rounded-lg text-green-600">
+                                            <BookOpen className="w-6 h-6" />
+                                        </div>
+                                        <span className={`text-xs px-2 py-1 rounded-full ${book.available > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                            {book.available > 0 ? `${book.available} Available` : 'Out of Stock'}
+                                        </span>
+                                    </div>
+                                    <h3 className="font-bold text-lg mb-1 line-clamp-1" title={book.title}>{book.title}</h3>
+                                    <p className="text-sm text-gray-500 mb-2">by {book.author}</p>
+
+                                    <div className="flex justify-between items-center text-xs text-gray-500 mb-4">
+                                        <span className="bg-gray-100 px-2 py-1 rounded">{book.subject}</span>
+                                        <span>{book.category}</span>
+                                    </div>
+
+                                    <div className="text-xs text-gray-400 mb-3">
+                                        ISBN: {book.isbn || 'N/A'}
+                                    </div>
+
+                                    <button
+                                        onClick={() => handleIssueBook(book)}
+                                        disabled={book.available <= 0}
+                                        className={`w-full py-2 rounded-lg font-medium transition-colors ${book.available > 0
+                                                ? 'bg-green-600 text-white hover:bg-green-700'
+                                                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                            }`}
+                                    >
+                                        {book.available > 0 ? 'Issue Book' : 'Unavailable'}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             )}
 
-            {/* Issued Books Tab */}
-            {activeTab === 'issued' && (
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className={darkMode ? 'bg-gray-700' : 'bg-gray-50'}>
-                                <tr>
-                                    <th className={`px-6 py-4 text-left text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                        Book Title
-                                    </th>
-                                    <th className={`px-6 py-4 text-left text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                        Student
-                                    </th>
-                                    <th className={`px-6 py-4 text-left text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                        Issue Date
-                                    </th>
-                                    <th className={`px-6 py-4 text-left text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                        Due Date
-                                    </th>
-                                    <th className={`px-6 py-4 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                        Status
-                                    </th>
-                                    <th className={`px-6 py-4 text-center text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'} uppercase tracking-wider`}>
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
-                                {issuedBooks.map((book) => (
-                                    <tr key={book.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}>
-                                        <td className={`px-6 py-4 text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                            {book.bookTitle}
-                                        </td>
+            {activeTab === 'myIssues' && (
+                <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl overflow-hidden`}>
+                    <table className="w-full text-left">
+                        <thead className={`${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-50 text-gray-600'} text-xs uppercase font-semibold`}>
+                            <tr>
+                                <th className="px-6 py-4">Book</th>
+                                <th className="px-6 py-4">Issue Date</th>
+                                <th className="px-6 py-4">Due Date</th>
+                                <th className="px-6 py-4">Status</th>
+                                <th className="px-6 py-4">Fine</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                            {myIssues.map(issue => {
+                                const isOverdue = issue.status === 'Issued' && new Date(issue.dueDate) < new Date();
+                                return (
+                                    <tr key={issue.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
+                                        <td className="px-6 py-4 font-medium">{issue.bookTitle}</td>
+                                        <td className="px-6 py-4 text-sm text-gray-500">{new Date(issue.issueDate).toLocaleDateString()}</td>
+                                        <td className="px-6 py-4 text-sm text-gray-500">{new Date(issue.dueDate).toLocaleDateString()}</td>
                                         <td className="px-6 py-4">
-                                            <div>
-                                                <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                    {book.studentName}
-                                                </div>
-                                                <div className="text-sm text-gray-500">{book.rollNo}</div>
-                                            </div>
-                                        </td>
-                                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                            {book.issueDate}
-                                        </td>
-                                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                            {book.dueDate}
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${book.status === 'overdue'
-                                                ? 'bg-red-100 text-red-600'
-                                                : 'bg-green-100 text-green-600'
+                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${issue.status === 'Returned' ? 'bg-green-100 text-green-700' :
+                                                    isOverdue ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
                                                 }`}>
-                                                {book.status === 'overdue' ? `Overdue (${Math.abs(book.daysLeft)} days)` : `Active (${book.daysLeft} days left)`}
+                                                {issue.status === 'Returned' ? 'Returned' : isOverdue ? 'Overdue' : 'Issued'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
-                                                Return Book
-                                            </button>
+                                        <td className="px-6 py-4 font-medium text-red-500">
+                                            {issue.fine > 0 ? `${rules.currency}${issue.fine}` : '-'}
                                         </td>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                );
+                            })}
+                            {myIssues.length === 0 && (
+                                <tr>
+                                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                                        <BookOpen className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                                        No books issued yet.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             )}
         </div>
     );
 };
 
-export default LibraryPage;
-
+export default TeacherLibraryPage;
