@@ -8,6 +8,7 @@ import TimetablePage from './TimetablePage';
 import LibraryPage from './LibraryPage';
 import ReportsPage from './ReportsPage';
 import SettingsPage from './SettingsPage';
+import AnnouncementsPage from './AnnouncementsPage';
 import {
     Home,
     Calendar,
@@ -25,7 +26,8 @@ import {
     TrendingUp,
     ClipboardList,
     UserCheck,
-    LogOut
+    LogOut,
+    Megaphone
 } from 'lucide-react';
 import { getCoursesByTeacher, getSubmissionsByAssignment, getAssignmentsByCourse, subscribeToAcademicUpdates } from '../../../utils/academicStore';
 import { getAllStudents } from '../../../utils/studentStore';
@@ -58,6 +60,7 @@ const TeacherDashboard = () => {
         { icon: BookOpen, label: 'Courses' },
         { icon: Clock, label: 'Timetable' },
         { icon: BookMarked, label: 'Library' },
+        { icon: Megaphone, label: 'Announcements' },
         { icon: FileText, label: 'Reports' },
         { icon: Settings, label: 'Settings' }
     ];
@@ -169,6 +172,10 @@ const TeacherDashboard = () => {
 
         if (activeTab === 'Settings') {
             return <SettingsPage darkMode={darkMode} />;
+        }
+
+        if (activeTab === 'Announcements') {
+            return <AnnouncementsPage darkMode={darkMode} />;
         }
 
         // Default Dashboard Content

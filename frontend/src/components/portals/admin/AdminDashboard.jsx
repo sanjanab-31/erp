@@ -8,7 +8,6 @@ import {
     DollarSign,
     Calendar,
     BookMarked,
-    Bus,
     BarChart3,
     Settings,
     Bell,
@@ -24,6 +23,7 @@ import {
     CheckCircle,
     AlertCircle,
     Info,
+    Megaphone,
     X
 } from 'lucide-react';
 import Students from './Students';
@@ -35,6 +35,7 @@ import TimetablePage from './TimetablePage';
 import SettingsPage from './SettingsPage';
 import AdminExamSchedules from './AdminExamSchedules';
 import LibraryPage from './LibraryPage';
+import AnnouncementsPage from './AnnouncementsPage';
 import { getStudentStats, subscribeToUpdates as subscribeToStudents } from '../../../utils/studentStore';
 import { getTeacherStats, subscribeToUpdates as subscribeToTeachers } from '../../../utils/teacherStore';
 import { getFeeStats, subscribeToUpdates as subscribeToFees } from '../../../utils/feeStore';
@@ -102,7 +103,7 @@ const AdminDashboard = () => {
         { icon: Calendar, label: 'Timetable' },
         { icon: Calendar, label: 'Exam Schedules' },
         { icon: BookMarked, label: 'Library' },
-        { icon: Bus, label: 'Transport' },
+        { icon: Megaphone, label: 'Announcements' },
         { icon: BarChart3, label: 'Reports' },
         { icon: Settings, label: 'Settings' }
     ];
@@ -416,6 +417,8 @@ const AdminDashboard = () => {
                 return <SettingsPage darkMode={darkMode} />;
             case 'Library':
                 return <LibraryPage darkMode={darkMode} />;
+            case 'Announcements':
+                return <AnnouncementsPage darkMode={darkMode} />;
             case 'Dashboard':
             default:
                 return (

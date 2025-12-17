@@ -17,6 +17,7 @@ import {
     Clock,
     Award,
     BookMarked,
+    Megaphone,
     LogOut
 } from 'lucide-react';
 import MyChildrenPage from './MyChildrenPage';
@@ -28,6 +29,7 @@ import ReportsPage from './ReportsPage';
 import SettingsPage from './SettingsPage';
 import ParentChildAcademics from './ParentChildAcademics';
 import LibraryPage from './LibraryPage';
+import AnnouncementsPage from './AnnouncementsPage';
 import { getChildrenByParentEmail } from '../../../utils/userStore';
 import { calculateAttendancePercentage, subscribeToUpdates as subscribeToAttendance } from '../../../utils/attendanceStore';
 import { getStudentFinalMarks, subscribeToAcademicUpdates } from '../../../utils/academicStore';
@@ -69,7 +71,8 @@ const ParentDashboard = () => {
         { icon: FileText, label: 'Reports' },
         { icon: Settings, label: 'Settings' },
         { icon: TrendingUp, label: 'Child Academics' },
-        { icon: BookMarked, label: 'Library' }
+        { icon: BookMarked, label: 'Library' },
+        { icon: Megaphone, label: 'Announcements' }
     ];
 
     const handleLogout = () => {
@@ -254,6 +257,7 @@ const ParentDashboard = () => {
         if (activeTab === 'Settings') return <SettingsPage darkMode={darkMode} />;
         if (activeTab === 'Child Academics') return <ParentChildAcademics darkMode={darkMode} />;
         if (activeTab === 'Library') return <LibraryPage darkMode={darkMode} />;
+        if (activeTab === 'Announcements') return <AnnouncementsPage darkMode={darkMode} />;
         // Default Dashboard
         return (
             <>
