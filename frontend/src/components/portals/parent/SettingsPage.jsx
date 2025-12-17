@@ -13,6 +13,8 @@ import {
     LogOut
 } from 'lucide-react';
 import { getSettings, updateSettingsSection, changePassword, subscribeToSettingsUpdates } from '../../../utils/settingsStore';
+import { getAllStudents } from '../../../utils/studentStore';
+import { getChildrenByParentEmail } from '../../../utils/userStore';
 
 const SettingsPage = ({ darkMode }) => {
     const navigate = useNavigate();
@@ -20,13 +22,15 @@ const SettingsPage = ({ darkMode }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [saved, setSaved] = useState(false);
     const [saveMessage, setSaveMessage] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [children, setChildren] = useState([]);
 
     const [profileData, setProfileData] = useState({
-        name: 'John Parent',
-        email: 'john.parent@email.com',
-        phone: '+1 234-567-8900',
-        address: '123 Main Street, City, State',
-        relationship: 'Father'
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        relationship: ''
     });
 
     const [notificationSettings, setNotificationSettings] = useState({
@@ -54,15 +58,54 @@ const SettingsPage = ({ darkMode }) => {
         navigate('/login');
     };
 
-    // Load settings from store on component mount
+    // Load parent data from student's parent information
     useEffect(() => {
+        const parentEmail = localStorage.getItem('userEmail');
+
+        if (parentEmail) {
+            // Get children for this parent
+            const parentChildren = getChildrenByParentEmail(parentEmail);
+            setChildren(parentChildren);
+
+            console.log('Loading settings for parent:', parentEmail);
+            console.log('Children found:', parentChildren);
+
+            // If parent has children, get parent info from first child's record
+            if (parentChildren && parentChildren.length > 0) {
+                const students = getAllStudents();
+                const child = students.find(s => s.id === parentChildren[0].id);
+
+                console.log('Child record:', child);
+
+                if (child) {
+                    setProfileData({
+                        name: child.parentName || '',
+                        email: child.parentEmail || parentEmail,
+                        phone: child.parentPhone || '',
+                        address: child.address || '',
+                        relationship: 'Parent/Guardian'
+                    });
+                }
+            } else {
+                // If no children found, use email from localStorage
+                setProfileData({
+                    name: localStorage.getItem('userName') || '',
+                    email: parentEmail,
+                    phone: '',
+                    address: '',
+                    relationship: 'Parent/Guardian'
+                });
+            }
+        }
+
+        // Load settings from settingsStore
         const settings = getSettings('parent');
-        if (settings.profile) setProfileData(settings.profile);
         if (settings.notifications) setNotificationSettings(settings.notifications);
+
+        setLoading(false);
 
         // Subscribe to real-time updates
         const unsubscribe = subscribeToSettingsUpdates('parent', (updatedSettings) => {
-            if (updatedSettings.profile) setProfileData(updatedSettings.profile);
             if (updatedSettings.notifications) setNotificationSettings(updatedSettings.notifications);
         });
 
@@ -195,6 +238,44 @@ const SettingsPage = ({ darkMode }) => {
                                 />
                             </div>
                         </div>
+
+                        {/* Children Information Section */}
+                        {children && children.length > 0 && (
+                            <div className="mt-8">
+                                <h4 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
+                                    Your Children
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {children.map((child, index) => (
+                                        <div
+                                            key={index}
+                                            className={`p-4 rounded-lg border ${darkMode
+                                                ? 'bg-gray-700 border-gray-600'
+                                                : 'bg-gray-50 border-gray-200'
+                                                }`}
+                                        >
+                                            <div className="flex items-center space-x-3 mb-2">
+                                                <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
+                                                    {child.name?.charAt(0) || 'S'}
+                                                </div>
+                                                <div>
+                                                    <p className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                        {child.name}
+                                                    </p>
+                                                    <p className="text-sm text-gray-500">
+                                                        {child.class || 'Student'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="text-sm text-gray-500 space-y-1">
+                                                <p>Roll No: {child.rollNumber || 'N/A'}</p>
+                                                <p>Email: {child.email || 'N/A'}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 );
 

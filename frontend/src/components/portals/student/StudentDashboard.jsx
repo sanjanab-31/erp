@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { calculateAttendancePercentage, subscribeToUpdates as subscribeToAttendance } from '../../../utils/attendanceStore';
 import { getSubmissionsByStudent, getStudentFinalMarks, subscribeToAcademicUpdates } from '../../../utils/academicStore';
+import { getAllStudents } from '../../../utils/studentStore';
 
 const StudentPortal = () => {
     const navigate = useNavigate();
@@ -91,7 +92,17 @@ const StudentPortal = () => {
     // Fetch and subscribe to real-time updates
     useEffect(() => {
         const fetchDashboardData = () => {
-            const studentId = userId || userEmail;
+            // Get student by email first
+            const students = getAllStudents();
+            const student = students.find(s => s.email === userEmail);
+
+            if (!student) {
+                console.log('Student not found for email:', userEmail);
+                return;
+            }
+
+            const studentId = student.id;
+            console.log('Dashboard loading for student:', student.name, 'ID:', studentId);
 
             // Get attendance percentage
             const attendancePercentage = calculateAttendancePercentage(studentId);
@@ -100,8 +111,12 @@ const StudentPortal = () => {
             const submissions = getSubmissionsByStudent(studentId);
             const finalMarks = getStudentFinalMarks(studentId);
 
-            // Calculate pending assignments
-            const pendingSubmissions = submissions.filter(s => s.status === 'submitted' || !s.marks);
+            console.log('Attendance:', attendancePercentage);
+            console.log('Submissions:', submissions.length);
+            console.log('Final Marks:', finalMarks.length);
+
+            // Calculate pending assignments (only graded ones count as complete)
+            const pendingSubmissions = submissions.filter(s => s.status !== 'graded');
 
             // Get recent grades
             const recentGrades = finalMarks.slice(0, 2).map((mark, idx) => ({
@@ -136,7 +151,9 @@ const StudentPortal = () => {
         };
 
         // Initial fetch
-        fetchDashboardData();
+        if (userEmail) {
+            fetchDashboardData();
+        }
 
         // Subscribe to updates
         const unsubscribeAttendance = subscribeToAttendance(fetchDashboardData);
@@ -146,7 +163,7 @@ const StudentPortal = () => {
             unsubscribeAttendance();
             unsubscribeAcademic();
         };
-    }, [userId, userEmail]);
+    }, [userEmail]);
 
     const getGreeting = () => {
         const hour = new Date().getHours();

@@ -2,18 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Bell, Lock, Palette, Settings as SettingsIcon, Camera, Mail, Phone, MapPin, FileText, LogOut } from 'lucide-react';
 import { getSettings, updateSettingsSection, changePassword, subscribeToSettingsUpdates } from '../../../utils/settingsStore';
+import { getAllStudents } from '../../../utils/studentStore';
 
 const SettingsPage = ({ darkMode }) => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('Profile');
     const [saveMessage, setSaveMessage] = useState('');
+    const [loading, setLoading] = useState(true);
     const [profileData, setProfileData] = useState({
-        fullName: 'Mike Wilson',
-        email: 'student@school.com',
-        phone: '+1 (555) 000-0000',
+        fullName: '',
+        email: '',
+        phone: '',
         role: 'Student',
         address: '',
-        bio: ''
+        bio: '',
+        class: '',
+        rollNumber: '',
+        dateOfBirth: '',
+        gender: '',
+        bloodGroup: '',
+        parentName: '',
+        parentPhone: '',
+        parentEmail: ''
     });
 
     const [notificationSettings, setNotificationSettings] = useState({
@@ -57,17 +67,47 @@ const SettingsPage = ({ darkMode }) => {
     };
 
 
-    // Load settings from store on component mount
+    // Load student data from studentStore and settings from settingsStore
     useEffect(() => {
+        const studentEmail = localStorage.getItem('userEmail');
+
+        if (studentEmail) {
+            // Fetch student data from studentStore
+            const students = getAllStudents();
+            const student = students.find(s => s.email === studentEmail);
+
+            console.log('Loading settings for student:', student);
+
+            if (student) {
+                setProfileData({
+                    fullName: student.name || '',
+                    email: student.email || '',
+                    phone: student.phone || '',
+                    role: 'Student',
+                    address: student.address || '',
+                    bio: student.bio || '',
+                    class: student.class || '',
+                    rollNumber: student.rollNumber || '',
+                    dateOfBirth: student.dateOfBirth || '',
+                    gender: student.gender || '',
+                    bloodGroup: student.bloodGroup || '',
+                    parentName: student.parentName || '',
+                    parentPhone: student.parentPhone || '',
+                    parentEmail: student.parentEmail || ''
+                });
+            }
+        }
+
+        // Load settings from settingsStore
         const settings = getSettings('student');
-        if (settings.profile) setProfileData(settings.profile);
         if (settings.notifications) setNotificationSettings(settings.notifications);
         if (settings.appearance) setAppearanceSettings(settings.appearance);
         if (settings.preferences) setPreferences(settings.preferences);
 
+        setLoading(false);
+
         // Subscribe to real-time updates
         const unsubscribe = subscribeToSettingsUpdates('student', (updatedSettings) => {
-            if (updatedSettings.profile) setProfileData(updatedSettings.profile);
             if (updatedSettings.notifications) setNotificationSettings(updatedSettings.notifications);
             if (updatedSettings.appearance) setAppearanceSettings(updatedSettings.appearance);
             if (updatedSettings.preferences) setPreferences(updatedSettings.preferences);
@@ -210,6 +250,142 @@ const SettingsPage = ({ darkMode }) => {
                             : 'bg-gray-100 border-gray-300 text-gray-500'
                             } cursor-not-allowed`}
                     />
+                </div>
+
+                {/* Class */}
+                <div>
+                    <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                        Class
+                    </label>
+                    <input
+                        type="text"
+                        value={profileData.class}
+                        disabled
+                        className={`w-full px-4 py-3 rounded-lg border ${darkMode
+                            ? 'bg-gray-700 border-gray-600 text-gray-400'
+                            : 'bg-gray-100 border-gray-300 text-gray-500'
+                            } cursor-not-allowed`}
+                    />
+                </div>
+
+                {/* Roll Number */}
+                <div>
+                    <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                        Roll Number
+                    </label>
+                    <input
+                        type="text"
+                        value={profileData.rollNumber}
+                        disabled
+                        className={`w-full px-4 py-3 rounded-lg border ${darkMode
+                            ? 'bg-gray-700 border-gray-600 text-gray-400'
+                            : 'bg-gray-100 border-gray-300 text-gray-500'
+                            } cursor-not-allowed`}
+                    />
+                </div>
+
+                {/* Date of Birth */}
+                <div>
+                    <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                        Date of Birth
+                    </label>
+                    <input
+                        type="text"
+                        value={profileData.dateOfBirth}
+                        disabled
+                        className={`w-full px-4 py-3 rounded-lg border ${darkMode
+                            ? 'bg-gray-700 border-gray-600 text-gray-400'
+                            : 'bg-gray-100 border-gray-300 text-gray-500'
+                            } cursor-not-allowed`}
+                    />
+                </div>
+
+                {/* Gender */}
+                <div>
+                    <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                        Gender
+                    </label>
+                    <input
+                        type="text"
+                        value={profileData.gender}
+                        disabled
+                        className={`w-full px-4 py-3 rounded-lg border ${darkMode
+                            ? 'bg-gray-700 border-gray-600 text-gray-400'
+                            : 'bg-gray-100 border-gray-300 text-gray-500'
+                            } cursor-not-allowed`}
+                    />
+                </div>
+
+                {/* Blood Group */}
+                <div>
+                    <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                        Blood Group
+                    </label>
+                    <input
+                        type="text"
+                        value={profileData.bloodGroup}
+                        disabled
+                        className={`w-full px-4 py-3 rounded-lg border ${darkMode
+                            ? 'bg-gray-700 border-gray-600 text-gray-400'
+                            : 'bg-gray-100 border-gray-300 text-gray-500'
+                            } cursor-not-allowed`}
+                    />
+                </div>
+            </div>
+
+            {/* Parent Information Section */}
+            <div className="mt-8 mb-6">
+                <h4 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
+                    Parent/Guardian Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Parent Name */}
+                    <div>
+                        <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                            Parent/Guardian Name
+                        </label>
+                        <input
+                            type="text"
+                            value={profileData.parentName}
+                            disabled
+                            className={`w-full px-4 py-3 rounded-lg border ${darkMode
+                                ? 'bg-gray-700 border-gray-600 text-gray-400'
+                                : 'bg-gray-100 border-gray-300 text-gray-500'
+                                } cursor-not-allowed`}
+                        />
+                    </div>
+
+                    {/* Parent Phone */}
+                    <div>
+                        <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                            Parent/Guardian Phone
+                        </label>
+                        <input
+                            type="text"
+                            value={profileData.parentPhone}
+                            disabled
+                            className={`w-full px-4 py-3 rounded-lg border ${darkMode
+                                ? 'bg-gray-700 border-gray-600 text-gray-400'
+                                : 'bg-gray-100 border-gray-300 text-gray-500'
+                                } cursor-not-allowed`}
+                        />
+                    </div>
+
+                    {/* Parent Email */}
+                    <div className="md:col-span-2">
+                        <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                            Parent/Guardian Email
+                        </label>
+                        <input
+                            type="email"
+                            value={profileData.parentEmail}
+                            disabled
+                            className={`w-full px-4 py-3 rounded-lg border ${darkMode
+                                ? 'bg-gray-700 border-gray-600 text-gray-400'
+                                : 'bg-gray-100 border-gray-300 text-gray-500'
+                                } cursor-not-allowed`}
+                        />
+                    </div>
                 </div>
             </div>
 

@@ -123,14 +123,19 @@ export const getAttendanceByTeacher = (teacherId) => {
 };
 
 // Get attendance statistics for a date
-export const getAttendanceStats = (date) => {
+export const getAttendanceStats = (date, totalTeachers = 0) => {
     const attendance = getAttendanceByDate(date);
 
+    const present = attendance.filter(a => a.status === 'Present').length;
+    const absent = attendance.filter(a => a.status === 'Absent').length;
+    const late = attendance.filter(a => a.status === 'Late').length;
+
     return {
-        total: attendance.length,
-        present: attendance.filter(a => a.status === 'Present').length,
-        absent: attendance.filter(a => a.status === 'Absent').length,
-        late: attendance.filter(a => a.status === 'Late').length
+        total: attendance.length, // Number of records (marked)
+        present,
+        absent,
+        late,
+        unmarked: Math.max(0, totalTeachers - attendance.length)
     };
 };
 

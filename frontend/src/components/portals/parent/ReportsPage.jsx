@@ -51,8 +51,12 @@ const ReportsPage = ({ darkMode }) => {
     }, [childId]);
 
     const loadReportData = () => {
+        console.log('Loading report data for child ID:', childId);
+
         // Load Academic Performance
         const finalMarks = getStudentFinalMarks(childId);
+        console.log('Final marks:', finalMarks);
+
         const academicData = finalMarks.map((mark, index) => {
             const percentage = mark.finalTotal;
             const grade = percentage >= 90 ? 'A+' : percentage >= 80 ? 'A' : percentage >= 70 ? 'A-' : percentage >= 60 ? 'B+' : 'B';
@@ -65,8 +69,16 @@ const ReportsPage = ({ darkMode }) => {
             };
         });
 
-        // Load Attendance Report
-        const attendanceRecords = getAttendanceByStudent(childId);
+        // Load Attendance Report - Use getAllAttendance and filter by childId
+        const allAttendanceRecords = getAttendanceByStudent(childId);
+        console.log('All attendance records:', allAttendanceRecords);
+
+        // Filter for this child
+        const attendanceRecords = allAttendanceRecords.filter(record =>
+            record.studentId.toString() === childId.toString()
+        );
+        console.log('Filtered attendance records for child:', attendanceRecords);
+
         const monthlyAttendance = {};
 
         attendanceRecords.forEach(record => {
@@ -95,6 +107,8 @@ const ReportsPage = ({ darkMode }) => {
                 percentage
             };
         });
+
+        console.log('Attendance data for report:', attendanceData);
 
         // Load Progress Report (term-wise)
         const progressData = [];

@@ -301,6 +301,74 @@ export const permanentlyDeleteUser = (userId) => {
     }
 };
 
+// Delete student and associated parent profile
+export const deleteStudentAndParent = (studentEmail, parentEmail) => {
+    try {
+        const users = getAllUsers();
+
+        // Find and remove student
+        const studentIndex = users.findIndex(u =>
+            u.email.toLowerCase() === studentEmail.toLowerCase() && u.role === 'student'
+        );
+
+        if (studentIndex !== -1) {
+            users.splice(studentIndex, 1);
+        }
+
+        // Find and remove parent if they exist and only have this one child
+        if (parentEmail && parentEmail.trim()) {
+            const parentIndex = users.findIndex(u =>
+                u.email.toLowerCase() === parentEmail.toLowerCase() && u.role === 'parent'
+            );
+
+            if (parentIndex !== -1) {
+                // Check if this parent has other children
+                const otherChildren = users.filter(u =>
+                    u.role === 'student' &&
+                    u.parentEmail &&
+                    u.parentEmail.toLowerCase() === parentEmail.toLowerCase()
+                );
+
+                // Only delete parent if they have no other children
+                if (otherChildren.length === 0) {
+                    users.splice(parentIndex, 1);
+                }
+            }
+        }
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ users }));
+        window.dispatchEvent(new Event('usersUpdated'));
+
+        return true;
+    } catch (error) {
+        console.error('Error deleting student and parent:', error);
+        throw error;
+    }
+};
+
+// Delete teacher by email
+export const deleteTeacherByEmail = (teacherEmail) => {
+    try {
+        const users = getAllUsers();
+
+        // Find and remove teacher
+        const teacherIndex = users.findIndex(u =>
+            u.email.toLowerCase() === teacherEmail.toLowerCase() && u.role === 'teacher'
+        );
+
+        if (teacherIndex !== -1) {
+            users.splice(teacherIndex, 1);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ users }));
+            window.dispatchEvent(new Event('usersUpdated'));
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error deleting teacher:', error);
+        throw error;
+    }
+};
+
 // Activate user
 export const activateUser = (userId) => {
     try {
@@ -434,6 +502,8 @@ export default {
     updateUser,
     deleteUser,
     permanentlyDeleteUser,
+    deleteStudentAndParent,
+    deleteTeacherByEmail,
     activateUser,
     changeUserPassword,
     resetUserPassword,

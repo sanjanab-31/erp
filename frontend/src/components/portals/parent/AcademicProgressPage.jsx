@@ -15,29 +15,59 @@ import {
     getSubmissionsByStudent,
     subscribeToAcademicUpdates
 } from '../../../utils/academicStore';
+import { getAllStudents } from '../../../utils/studentStore';
+import { getChildrenByParentEmail } from '../../../utils/userStore';
 
 const AcademicProgressPage = ({ darkMode }) => {
     const [courses, setCourses] = useState([]);
     const [examSchedules, setExamSchedules] = useState([]);
     const [allMarks, setAllMarks] = useState([]);
     const [selectedCourse, setSelectedCourse] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    // Get child info from parent's profile
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-    const childId = currentUser.studentId || 'student_1'; // Link to child
-    const childName = currentUser.childName || 'Student Name';
-    const childClass = currentUser.childClass || 'Grade 10-A';
+    // Get child info from parent email
+    const parentEmail = localStorage.getItem('userEmail');
+    const [childId, setChildId] = useState('');
+    const [childName, setChildName] = useState('');
+    const [childClass, setChildClass] = useState('');
 
     useEffect(() => {
-        loadData();
-        const unsubscribe = subscribeToAcademicUpdates(() => {
+        // Find child by parent email
+        if (parentEmail) {
+            const children = getChildrenByParentEmail(parentEmail);
+            console.log('Parent children:', children);
+
+            if (children && children.length > 0) {
+                const students = getAllStudents();
+                const child = students.find(s => s.id === children[0].id);
+
+                console.log('Child found:', child);
+
+                if (child) {
+                    setChildId(child.id);
+                    setChildName(child.name);
+                    setChildClass(child.class);
+                }
+            }
+        }
+        setLoading(false);
+    }, [parentEmail]);
+
+    useEffect(() => {
+        if (childId && childClass) {
             loadData();
-        });
-        return unsubscribe;
-    }, []);
+            const unsubscribe = subscribeToAcademicUpdates(() => {
+                loadData();
+            });
+            return unsubscribe;
+        }
+    }, [childId, childClass]);
 
     const loadData = () => {
+        console.log('Loading academic data for child:', childId, childClass);
+
         const classCourses = getCoursesByClass(childClass);
+        console.log('Class courses:', classCourses);
         setCourses(classCourses);
 
         const classSchedules = getExamSchedulesByClass(childClass);
@@ -56,6 +86,7 @@ const AcademicProgressPage = ({ darkMode }) => {
             };
         }).filter(m => m.finalMarks.finalTotal > 0);
 
+        console.log('Marks data:', marksData);
         setAllMarks(marksData);
     };
 
@@ -194,9 +225,9 @@ const AcademicProgressPage = ({ darkMode }) => {
                                         <BookOpen className="w-6 h-6 text-white" />
                                     </div>
                                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${mark.finalMarks.finalTotal >= 90 ? 'bg-green-100 text-green-600' :
-                                            mark.finalMarks.finalTotal >= 75 ? 'bg-blue-100 text-blue-600' :
-                                                mark.finalMarks.finalTotal >= 60 ? 'bg-yellow-100 text-yellow-600' :
-                                                    mark.finalMarks.finalTotal > 0 ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'
+                                        mark.finalMarks.finalTotal >= 75 ? 'bg-blue-100 text-blue-600' :
+                                            mark.finalMarks.finalTotal >= 60 ? 'bg-yellow-100 text-yellow-600' :
+                                                mark.finalMarks.finalTotal > 0 ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'
                                         }`}>
                                         {mark.finalMarks.finalTotal > 0 ? `${mark.finalMarks.finalTotal}/100` : 'No marks'}
                                     </span>
@@ -384,8 +415,8 @@ const AcademicProgressPage = ({ darkMode }) => {
                                             <p className="text-sm text-gray-500">{schedule.courseName}</p>
                                         </div>
                                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${isToday ? 'bg-blue-100 text-blue-600' :
-                                                isUpcoming ? 'bg-green-100 text-green-600' :
-                                                    'bg-gray-100 text-gray-600'
+                                            isUpcoming ? 'bg-green-100 text-green-600' :
+                                                'bg-gray-100 text-gray-600'
                                             }`}>
                                             {isToday ? 'Today' : isUpcoming ? 'Upcoming' : 'Past'}
                                         </span>

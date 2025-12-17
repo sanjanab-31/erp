@@ -96,7 +96,7 @@ const AdminExamSchedules = ({ darkMode }) => {
             schedulesToDelete.forEach(schedule => {
                 deleteExamSchedule(schedule.id);
             });
-            alert('Exam deleted successfully!');
+            showSuccess('Exam deleted successfully!');
         }
     };
 
@@ -105,6 +105,28 @@ const AdminExamSchedules = ({ darkMode }) => {
             deleteExamSchedule(scheduleId);
         }
     };
+
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // Helper for stats
+    const getUpcomingCount = () => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return schedules.filter(s => new Date(s.examDate) >= today).length;
+    };
+
+    // Filter logic
+    const filteredExamGroups = useMemo(() => {
+        if (!searchTerm) return Object.entries(groupedSchedules);
+        const term = searchTerm.toLowerCase();
+        return Object.entries(groupedSchedules).filter(([examName, papers]) => {
+            return examName.toLowerCase().includes(term) ||
+                papers.some(p => p.subject?.toLowerCase().includes(term));
+        });
+    }, [searchTerm, groupedSchedules]);
+
+    // Get today's date for min attribute
+    const todayStr = new Date().toISOString().split('T')[0];
 
     return (
         <div className="space-y-6">
@@ -118,30 +140,50 @@ const AdminExamSchedules = ({ darkMode }) => {
 
             {/* Controls */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                <div className="w-full md:w-auto">
-                    <label className={`block text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-700'} mb-1`}>
-                        Select Class
-                    </label>
-                    <select
-                        value={selectedClass}
-                        onChange={(e) => setSelectedClass(e.target.value)}
-                        className={`w-full md:w-64 px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                    >
-                        {classes.map(cls => (
-                            <option key={cls} value={cls}>{cls}</option>
-                        ))}
-                    </select>
+                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto flex-1">
+                    <div className="w-full sm:w-64">
+                        <label className={`block text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-700'} mb-1`}>
+                            Select Class
+                        </label>
+                        <select
+                            value={selectedClass}
+                            onChange={(e) => setSelectedClass(e.target.value)}
+                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        >
+                            {classes.map(cls => (
+                                <option key={cls} value={cls}>{cls}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Search Bar */}
+                    <div className="w-full sm:w-64 relative">
+                        <label className={`block text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-700'} mb-1`}>
+                            Search Exams
+                        </label>
+                        <Search className="absolute left-3 top-8 w-4 h-4 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Search by name or subject..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className={`w-full pl-9 pr-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        />
+                    </div>
                 </div>
-                <button
-                    onClick={() => {
-                        setEditData(null);
-                        setShowCreateModal(true);
-                    }}
-                    className="w-full md:w-auto flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                    <Plus className="w-5 h-5" />
-                    <span>Create Multiple Exams</span>
-                </button>
+
+                <div className="md:self-end">
+                    <button
+                        onClick={() => {
+                            setEditData(null);
+                            setShowCreateModal(true);
+                        }}
+                        className="w-full md:w-auto flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                        <Plus className="w-5 h-5" />
+                        <span>Create Multiple Exams</span>
+                    </button>
+                </div>
             </div>
 
             {/* Statistics */}
@@ -179,7 +221,7 @@ const AdminExamSchedules = ({ darkMode }) => {
                         <div>
                             <p className="text-sm text-gray-500">Upcoming Papers</p>
                             <h3 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                {schedules.filter(s => new Date(s.examDate) >= new Date()).length}
+                                {getUpcomingCount()}
                             </h3>
                         </div>
                         <div className={`p-3 rounded-full ${darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-600'}`}>
@@ -190,19 +232,19 @@ const AdminExamSchedules = ({ darkMode }) => {
             </div>
 
             {/* Exam Groups List */}
-            {Object.keys(groupedSchedules).length === 0 ? (
+            {filteredExamGroups.length === 0 ? (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 text-center border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <p className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                        No exams scheduled for {selectedClass}
+                        {searchTerm ? 'No exams found matching your search' : `No exams scheduled for ${selectedClass}`}
                     </p>
                     <p className="text-sm text-gray-500 mt-2">
-                        Select a class and click "Create Multiple Exams" to get started
+                        {searchTerm ? 'Try simple search terms' : 'Select a class and click "Create Multiple Exams" to get started'}
                     </p>
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {Object.entries(groupedSchedules).map(([examName, papers]) => (
+                    {filteredExamGroups.map(([examName, papers]) => (
                         <div key={examName} className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden shadow-sm`}>
                             {/* Exam Header */}
                             <div
@@ -307,13 +349,17 @@ const AdminExamSchedules = ({ darkMode }) => {
                         loadData();
                     }}
                     adminId={adminId}
+                    showSuccess={showSuccess}
+                    showError={showError}
+                    showWarning={showWarning}
+                    minDate={todayStr}
                 />
             )}
         </div>
     );
 };
 
-const CreateExamModal = ({ darkMode, selectedClass, subjects, editData, onClose, onSave, adminId }) => {
+const CreateExamModal = ({ darkMode, selectedClass, subjects, editData, onClose, onSave, adminId, showSuccess, showError, showWarning, minDate }) => {
     const [examName, setExamName] = useState(editData ? editData.examName : '');
     const [rows, setRows] = useState(editData ? editData.rows : [
         { id: 1, subject: '', date: '', startTime: '', endTime: '', venue: '' }
@@ -338,13 +384,13 @@ const CreateExamModal = ({ darkMode, selectedClass, subjects, editData, onClose,
 
         // Validation
         if (!examName) {
-            alert('Please enter an exam name');
+            showWarning('Please enter an exam name');
             return;
         }
 
         const validRows = rows.filter(r => r.subject && r.date && r.startTime && r.endTime);
         if (validRows.length === 0) {
-            alert('Please add at least one complete exam paper');
+            showWarning('Please add at least one complete exam paper');
             return;
         }
 
@@ -388,7 +434,7 @@ const CreateExamModal = ({ darkMode, selectedClass, subjects, editData, onClose,
                     createBulkExamSchedules(newSchedules);
                 }
 
-                alert('Exam schedule updated successfully!');
+                showSuccess('Exam schedule updated successfully!');
             } else {
                 // CREATE MODE
                 const schedulesData = validRows.map(row => ({
@@ -404,11 +450,11 @@ const CreateExamModal = ({ darkMode, selectedClass, subjects, editData, onClose,
                 }));
 
                 createBulkExamSchedules(schedulesData);
-                alert('Exam schedules created successfully!');
+                showSuccess('Exam schedules created successfully!');
             }
             onSave();
         } catch (error) {
-            alert('Error creating/updating schedules: ' + error.message);
+            showError('Error creating/updating schedules: ' + error.message);
         }
     };
 
@@ -470,6 +516,7 @@ const CreateExamModal = ({ darkMode, selectedClass, subjects, editData, onClose,
                                     <label className="block text-xs font-medium text-gray-500 mb-1">Date *</label>
                                     <input
                                         type="date"
+                                        min={minDate}
                                         value={row.date}
                                         onChange={(e) => updateRow(row.id, 'date', e.target.value)}
                                         className={`w-full px-3 py-2 text-sm rounded border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-1 focus:ring-blue-500`}

@@ -30,8 +30,10 @@ import {
     subscribeToUpdates as subscribeToTeacherAttendanceUpdates,
     getAttendanceStats as getTeacherAttendanceStats
 } from '../../../utils/teacherAttendanceStore';
+import { useToast } from '../../../context/ToastContext';
 
 const AttendancePage = ({ darkMode }) => {
+    const { showSuccess, showError } = useToast();
     // Global State
     const [activeTab, setActiveTab] = useState('teachers'); // 'teachers' | 'students'
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -82,10 +84,15 @@ const AttendancePage = ({ darkMode }) => {
     };
 
     const loadTeacherData = () => {
-        setAllTeachers(getAllTeachers());
+        const teachers = getAllTeachers();
+        setAllTeachers(teachers);
+        return teachers;
     };
 
     const loadAttendanceData = () => {
+        // Get fresh teacher data for stats calculation
+        const currentTeachers = getAllTeachers();
+
         // Student Attendance (Read Only for Admin)
         const sAttendance = getAttendanceByDate(selectedDate);
         setStudentAttendanceRecords(sAttendance);
@@ -94,12 +101,15 @@ const AttendancePage = ({ darkMode }) => {
         // Teacher Attendance
         const tAttendance = getTeacherAttendanceByDate(selectedDate);
         setDbTeacherAttendance(tAttendance);
-        setTeacherStats(getTeacherAttendanceStats(selectedDate));
 
-        // Initialize local state from DB
+        // Calculate teacher stats based on actual records for this date
+        const tStats = getTeacherAttendanceStats(selectedDate, currentTeachers.length);
+        setTeacherStats(tStats);
+
+        // Initialize local state from DB - ensure string keys for consistency
         const initialMap = {};
         tAttendance.forEach(r => {
-            initialMap[r.teacherId] = r.status;
+            initialMap[String(r.teacherId)] = r.status;
         });
         setLocalTeacherAttendance(initialMap);
     };
@@ -135,7 +145,7 @@ const AttendancePage = ({ darkMode }) => {
     const handleLocalStatusChange = (teacherId, status) => {
         setLocalTeacherAttendance(prev => ({
             ...prev,
-            [teacherId]: status
+            [String(teacherId)]: status
         }));
         setSaveStatus(null); // Reset save status on change
     };
@@ -143,25 +153,32 @@ const AttendancePage = ({ darkMode }) => {
     const saveTeacherAttendance = () => {
         setSaveStatus('saving');
         try {
-            // Convert local map to array for bulk save
-            const attendanceList = Object.entries(localTeacherAttendance).map(([teacherId, status]) => ({
-                date: selectedDate,
-                teacherId,
-                status,
-                markedBy: 'Admin'
-            }));
+            // Iterate over allTeachers to preserve original ID types (numbers)
+            // and only save records for valid teachers
+            const attendanceList = allTeachers
+                .filter(teacher => localTeacherAttendance[String(teacher.id)]) // Only include if status is set
+                .map(teacher => ({
+                    date: selectedDate,
+                    teacherId: teacher.id, // Preserves original ID type (number)
+                    status: localTeacherAttendance[String(teacher.id)],
+                    markedBy: 'Admin'
+                }));
 
-            // Even if empty (no changes), strictly we might want to save if they cleared something? 
-            // But here we just save what's in the map.
+            if (attendanceList.length === 0 && Object.keys(localTeacherAttendance).length > 0) {
+                // Fallback if no matching teachers found but local state exists (shouldn't happen)
+                console.warn("Mismatch between teachers list and attendance map");
+            }
 
             bulkMarkTeacherAttendance(attendanceList);
             setSaveStatus('saved');
+            showSuccess('Teacher attendance saved successfully!');
             setTimeout(() => setSaveStatus(null), 3000);
 
             // Stats will update automatically via subscription
         } catch (error) {
             console.error(error);
             setSaveStatus('error');
+            showError('Error saving attendance: ' + error.message);
         }
     };
 
@@ -203,8 +220,8 @@ const AttendancePage = ({ darkMode }) => {
                     <button
                         onClick={() => setActiveTab('teachers')}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'teachers'
-                                ? 'bg-white text-blue-600 shadow-sm'
-                                : 'text-gray-600 hover:text-gray-900'
+                            ? 'bg-white text-blue-600 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
                             }`}
                     >
                         Teachers
@@ -212,8 +229,8 @@ const AttendancePage = ({ darkMode }) => {
                     <button
                         onClick={() => setActiveTab('students')}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'students'
-                                ? 'bg-white text-blue-600 shadow-sm'
-                                : 'text-gray-600 hover:text-gray-900'
+                            ? 'bg-white text-blue-600 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
                             }`}
                     >
                         Students
@@ -264,8 +281,8 @@ const AttendancePage = ({ darkMode }) => {
                                 onClick={saveTeacherAttendance}
                                 disabled={saveStatus === 'saved'}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${saveStatus === 'saved'
-                                        ? 'bg-green-100 text-green-700 cursor-default'
-                                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                                    ? 'bg-green-100 text-green-700 cursor-default'
+                                    : 'bg-blue-600 text-white hover:bg-blue-700'
                                     }`}
                             >
                                 {saveStatus === 'saved' ? (
@@ -291,7 +308,7 @@ const AttendancePage = ({ darkMode }) => {
                                 </thead>
                                 <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
                                     {allTeachers.map(teacher => {
-                                        const status = localTeacherAttendance[teacher.id] || '';
+                                        const status = localTeacherAttendance[String(teacher.id)] || '';
 
                                         return (
                                             <tr key={teacher.id} className={darkMode ? 'hover:bg-gray-750' : 'hover:bg-gray-50'}>

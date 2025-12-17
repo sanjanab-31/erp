@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Clock, Plus, Edit, Trash2, Save, X, Calendar as CalendarIcon, Users, GraduationCap, ChevronDown, ChevronUp, MapPin } from 'lucide-react';
+import { Clock, Plus, Edit, Trash2, Save, X, Calendar as CalendarIcon, Users, GraduationCap, ChevronDown, ChevronUp, MapPin, Search } from 'lucide-react';
 import { getAllTeachers } from '../../../utils/teacherStore';
 import { useToast } from '../../../context/ToastContext';
 import {
@@ -431,7 +431,20 @@ const TimetablePage = ({ darkMode }) => {
         setShowAddModal(true);
     }, []);
 
+    const [searchTerm, setSearchTerm] = useState('');
+
     const currentTimetables = activeView === 'teacher' ? teacherTimetables : classTimetables;
+
+    const filteredTimetables = currentTimetables.filter(item => {
+        if (!searchTerm) return true;
+        const term = searchTerm.toLowerCase();
+
+        if (activeView === 'teacher') {
+            return item.teacherName?.toLowerCase().includes(term);
+        } else {
+            return item.className?.toLowerCase().includes(term);
+        }
+    });
 
     return (
         <div className="space-y-6">
@@ -462,32 +475,46 @@ const TimetablePage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* View Toggle & Add Button */}
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div className={`inline-flex rounded-lg border ${darkMode ? 'border-gray-600' : 'border-gray-300'} p-1`}>
-                    <button
-                        onClick={() => setActiveView('teacher')}
-                        className={`px-4 py-2 rounded-lg transition-colors ${activeView === 'teacher'
-                            ? 'bg-purple-600 text-white'
-                            : darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                    >
-                        Teacher Timetables
-                    </button>
-                    <button
-                        onClick={() => setActiveView('student')}
-                        className={`px-4 py-2 rounded-lg transition-colors ${activeView === 'student'
-                            ? 'bg-purple-600 text-white'
-                            : darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                    >
-                        Class Timetables
-                    </button>
+            {/* View Toggle, Search & Add Button */}
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                    <div className={`inline-flex rounded-lg border ${darkMode ? 'border-gray-600' : 'border-gray-300'} p-1`}>
+                        <button
+                            onClick={() => { setActiveView('teacher'); setSearchTerm(''); }}
+                            className={`px-4 py-2 rounded-lg transition-colors ${activeView === 'teacher'
+                                ? 'bg-purple-600 text-white'
+                                : darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
+                                }`}
+                        >
+                            Teacher
+                        </button>
+                        <button
+                            onClick={() => { setActiveView('student'); setSearchTerm(''); }}
+                            className={`px-4 py-2 rounded-lg transition-colors ${activeView === 'student'
+                                ? 'bg-purple-600 text-white'
+                                : darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
+                                }`}
+                        >
+                            Class
+                        </button>
+                    </div>
+
+                    {/* Search Bar */}
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder={`Search ${activeView === 'teacher' ? 'teachers' : 'classes'}...`}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className={`pl-10 pr-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-purple-500 w-full sm:w-64`}
+                        />
+                    </div>
                 </div>
 
                 <button
                     onClick={handleCreate}
-                    className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                    className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 w-full md:w-auto justify-center"
                 >
                     <Plus className="w-5 h-5" />
                     <span>Create Timetable</span>
@@ -496,19 +523,21 @@ const TimetablePage = ({ darkMode }) => {
 
             {/* Timetables List */}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
-                {currentTimetables.length === 0 ? (
+                {filteredTimetables.length === 0 ? (
                     <div className="p-12 text-center">
                         <CalendarIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <p className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                            No timetables created yet
-                        </p>
+                        <h3 className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                            No timetables found
+                        </h3>
                         <p className="text-sm text-gray-500 mt-2">
-                            Click "Create Timetable" to add a new {activeView} timetable
+                            {searchTerm
+                                ? `No results matching "${searchTerm}"`
+                                : `Click "Create Timetable" to add a new ${activeView} timetable`}
                         </p>
                     </div>
                 ) : (
                     <div>
-                        {currentTimetables.map((timetable) => (
+                        {filteredTimetables.map((timetable) => (
                             <TimetableItem
                                 key={timetable.id}
                                 item={timetable}

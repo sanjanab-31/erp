@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Plus, MoreVertical, Mail, Phone, Edit, Trash2, X, Save, UserPlus, BookOpen, Calendar, Award } from 'lucide-react';
 import { getAllTeachers, addTeacher, updateTeacher, deleteTeacher, subscribeToUpdates, getTeacherStats } from '../../../utils/teacherStore';
-import { addTeacher as addUserTeacher } from '../../../utils/userStore';
+import { addTeacher as addUserTeacher, deleteTeacherByEmail } from '../../../utils/userStore';
 import { useToast } from '../../../context/ToastContext';
 
 // Move modal components outside to prevent re-creation on every render
@@ -111,7 +111,13 @@ const TeacherFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
                                     </div>
                                     <div>
                                         <label className={labelClass}>Date of Birth</label>
-                                        <input type="date" value={formData.dateOfBirth} onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })} className={inputClass} />
+                                        <input
+                                            type="date"
+                                            value={formData.dateOfBirth}
+                                            onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                                            max={new Date().toISOString().split('T')[0]}
+                                            className={inputClass}
+                                        />
                                     </div>
                                 </div>
                                 <div>
@@ -246,6 +252,17 @@ const Teachers = ({ darkMode }) => {
     const handleAddTeacher = useCallback((e) => {
         e.preventDefault();
         try {
+            // Validation: Check if DOB is in the future
+            if (formData.dateOfBirth) {
+                const dob = new Date(formData.dateOfBirth);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (dob > today) {
+                    showError('Date of birth cannot be in the future!');
+                    return;
+                }
+            }
+
             // Add to teacherStore (for teacher management)
             addTeacher(formData);
 
@@ -268,11 +285,22 @@ const Teachers = ({ darkMode }) => {
         } catch (error) {
             showError('Error adding teacher: ' + error.message);
         }
-    }, [formData, resetForm]);
+    }, [formData, resetForm, showSuccess, showError]);
 
     const handleEditTeacher = useCallback((e) => {
         e.preventDefault();
         try {
+            // Validation: Check if DOB is in the future
+            if (formData.dateOfBirth) {
+                const dob = new Date(formData.dateOfBirth);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (dob > today) {
+                    showError('Date of birth cannot be in the future!');
+                    return;
+                }
+            }
+
             updateTeacher(selectedTeacher.id, formData);
             setShowEditModal(false);
             setSelectedTeacher(null);
@@ -281,18 +309,23 @@ const Teachers = ({ darkMode }) => {
         } catch (error) {
             showError('Error updating teacher: ' + error.message);
         }
-    }, [formData, selectedTeacher, resetForm]);
+    }, [formData, selectedTeacher, resetForm, showSuccess, showError]);
 
     const handleDeleteTeacher = useCallback(() => {
         try {
+            // Delete from teacherStore
             deleteTeacher(selectedTeacher.id);
+
+            // Delete from userStore (for authentication)
+            deleteTeacherByEmail(selectedTeacher.email);
+
             setShowDeleteConfirm(false);
             setSelectedTeacher(null);
             showSuccess('Teacher deleted successfully!');
         } catch (error) {
             showError('Error deleting teacher: ' + error.message);
         }
-    }, [selectedTeacher]);
+    }, [selectedTeacher, showSuccess, showError]);
 
     const openEditModal = useCallback((teacher) => {
         setSelectedTeacher(teacher);

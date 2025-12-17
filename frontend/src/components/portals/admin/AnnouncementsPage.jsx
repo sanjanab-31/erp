@@ -10,11 +10,14 @@ import {
     Users,
     Calendar,
     Link as LinkIcon,
-    Filter
+    Filter,
+    RotateCcw
 } from 'lucide-react';
 import * as announcementStore from '../../../utils/announcementStore';
+import { useToast } from '../../../context/ToastContext';
 
 const AnnouncementsPage = ({ darkMode }) => {
+    const { showSuccess, showError } = useToast();
     const [announcements, setAnnouncements] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterAudience, setFilterAudience] = useState('All');
@@ -48,14 +51,26 @@ const AnnouncementsPage = ({ darkMode }) => {
     };
 
     const handleDelete = (id) => {
-        if (window.confirm('Are you sure you want to delete this announcement?')) {
-            announcementStore.deleteAnnouncement(id);
-        }
+        setModalType('delete');
+        setSelectedAnnouncement({ id }); // Only need ID for delete
+        setShowModal(true);
     };
 
     const handleArchive = (id) => {
-        if (window.confirm('Archive this announcement?')) {
+        try {
             announcementStore.archiveAnnouncement(id);
+            showSuccess('Announcement archived successfully!');
+        } catch (error) {
+            showError('Failed to archive: ' + error.message);
+        }
+    };
+
+    const handleUnarchive = (id) => {
+        try {
+            announcementStore.unarchiveAnnouncement(id);
+            showSuccess('Announcement restored successfully!');
+        } catch (error) {
+            showError('Failed to unarchive: ' + error.message);
         }
     };
 
@@ -83,14 +98,19 @@ const AnnouncementsPage = ({ darkMode }) => {
         const handleSubmit = (e) => {
             e.preventDefault();
             try {
-                if (modalType === 'add') {
+                if (modalType === 'delete') {
+                    announcementStore.deleteAnnouncement(selectedAnnouncement.id);
+                    showSuccess('Announcement deleted successfully!');
+                } else if (modalType === 'add') {
                     announcementStore.addAnnouncement(formData);
+                    showSuccess('Announcement created successfully!');
                 } else {
                     announcementStore.updateAnnouncement(selectedAnnouncement.id, formData);
+                    showSuccess('Announcement updated successfully!');
                 }
                 setShowModal(false);
             } catch (error) {
-                alert(error.message);
+                showError(error.message);
             }
         };
 
@@ -102,6 +122,21 @@ const AnnouncementsPage = ({ darkMode }) => {
                     : [...prev.classes, className]
             }));
         };
+
+        if (modalType === 'delete') {
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-2xl max-w-md w-full p-6`}>
+                        <h2 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Delete Announcement</h2>
+                        <p className={`mb-6 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Are you sure you want to delete this announcement? This action cannot be undone.</p>
+                        <div className="flex space-x-3">
+                            <button onClick={() => setShowModal(false)} className="flex-1 px-4 py-2 border text-gray-700 rounded-lg hover:bg-gray-50">Cancel</button>
+                            <button onClick={handleSubmit} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
 
         return (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -270,8 +305,8 @@ const AnnouncementsPage = ({ darkMode }) => {
                                 <div className="flex items-center space-x-3 mb-2">
                                     <h3 className="text-lg font-bold">{announcement.title}</h3>
                                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${announcement.status === 'Published' ? 'bg-green-100 text-green-700' :
-                                            announcement.status === 'Archived' ? 'bg-gray-100 text-gray-700' :
-                                                'bg-yellow-100 text-yellow-700'
+                                        announcement.status === 'Archived' ? 'bg-gray-100 text-gray-700' :
+                                            'bg-yellow-100 text-yellow-700'
                                         }`}>
                                         {announcement.status}
                                     </span>
@@ -322,6 +357,15 @@ const AnnouncementsPage = ({ darkMode }) => {
                                         title="Archive"
                                     >
                                         <Archive className="w-4 h-4" />
+                                    </button>
+                                )}
+                                {announcement.status === 'Archived' && (
+                                    <button
+                                        onClick={() => handleUnarchive(announcement.id)}
+                                        className="p-2 hover:bg-green-50 text-green-600 rounded-lg transition-colors"
+                                        title="Unarchive"
+                                    >
+                                        <RotateCcw className="w-4 h-4" />
                                     </button>
                                 )}
                                 <button

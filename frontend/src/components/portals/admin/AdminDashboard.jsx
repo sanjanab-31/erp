@@ -5,7 +5,7 @@ import {
     Users,
     GraduationCap,
     UserCheck,
-    DollarSign,
+    IndianRupee,
     Calendar,
     BookMarked,
     BarChart3,
@@ -16,7 +16,6 @@ import {
     Sun,
     TrendingUp,
     UserPlus,
-    CalendarPlus,
     FileText,
     ChevronDown,
     LogOut,
@@ -41,6 +40,8 @@ import { getStudentStats, subscribeToUpdates as subscribeToStudents } from '../.
 import { getTeacherStats, subscribeToUpdates as subscribeToTeachers } from '../../../utils/teacherStore';
 import { getFeeStats, subscribeToUpdates as subscribeToFees } from '../../../utils/feeStore';
 import { getOverallAttendanceStats, subscribeToUpdates as subscribeToAttendance } from '../../../utils/attendanceStore';
+import { logAdminActivity, initializeActivityLog } from '../../../utils/activityLogger';
+import { getLatestAnnouncements, subscribeToUpdates as subscribeToAnnouncements } from '../../../utils/announcementStore';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -100,7 +101,7 @@ const AdminDashboard = () => {
         { icon: GraduationCap, label: 'Teachers' },
         { icon: UserCheck, label: 'Attendance' },
         { icon: BookMarked, label: 'Courses' },
-        { icon: DollarSign, label: 'Fees & Finance' },
+        { icon: IndianRupee, label: 'Fees & Finance' },
         { icon: Calendar, label: 'Timetable' },
         { icon: Calendar, label: 'Exam Schedules' },
         { icon: BookMarked, label: 'Library' },
@@ -109,12 +110,8 @@ const AdminDashboard = () => {
         { icon: Settings, label: 'Settings' }
     ];
 
-    const quickActions = [
-        { icon: UserPlus, label: 'Add New Student', color: 'bg-blue-500', action: 'addStudent' },
-        { icon: GraduationCap, label: 'Add New Teacher', color: 'bg-green-500', action: 'addTeacher' },
-        { icon: CalendarPlus, label: 'Schedule Event', color: 'bg-purple-500', action: 'scheduleEvent' },
-        { icon: FileText, label: 'Generate Report', color: 'bg-orange-500', action: 'generateReport' }
-    ];
+    // Recent announcements state
+    const [recentAnnouncements, setRecentAnnouncements] = useState([]);
 
     // Fetch and subscribe to real-time data updates
     useEffect(() => {
@@ -173,10 +170,66 @@ const AdminDashboard = () => {
         return 'Good evening';
     };
 
-    const handleQuickAction = (action) => {
-        setModalType(action);
-        setShowModal(true);
-    };
+    // Fetch recent activities from activity log
+    useEffect(() => {
+        // Initialize activity log
+        initializeActivityLog();
+
+        const fetchRecentActivities = () => {
+            try {
+                const activityLog = JSON.parse(localStorage.getItem('adminActivityLog') || '[]');
+
+                // Get last 3 activities
+                const recentActivitiesData = activityLog.slice(0, 3).map(activity => ({
+                    id: activity.id || Date.now(),
+                    type: activity.type || 'info',
+                    title: activity.title || 'Activity',
+                    description: activity.description || '',
+                    time: activity.time || 'Recently',
+                    icon: activity.type === 'success' ? CheckCircle :
+                        activity.type === 'warning' ? AlertCircle : Info
+                }));
+
+                if (recentActivitiesData.length > 0) {
+                    setRecentActivities(recentActivitiesData);
+                }
+            } catch (error) {
+                console.error('Error fetching recent activities:', error);
+            }
+        };
+
+        fetchRecentActivities();
+
+        // Listen for new activities
+        const handleNewActivity = () => {
+            fetchRecentActivities();
+        };
+
+        window.addEventListener('adminActivityAdded', handleNewActivity);
+
+        // Refresh activities every 30 seconds
+        const interval = setInterval(fetchRecentActivities, 30000);
+
+        return () => {
+            window.removeEventListener('adminActivityAdded', handleNewActivity);
+            clearInterval(interval);
+        };
+    }, []);
+
+    // Fetch recent announcements
+    useEffect(() => {
+        const fetchAnnouncements = () => {
+            const announcements = getLatestAnnouncements('All', null, 3);
+            setRecentAnnouncements(announcements);
+        };
+
+        fetchAnnouncements();
+
+        // Subscribe to announcement updates
+        const unsubscribe = subscribeToAnnouncements(fetchAnnouncements);
+
+        return unsubscribe;
+    }, []);
 
     const handleLogout = () => {
         localStorage.removeItem('isAuthenticated');
@@ -461,10 +514,10 @@ const AdminDashboard = () => {
                             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-shadow`}>
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Revenue</h3>
-                                    <DollarSign className="w-5 h-5 text-blue-500" />
+                                    <IndianRupee className="w-5 h-5 text-blue-500" />
                                 </div>
                                 <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
-                                    ${dashboardData.revenue.toLocaleString()}
+                                    ₹{dashboardData.revenue.toLocaleString('en-IN')}
                                 </p>
                                 <p className="text-sm text-green-500">{dashboardData.revenueChange}</p>
                             </div>
@@ -510,25 +563,61 @@ const AdminDashboard = () => {
                             </div>
 
                             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                                <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-                                    Quick Actions
-                                </h3>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                        Recent Announcements
+                                    </h3>
+                                    <button
+                                        onClick={() => setActiveTab('Announcements')}
+                                        className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                                    >
+                                        View All
+                                    </button>
+                                </div>
                                 <div className="space-y-3">
-                                    {quickActions.map((action, index) => (
-                                        <button
-                                            key={index}
-                                            onClick={() => handleQuickAction(action.action)}
-                                            className={`w-full flex items-center space-x-3 p-4 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                                                } transition-all hover:shadow-md`}
-                                        >
-                                            <div className={`p-2 rounded-lg ${action.color} bg-opacity-10`}>
-                                                <action.icon className={`w-5 h-5 ${action.color.replace('bg-', 'text-')}`} />
+                                    {recentAnnouncements.length === 0 ? (
+                                        <div className="text-center py-8">
+                                            <Megaphone className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                                            <p className="text-sm text-gray-500">No announcements yet</p>
+                                        </div>
+                                    ) : (
+                                        recentAnnouncements.map((announcement) => (
+                                            <div
+                                                key={announcement.id}
+                                                className={`p-4 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} hover:shadow-md transition-shadow cursor-pointer`}
+                                                onClick={() => setActiveTab('Announcements')}
+                                            >
+                                                <div className="flex items-start space-x-3">
+                                                    <div className="p-2 rounded-lg bg-orange-100">
+                                                        <Megaphone className="w-5 h-5 text-orange-600" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'} truncate`}>
+                                                            {announcement.title}
+                                                        </p>
+                                                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                                                            {announcement.description}
+                                                        </p>
+                                                        <div className="flex items-center space-x-3 mt-2">
+                                                            <span className="text-xs text-gray-400">
+                                                                {new Date(announcement.publishDate).toLocaleDateString()}
+                                                            </span>
+                                                            <span className={`text-xs px-2 py-1 rounded-full ${announcement.targetAudience === 'All'
+                                                                ? 'bg-blue-100 text-blue-600'
+                                                                : announcement.targetAudience === 'Teachers'
+                                                                    ? 'bg-green-100 text-green-600'
+                                                                    : announcement.targetAudience === 'Students'
+                                                                        ? 'bg-purple-100 text-purple-600'
+                                                                        : 'bg-pink-100 text-pink-600'
+                                                                }`}>
+                                                                {announcement.targetAudience}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                {action.label}
-                                            </span>
-                                        </button>
-                                    ))}
+                                        ))
+                                    )}
                                 </div>
                             </div>
                         </div>

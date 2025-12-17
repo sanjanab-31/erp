@@ -10,8 +10,10 @@ import {
     Filter
 } from 'lucide-react';
 import * as libraryStore from '../../../utils/libraryStore';
+import { useToast } from '../../../context/ToastContext';
 
 const TeacherLibraryPage = ({ darkMode }) => {
+    const { showSuccess, showError } = useToast();
     const [activeTab, setActiveTab] = useState('browse');
     const [books, setBooks] = useState([]);
     const [myIssues, setMyIssues] = useState([]);
@@ -56,9 +58,9 @@ const TeacherLibraryPage = ({ darkMode }) => {
                     name: user.name,
                     role: user.role
                 });
-                alert('Book issued successfully!');
+                showSuccess('Book issued successfully!');
             } catch (error) {
-                alert(error.message);
+                showError(error.message);
             }
         }
     };
@@ -142,8 +144,8 @@ const TeacherLibraryPage = ({ darkMode }) => {
                                         onClick={() => handleIssueBook(book)}
                                         disabled={book.available <= 0}
                                         className={`w-full py-2 rounded-lg font-medium transition-colors ${book.available > 0
-                                                ? 'bg-green-600 text-white hover:bg-green-700'
-                                                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                            ? 'bg-green-600 text-white hover:bg-green-700'
+                                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                                             }`}
                                     >
                                         {book.available > 0 ? 'Issue Book' : 'Unavailable'}
@@ -177,7 +179,7 @@ const TeacherLibraryPage = ({ darkMode }) => {
                                         <td className="px-6 py-4 text-sm text-gray-500">{new Date(issue.dueDate).toLocaleDateString()}</td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 rounded-full text-xs font-semibold ${issue.status === 'Returned' ? 'bg-green-100 text-green-700' :
-                                                    isOverdue ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                                                isOverdue ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
                                                 }`}>
                                                 {issue.status === 'Returned' ? 'Returned' : isOverdue ? 'Overdue' : 'Issued'}
                                             </span>

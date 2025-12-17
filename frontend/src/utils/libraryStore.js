@@ -10,7 +10,7 @@ const DEFAULT_RULES = {
     maxBooksPerUser: 3,
     issueDurationDays: 14,
     finePerDay: 5, // Currency unit
-    currency: '$'
+    currency: '₹'
 };
 
 // Initialize default data if empty

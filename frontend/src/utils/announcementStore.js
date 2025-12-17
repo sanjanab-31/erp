@@ -132,6 +132,16 @@ export const archiveAnnouncement = (id) => {
     }
 };
 
+// Unarchive announcement
+export const unarchiveAnnouncement = (id) => {
+    try {
+        return updateAnnouncement(id, { status: 'Published' });
+    } catch (error) {
+        console.error('Error unarchiving announcement:', error);
+        throw error;
+    }
+};
+
 // Get announcements for specific audience
 export const getAnnouncementsForAudience = (audience, userClass = null) => {
     const announcements = getAllAnnouncements();
@@ -190,7 +200,13 @@ export const subscribeToUpdates = (callback) => {
         callback(getAllAnnouncements());
     };
     window.addEventListener('announcementsUpdated', handler);
-    return () => window.removeEventListener('announcementsUpdated', handler);
+    window.addEventListener('storage', (e) => {
+        if (e.key === STORAGE_KEY) handler();
+    });
+    return () => {
+        window.removeEventListener('announcementsUpdated', handler);
+        window.removeEventListener('storage', handler);
+    };
 };
 
 // Initialize on load
@@ -205,6 +221,7 @@ export default {
     updateAnnouncement,
     deleteAnnouncement,
     archiveAnnouncement,
+    unarchiveAnnouncement,
     getAnnouncementsForAudience,
     getLatestAnnouncements,
     autoArchiveOldAnnouncements,

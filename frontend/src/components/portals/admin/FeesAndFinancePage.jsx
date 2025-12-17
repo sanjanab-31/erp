@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Edit, Trash2, Save, X, DollarSign, Users, AlertCircle, TrendingUp, Calendar, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, IndianRupee, Users, AlertCircle, TrendingUp, Calendar, Search } from 'lucide-react';
 import { getAllStudents } from '../../../utils/studentStore';
 import { useToast } from '../../../context/ToastContext';
 import {
@@ -176,6 +176,7 @@ const FeeModal = ({ darkMode, onClose, onSave, editingFee, students }) => {
 };
 
 const FeesAndFinancePage = ({ darkMode }) => {
+    const { showSuccess, showError } = useToast();
     const [fees, setFees] = useState([]);
     const [students, setStudents] = useState([]);
     const [stats, setStats] = useState({});
@@ -202,13 +203,19 @@ const FeesAndFinancePage = ({ darkMode }) => {
 
     const handleAddFee = useCallback((feeData) => {
         try {
-            addFee(feeData);
+            if (editingFee) {
+                updateFee(editingFee.id, feeData);
+                showSuccess('Fee updated successfully!');
+            } else {
+                addFee(feeData);
+                showSuccess('Fee added successfully!');
+            }
             setShowAddModal(false);
-            showSuccess('Fee added successfully!');
+            setEditingFee(null);
         } catch (error) {
-            showError('Error adding fee: ' + error.message);
+            showError(`Error ${editingFee ? 'updating' : 'adding'} fee: ` + error.message);
         }
-    }, []);
+    }, [editingFee, showSuccess, showError]);
 
     const handleDelete = useCallback((feeId) => {
         if (window.confirm('Are you sure you want to delete this fee?')) {
@@ -259,11 +266,11 @@ const FeesAndFinancePage = ({ darkMode }) => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Fees</h3>
-                        <DollarSign className="w-5 h-5 text-blue-500" />
+                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Receivables</h3>
+                        <IndianRupee className="w-5 h-5 text-blue-500" />
                     </div>
-                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.totalFees || 0}</p>
-                    <p className="text-sm text-gray-500 mt-1">All fee records</p>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>₹{stats.totalAmount?.toLocaleString() || 0}</p>
+                    <p className="text-sm text-gray-500 mt-1">{stats.totalFees || 0} total invoices</p>
                 </div>
 
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -272,7 +279,7 @@ const FeesAndFinancePage = ({ darkMode }) => {
                         <TrendingUp className="w-5 h-5 text-green-500" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>₹{stats.paidAmount?.toLocaleString() || 0}</p>
-                    <p className="text-sm text-gray-500 mt-1">{stats.collectionRate || 0}% collection rate</p>
+                    <p className="text-sm text-gray-500 mt-1">{stats.paidFees || 0} fully paid</p>
                 </div>
 
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -281,7 +288,7 @@ const FeesAndFinancePage = ({ darkMode }) => {
                         <AlertCircle className="w-5 h-5 text-red-500" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>₹{stats.remainingAmount?.toLocaleString() || 0}</p>
-                    <p className="text-sm text-gray-500 mt-1">{stats.pendingFees || 0} pending fees</p>
+                    <p className="text-sm text-gray-500 mt-1">{stats.pendingFees || 0} pending invoices</p>
                 </div>
 
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -290,7 +297,7 @@ const FeesAndFinancePage = ({ darkMode }) => {
                         <Users className="w-5 h-5 text-yellow-500" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.partialFees || 0}</p>
-                    <p className="text-sm text-gray-500 mt-1">Partially paid</p>
+                    <p className="text-sm text-gray-500 mt-1">Partially paid invoices</p>
                 </div>
             </div>
 
@@ -338,7 +345,7 @@ const FeesAndFinancePage = ({ darkMode }) => {
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
                 {filteredFees.length === 0 ? (
                     <div className="p-12 text-center">
-                        <DollarSign className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <IndianRupee className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                         <p className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                             No fees found
                         </p>
@@ -392,8 +399,17 @@ const FeesAndFinancePage = ({ darkMode }) => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <button
+                                                onClick={() => {
+                                                    setEditingFee(fee);
+                                                    setShowAddModal(true);
+                                                }}
+                                                className="text-blue-600 hover:text-blue-900 mr-4"
+                                            >
+                                                <Edit className="w-5 h-5" />
+                                            </button>
+                                            <button
                                                 onClick={() => handleDelete(fee.id)}
-                                                className="text-red-600 hover:text-red-900 ml-4"
+                                                className="text-red-600 hover:text-red-900"
                                             >
                                                 <Trash2 className="w-5 h-5" />
                                             </button>

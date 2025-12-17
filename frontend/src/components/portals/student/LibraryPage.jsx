@@ -10,8 +10,10 @@ import {
     AlertTriangle
 } from 'lucide-react';
 import * as libraryStore from '../../../utils/libraryStore';
+import { useToast } from '../../../context/ToastContext';
 
 const StudentLibraryPage = ({ darkMode }) => {
+    const { showSuccess, showError, showWarning } = useToast();
     const [activeTab, setActiveTab] = useState('browse');
     const [books, setBooks] = useState([]);
     const [myIssues, setMyIssues] = useState([]);
@@ -52,7 +54,7 @@ const StudentLibraryPage = ({ darkMode }) => {
         // Check if already requested or issued
         const alreadyHas = myIssues.some(i => i.bookId === book.id && (i.status === 'Issued' || i.status === 'Requested'));
         if (alreadyHas) {
-            alert('You have already requested or issued this book.');
+            showWarning('You have already requested or issued this book.');
             return;
         }
 
@@ -63,9 +65,9 @@ const StudentLibraryPage = ({ darkMode }) => {
                     name: user.name,
                     role: user.role
                 }, null, 'Requested');
-                alert('Book requested successfully! Please collect it from the library once approved.');
+                showSuccess('Book requested successfully! Please collect it from the library once approved.');
             } catch (error) {
-                alert(error.message);
+                showError(error.message);
             }
         }
     };
@@ -152,8 +154,8 @@ const StudentLibraryPage = ({ darkMode }) => {
                                             onClick={() => handleRequestBook(book)}
                                             disabled={alreadyRequested}
                                             className={`w-full py-2 rounded-lg font-medium transition-colors ${alreadyRequested
-                                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                                : 'bg-blue-600 text-white hover:bg-blue-700'
                                                 }`}
                                         >
                                             {alreadyRequested ? 'Already Requested' : 'Request Book'}
@@ -193,8 +195,8 @@ const StudentLibraryPage = ({ darkMode }) => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 rounded-full text-xs font-semibold ${issue.status === 'Returned' ? 'bg-green-100 text-green-700' :
-                                                    issue.status === 'Requested' ? 'bg-yellow-100 text-yellow-700' :
-                                                        isOverdue ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                                                issue.status === 'Requested' ? 'bg-yellow-100 text-yellow-700' :
+                                                    isOverdue ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
                                                 }`}>
                                                 {issue.status === 'Returned' ? 'Returned' :
                                                     issue.status === 'Requested' ? 'Pending Approval' :

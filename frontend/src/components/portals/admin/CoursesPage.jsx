@@ -8,21 +8,110 @@ import {
     Calendar,
     Award,
     GraduationCap,
-    Eye
+    Eye,
+    X,
+    FileText,
+    Link as LinkIcon
 } from 'lucide-react';
-import { getAllAcademicData, subscribeToAcademicUpdates } from '../../../utils/academicStore';
+import { getAllCourses, subscribeToUpdates } from '../../../utils/courseStore';
+
+const CourseDetailsModal = ({ course, onClose, darkMode }) => {
+    if (!course) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+            <div className={`${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} w-full max-w-2xl rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto`}>
+                <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+                    <div>
+                        <h2 className="text-xl font-bold">{course.courseName}</h2>
+                        <span className="text-sm text-gray-500">{course.subject} • Class {course.class}</span>
+                    </div>
+                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+                        <X className="w-6 h-6" />
+                    </button>
+                </div>
+
+                <div className="p-6 space-y-6">
+                    {/* Course Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                            <p className="text-sm text-gray-500">Teacher</p>
+                            <p className="font-medium flex items-center gap-2">
+                                <GraduationCap className="w-4 h-4" /> {course.teacherName}
+                            </p>
+                        </div>
+                        <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                            <p className="text-sm text-gray-500">Created At</p>
+                            <p className="font-medium flex items-center gap-2">
+                                <Calendar className="w-4 h-4" /> {new Date(course.createdAt).toLocaleDateString()}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                        <h3 className="font-semibold mb-2">Description</h3>
+                        <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                            {course.description || 'No description provided.'}
+                        </p>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-3 gap-4">
+                        <div className={`p-3 rounded-lg text-center ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                            <p className="text-lg font-bold">{course.materials?.length || 0}</p>
+                            <p className="text-xs text-gray-500">Materials</p>
+                        </div>
+                        <div className={`p-3 rounded-lg text-center ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                            <p className="text-lg font-bold">{course.assignments?.length || 0}</p>
+                            <p className="text-xs text-gray-500">Assignments</p>
+                        </div>
+                        <div className={`p-3 rounded-lg text-center ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                            <p className="text-lg font-bold">{course.enrolledStudents?.length || 0}</p>
+                            <p className="text-xs text-gray-500">Students</p>
+                        </div>
+                    </div>
+
+                    {/* Materials List */}
+                    <div>
+                        <h3 className="font-semibold mb-2 flex items-center gap-2">
+                            <BookOpen className="w-4 h-4" /> Course Materials
+                        </h3>
+                        {course.materials && course.materials.length > 0 ? (
+                            <ul className="space-y-2">
+                                {course.materials.map(mat => (
+                                    <li key={mat.id} className={`p-3 rounded-lg flex items-center justify-between ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                                        <div className="flex items-center gap-3">
+                                            {mat.type === 'link' ? <LinkIcon className="w-4 h-4 text-blue-500" /> : <FileText className="w-4 h-4 text-orange-500" />}
+                                            <div>
+                                                <p className="text-sm font-medium">{mat.title}</p>
+                                                {mat.description && <p className="text-xs text-gray-500">{mat.description}</p>}
+                                            </div>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-sm text-gray-500 italic">No materials uploaded.</p>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const CoursesPage = ({ darkMode }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedClass, setSelectedClass] = useState('All');
     const [courses, setCourses] = useState([]);
     const [classes, setClasses] = useState(['All']);
+    const [selectedCourse, setSelectedCourse] = useState(null);
 
     // Fetch courses in real-time
     useEffect(() => {
         const fetchCourses = () => {
-            const academicData = getAllAcademicData();
-            const allCourses = academicData.courses || [];
+            const allCourses = getAllCourses();
 
             // Extract unique classes
             const uniqueClasses = ['All', ...new Set(allCourses.map(c => c.class).filter(Boolean))];
@@ -35,21 +124,23 @@ const CoursesPage = ({ darkMode }) => {
         fetchCourses();
 
         // Subscribe to real-time updates
-        const unsubscribe = subscribeToAcademicUpdates(fetchCourses);
+        const unsubscribe = subscribeToUpdates(fetchCourses);
 
         return () => unsubscribe();
     }, []);
 
     const filteredCourses = courses.filter(course => {
-        const matchesSearch = course.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            course.code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        const matchesSearch = course.courseName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            course.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             course.teacherName?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesClass = selectedClass === 'All' || course.class === selectedClass;
         return matchesSearch && matchesClass;
     });
 
-    const activeCourses = courses.filter(c => c.active);
-    const totalStudents = courses.length * 30; // Approximate, can be calculated from actual enrollments
+    const activeCourses = courses; // Assuming all courses in store are active
+
+    // Calculate total students across all courses (sum of enrolledStudents)
+    const totalStudents = courses.reduce((sum, course) => sum + (course.enrolledStudents?.length || 0), 0);
 
     return (
         <div className="space-y-6">
@@ -91,7 +182,7 @@ const CoursesPage = ({ darkMode }) => {
                         <GraduationCap className="w-5 h-5 text-purple-500" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {new Set(courses.map(c => c.teacherId)).size}
+                        {new Set(courses.map(c => String(c.teacherId))).size}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">Teaching courses</p>
                 </div>
@@ -102,9 +193,9 @@ const CoursesPage = ({ darkMode }) => {
                         <BookOpen className="w-5 h-5 text-yellow-500" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {classes.length - 1}
+                        {classes.length - 1} {/* Subtract 'All' */}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">Different classes</p>
+                    <p className="text-xs text-gray-500 mt-1">Active classes</p>
                 </div>
             </div>
 
@@ -115,7 +206,7 @@ const CoursesPage = ({ darkMode }) => {
                         <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                         <input
                             type="text"
-                            placeholder="Search by course name, code, or teacher..."
+                            placeholder="Search by course name, subject, or teacher..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className={`w-full pl-10 pr-4 py-2 rounded-lg border ${darkMode
@@ -163,15 +254,12 @@ const CoursesPage = ({ darkMode }) => {
                             <div className="flex items-start justify-between mb-4">
                                 <div className="flex-1">
                                     <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>
-                                        {course.name}
+                                        {course.courseName}
                                     </h3>
-                                    <p className="text-sm text-gray-500">{course.code}</p>
+                                    <p className="text-sm text-gray-500">{course.subject}</p>
                                 </div>
-                                <span className={`px-3 py-1 text-xs font-semibold rounded-full ${course.active
-                                        ? 'bg-green-100 text-green-600'
-                                        : 'bg-gray-100 text-gray-600'
-                                    }`}>
-                                    {course.active ? 'Active' : 'Inactive'}
+                                <span className="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-600">
+                                    Active
                                 </span>
                             </div>
 
@@ -205,7 +293,10 @@ const CoursesPage = ({ darkMode }) => {
                             </div>
 
                             <div className="flex gap-2">
-                                <button className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm flex items-center justify-center space-x-2">
+                                <button
+                                    onClick={() => setSelectedCourse(course)}
+                                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm flex items-center justify-center space-x-2"
+                                >
                                     <Eye className="w-4 h-4" />
                                     <span>View Details</span>
                                 </button>
@@ -213,6 +304,15 @@ const CoursesPage = ({ darkMode }) => {
                         </div>
                     ))}
                 </div>
+            )}
+
+            {/* Course Details Modal */}
+            {selectedCourse && (
+                <CourseDetailsModal
+                    course={selectedCourse}
+                    onClose={() => setSelectedCourse(null)}
+                    darkMode={darkMode}
+                />
             )}
         </div>
     );

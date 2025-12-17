@@ -9,7 +9,7 @@ import {
     AlertCircle,
     CheckCircle,
     Clock,
-    DollarSign,
+    IndianRupee,
     Settings,
     MoreVertical,
     FileText,
@@ -18,8 +18,10 @@ import {
     X
 } from 'lucide-react';
 import * as libraryStore from '../../../utils/libraryStore';
+import { useToast } from '../../../context/ToastContext';
 
 const LibraryPage = ({ darkMode }) => {
+    const { showSuccess, showError, showWarning } = useToast();
     const [activeTab, setActiveTab] = useState('books');
     const [books, setBooks] = useState([]);
     const [issues, setIssues] = useState([]);
@@ -65,7 +67,7 @@ const LibraryPage = ({ darkMode }) => {
         try {
             libraryStore.updateIssueStatus(issueId, 'Issued');
         } catch (error) {
-            alert(error.message);
+            showError(error.message);
         }
     };
 
@@ -76,7 +78,7 @@ const LibraryPage = ({ darkMode }) => {
             try {
                 libraryStore.updateIssueStatus(issueId, 'Rejected');
             } catch (error) {
-                alert(error.message);
+                showError(error.message);
             }
         }
     };
@@ -127,7 +129,10 @@ const LibraryPage = ({ darkMode }) => {
                     // Here admin manually inputs user details or email.
 
                     // Simple validation
-                    if (!issueData.userId) return alert('User ID is required');
+                    if (!issueData.userId) {
+                        showWarning('User ID is required');
+                        return;
+                    }
 
                     libraryStore.issueBook(selectedBook.id, {
                         id: issueData.userId,
@@ -137,7 +142,7 @@ const LibraryPage = ({ darkMode }) => {
                 }
                 setShowModal(false);
             } catch (error) {
-                alert(error.message);
+                showError(error.message);
             }
         };
 
@@ -349,9 +354,9 @@ const LibraryPage = ({ darkMode }) => {
                 <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6 shadow-sm`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-gray-500 text-sm font-medium">Pending Fines</h3>
-                        <DollarSign className="w-5 h-5 text-red-500" />
+                        <IndianRupee className="w-5 h-5 text-red-500" />
                     </div>
-                    <p className="text-3xl font-bold">{rules.currency}{stats.pendingFines}</p>
+                    <p className="text-3xl font-bold">₹{stats.pendingFines}</p>
                     <p className="text-xs text-red-500 mt-1">Uncollected</p>
                 </div>
                 <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6 shadow-sm cursor-pointer hover:shadow-md transition-all`} onClick={() => handleAction('settings')}>
@@ -359,7 +364,7 @@ const LibraryPage = ({ darkMode }) => {
                         <h3 className="text-gray-500 text-sm font-medium">Settings</h3>
                         <Settings className="w-5 h-5 text-gray-500" />
                     </div>
-                    <p className="text-lg font-medium">Fines: {rules.currency}{rules.finePerDay}/day</p>
+                    <p className="text-lg font-medium">Fines: ₹{rules.finePerDay}/day</p>
                     <p className="text-xs text-gray-500 mt-1">Click to configure</p>
                 </div>
             </div>
@@ -502,7 +507,15 @@ const LibraryPage = ({ darkMode }) => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
-                                {filteredIssues.filter(i => activeTab === 'overdue' ? i.status === 'Issued' && new Date(i.dueDate) < new Date() : true).map((issue) => {
+                                {filteredIssues.filter(i => {
+                                    if (activeTab === 'overdue') {
+                                        return i.status === 'Issued' && new Date(i.dueDate) < new Date();
+                                    }
+                                    if (activeTab === 'issues') {
+                                        return i.status === 'Issued'; // Only show active issues (not returned)
+                                    }
+                                    return true;
+                                }).map((issue) => {
                                     const isOverdue = issue.status === 'Issued' && new Date(issue.dueDate) < new Date();
                                     const currentFine = issue.status === 'Issued' ? libraryStore.calculateFine(issue.dueDate) : issue.fine;
 
@@ -527,7 +540,7 @@ const LibraryPage = ({ darkMode }) => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 font-medium text-red-500">
-                                                {currentFine > 0 ? `${rules.currency}${currentFine}` : '-'}
+                                                {currentFine > 0 ? `₹${currentFine}` : '-'}
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 {issue.status === 'Issued' && (

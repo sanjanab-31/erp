@@ -18,6 +18,7 @@ import {
     LogOut
 } from 'lucide-react';
 import { getSettings, updateSettingsSection, changePassword, subscribeToSettingsUpdates } from '../../../utils/settingsStore';
+import { getAllTeachers } from '../../../utils/teacherStore';
 
 const SettingsPage = ({ darkMode }) => {
     const navigate = useNavigate();
@@ -25,17 +26,22 @@ const SettingsPage = ({ darkMode }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [saved, setSaved] = useState(false);
     const [saveMessage, setSaveMessage] = useState('');
+    const [loading, setLoading] = useState(true);
 
     const [profileData, setProfileData] = useState({
-        name: 'Sarah Johnson',
-        email: 'sarah.johnson@school.com',
-        phone: '+1 234-567-8900',
-        address: '123 Education Street, City, State 12345',
-        dateOfBirth: '1985-05-15',
-        employeeId: 'TCH-2024-001',
-        department: 'Mathematics',
-        qualification: 'M.Sc. Mathematics',
-        experience: '10 years'
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        dateOfBirth: '',
+        employeeId: '',
+        department: '',
+        qualification: '',
+        experience: '',
+        subject: '',
+        joiningDate: '',
+        gender: '',
+        bloodGroup: ''
     });
 
     const [notificationSettings, setNotificationSettings] = useState({
@@ -72,17 +78,46 @@ const SettingsPage = ({ darkMode }) => {
         navigate('/login');
     };
 
-    // Load settings from store on component mount
+    // Load teacher data from teacherStore and settings from settingsStore
     useEffect(() => {
+        const teacherEmail = localStorage.getItem('userEmail');
+
+        if (teacherEmail) {
+            // Fetch teacher data from teacherStore
+            const teachers = getAllTeachers();
+            const teacher = teachers.find(t => t.email === teacherEmail);
+
+            console.log('Loading settings for teacher:', teacher);
+
+            if (teacher) {
+                setProfileData({
+                    name: teacher.name || '',
+                    email: teacher.email || '',
+                    phone: teacher.phone || '',
+                    address: teacher.address || '',
+                    dateOfBirth: teacher.dateOfBirth || '',
+                    employeeId: teacher.employeeId || teacher.id || '',
+                    department: teacher.department || '',
+                    qualification: teacher.qualification || '',
+                    experience: teacher.experience || '',
+                    subject: teacher.subject || '',
+                    joiningDate: teacher.joiningDate || '',
+                    gender: teacher.gender || '',
+                    bloodGroup: teacher.bloodGroup || ''
+                });
+            }
+        }
+
+        // Load settings from settingsStore
         const settings = getSettings('teacher');
-        if (settings.profile) setProfileData(settings.profile);
         if (settings.notifications) setNotificationSettings(settings.notifications);
         if (settings.preferences) setPreferenceSettings(settings.preferences);
         if (settings.security) setSecuritySettings(prev => ({ ...prev, twoFactorAuth: settings.security.twoFactorAuth || false }));
 
+        setLoading(false);
+
         // Subscribe to real-time updates
         const unsubscribe = subscribeToSettingsUpdates('teacher', (updatedSettings) => {
-            if (updatedSettings.profile) setProfileData(updatedSettings.profile);
             if (updatedSettings.notifications) setNotificationSettings(updatedSettings.notifications);
             if (updatedSettings.preferences) setPreferenceSettings(updatedSettings.preferences);
             if (updatedSettings.security) setSecuritySettings(prev => ({ ...prev, twoFactorAuth: updatedSettings.security.twoFactorAuth || false }));
@@ -265,6 +300,106 @@ const SettingsPage = ({ darkMode }) => {
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-white border-gray-300 text-gray-900'
                                         } focus:outline-none focus:ring-2 focus:ring-green-500`}
+                                />
+                            </div>
+
+                            {/* Subject */}
+                            <div>
+                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                                    Subject
+                                </label>
+                                <input
+                                    type="text"
+                                    value={profileData.subject}
+                                    disabled
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode
+                                        ? 'bg-gray-700 border-gray-600 text-gray-400'
+                                        : 'bg-gray-100 border-gray-300 text-gray-500'
+                                        } cursor-not-allowed`}
+                                />
+                            </div>
+
+                            {/* Experience */}
+                            <div>
+                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                                    Experience
+                                </label>
+                                <input
+                                    type="text"
+                                    value={profileData.experience}
+                                    onChange={(e) => {
+                                        const updated = { ...profileData, experience: e.target.value };
+                                        setProfileData(updated);
+                                        updateSettingsSection('teacher', 'profile', updated);
+                                    }}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode
+                                        ? 'bg-gray-700 border-gray-600 text-white'
+                                        : 'bg-white border-gray-300 text-gray-900'
+                                        } focus:outline-none focus:ring-2 focus:ring-green-500`}
+                                />
+                            </div>
+
+                            {/* Employee ID */}
+                            <div>
+                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                                    Employee ID
+                                </label>
+                                <input
+                                    type="text"
+                                    value={profileData.employeeId}
+                                    disabled
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode
+                                        ? 'bg-gray-700 border-gray-600 text-gray-400'
+                                        : 'bg-gray-100 border-gray-300 text-gray-500'
+                                        } cursor-not-allowed`}
+                                />
+                            </div>
+
+                            {/* Joining Date */}
+                            <div>
+                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                                    Joining Date
+                                </label>
+                                <input
+                                    type="text"
+                                    value={profileData.joiningDate}
+                                    disabled
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode
+                                        ? 'bg-gray-700 border-gray-600 text-gray-400'
+                                        : 'bg-gray-100 border-gray-300 text-gray-500'
+                                        } cursor-not-allowed`}
+                                />
+                            </div>
+
+                            {/* Gender */}
+                            <div>
+                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                                    Gender
+                                </label>
+                                <input
+                                    type="text"
+                                    value={profileData.gender}
+                                    disabled
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode
+                                        ? 'bg-gray-700 border-gray-600 text-gray-400'
+                                        : 'bg-gray-100 border-gray-300 text-gray-500'
+                                        } cursor-not-allowed`}
+                                />
+                            </div>
+
+                            {/* Blood Group */}
+                            <div>
+                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                                    Blood Group
+                                </label>
+                                <input
+                                    type="text"
+                                    value={profileData.bloodGroup}
+                                    disabled
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode
+                                        ? 'bg-gray-700 border-gray-600 text-gray-400'
+                                        : 'bg-gray-100 border-gray-300 text-gray-500'
+                                        } cursor-not-allowed`}
                                 />
                             </div>
                         </div>

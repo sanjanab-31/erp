@@ -12,8 +12,10 @@ import {
     X
 } from 'lucide-react';
 import * as announcementStore from '../../../utils/announcementStore';
+import { useToast } from '../../../context/ToastContext';
 
 const AnnouncementsPage = ({ darkMode }) => {
+    const { showSuccess, showError } = useToast();
     const [announcements, setAnnouncements] = useState([]);
     const [myAnnouncements, setMyAnnouncements] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -108,7 +110,7 @@ const AnnouncementsPage = ({ darkMode }) => {
                 }
                 setShowModal(false);
             } catch (error) {
-                alert(error.message);
+                showError(error.message);
             }
         };
 
@@ -334,8 +336,8 @@ const AnnouncementsPage = ({ darkMode }) => {
                                     <div className="flex items-center space-x-3 mb-2">
                                         <h3 className="text-lg font-bold">{announcement.title}</h3>
                                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${announcement.status === 'Published' ? 'bg-green-100 text-green-700' :
-                                                announcement.status === 'Archived' ? 'bg-gray-100 text-gray-700' :
-                                                    'bg-yellow-100 text-yellow-700'
+                                            announcement.status === 'Archived' ? 'bg-gray-100 text-gray-700' :
+                                                'bg-yellow-100 text-yellow-700'
                                             }`}>
                                             {announcement.status}
                                         </span>

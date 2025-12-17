@@ -11,48 +11,89 @@ import {
     Clock,
     GraduationCap
 } from 'lucide-react';
+import { getChildrenByParentEmail } from '../../../utils/userStore';
+import { getAllStudents } from '../../../utils/studentStore';
+import { calculateAttendancePercentage } from '../../../utils/attendanceStore';
+import { getStudentFinalMarks, getSubmissionsByStudent } from '../../../utils/academicStore';
 
 const MyChildrenPage = ({ darkMode }) => {
-    const [children, setChildren] = useState([
-        {
-            id: 1,
-            name: 'Emma Wilson',
-            class: 'Grade 10-A',
-            rollNo: '10A-015',
-            dateOfBirth: '2010-05-15',
-            email: 'emma.wilson@student.school.com',
-            phone: '+1 234-567-8901',
-            address: '123 Main Street, City, State 12345',
-            attendance: 95,
-            currentGrade: 'A',
-            rank: 3,
-            subjects: [
-                { name: 'Mathematics', grade: 'A+', marks: 98 },
-                { name: 'Physics', grade: 'A', marks: 92 },
-                { name: 'Chemistry', grade: 'A', marks: 94 },
-                { name: 'English', grade: 'A-', marks: 88 },
-                { name: 'Computer Science', grade: 'A+', marks: 96 }
-            ],
-            recentActivities: [
-                { id: 1, activity: 'Submitted Math Assignment', date: '2025-12-14', status: 'completed' },
-                { id: 2, activity: 'Attended Physics Lab', date: '2025-12-13', status: 'completed' },
-                { id: 3, activity: 'Quiz - Chemistry', date: '2025-12-12', status: 'graded', score: 95 }
-            ]
-        }
-    ]);
+    const [children, setChildren] = useState([]);
+    const [selectedChild, setSelectedChild] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    const [selectedChild, setSelectedChild] = useState(children[0]);
-
-    // Real-time updates
+    // Fetch children data
     useEffect(() => {
-        const interval = setInterval(() => {
-            setChildren(prev => prev.map(child => ({
-                ...child,
-                attendance: Math.min(100, child.attendance + (Math.random() > 0.5 ? 0.1 : 0))
-            })));
-        }, 10000);
+        const parentEmail = localStorage.getItem('userEmail');
 
-        return () => clearInterval(interval);
+        if (parentEmail) {
+            // Get children IDs for this parent
+            const parentChildren = getChildrenByParentEmail(parentEmail);
+            console.log('Parent children:', parentChildren);
+
+            if (parentChildren && parentChildren.length > 0) {
+                // Get full student data for each child
+                const students = getAllStudents();
+                const childrenData = parentChildren.map(child => {
+                    const student = students.find(s => s.id === child.id);
+                    if (!student) return null;
+
+                    // Get attendance percentage
+                    const attendance = calculateAttendancePercentage(student.id);
+
+                    // Get final marks
+                    const finalMarks = getStudentFinalMarks(student.id);
+
+                    // Calculate average grade
+                    let avgGrade = 0;
+                    let currentGrade = 'N/A';
+                    if (finalMarks.length > 0) {
+                        avgGrade = finalMarks.reduce((sum, m) => sum + m.finalTotal, 0) / finalMarks.length;
+                        currentGrade = avgGrade >= 90 ? 'A+' : avgGrade >= 85 ? 'A' : avgGrade >= 75 ? 'B+' : avgGrade >= 70 ? 'B' : avgGrade >= 60 ? 'C' : 'D';
+                    }
+
+                    // Get submissions for recent activities
+                    const submissions = getSubmissionsByStudent(student.id);
+                    const recentActivities = submissions.slice(0, 3).map((sub, idx) => ({
+                        id: idx + 1,
+                        activity: sub.assignmentTitle || `Assignment ${sub.assignmentId}`,
+                        date: sub.submittedAt || 'N/A',
+                        status: sub.status || 'submitted',
+                        score: sub.marks || null
+                    }));
+
+                    // Format subjects from final marks
+                    const subjects = finalMarks.map(mark => ({
+                        name: mark.courseName,
+                        grade: mark.finalTotal >= 90 ? 'A+' : mark.finalTotal >= 85 ? 'A' : mark.finalTotal >= 75 ? 'B+' : mark.finalTotal >= 70 ? 'B' : mark.finalTotal >= 60 ? 'C' : 'D',
+                        marks: Math.round(mark.finalTotal)
+                    }));
+
+                    return {
+                        id: student.id,
+                        name: student.name,
+                        class: student.class,
+                        rollNo: student.rollNumber,
+                        dateOfBirth: student.dateOfBirth,
+                        email: student.email,
+                        phone: student.phone,
+                        address: student.address,
+                        attendance: attendance,
+                        currentGrade: currentGrade,
+                        rank: 'N/A', // Would need ranking logic
+                        subjects: subjects,
+                        recentActivities: recentActivities
+                    };
+                }).filter(Boolean);
+
+                console.log('Children data loaded:', childrenData);
+                setChildren(childrenData);
+                if (childrenData.length > 0) {
+                    setSelectedChild(childrenData[0]);
+                }
+            }
+        }
+
+        setLoading(false);
     }, []);
 
     const getGradeColor = (grade) => {
@@ -72,14 +113,28 @@ const MyChildrenPage = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">View and manage your children's information</p>
             </div>
 
+            {/* Loading State */}
+            {loading && (
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-8 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-center`}>
+                    <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Loading children data...</p>
+                </div>
+            )}
+
+            {/* Empty State */}
+            {!loading && children.length === 0 && (
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-8 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-center`}>
+                    <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>No children found. Please contact the administrator.</p>
+                </div>
+            )}
+
             {/* Child Selector */}
-            {children.length > 1 && (
+            {!loading && children.length > 1 && (
                 <div className="flex gap-4">
                     {children.map((child) => (
                         <button
                             key={child.id}
                             onClick={() => setSelectedChild(child)}
-                            className={`px-6 py-3 rounded-lg font-medium transition-colors ${selectedChild.id === child.id
+                            className={`px-6 py-3 rounded-lg font-medium transition-colors ${selectedChild?.id === child.id
                                 ? 'bg-orange-600 text-white'
                                 : `${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-white text-gray-700'} hover:bg-orange-50`
                                 }`}
@@ -91,6 +146,7 @@ const MyChildrenPage = ({ darkMode }) => {
             )}
 
             {/* Child Profile */}
+            {!loading && selectedChild && (
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-8 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="flex items-start space-x-6 mb-8">
                     <div className="w-24 h-24 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white text-3xl font-bold">
@@ -230,6 +286,7 @@ const MyChildrenPage = ({ darkMode }) => {
                     </div>
                 </div>
             </div>
+            )}
         </div>
     );
 };

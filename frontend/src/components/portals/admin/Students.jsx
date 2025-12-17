@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Plus, MoreVertical, Mail, Phone, Edit, Trash2, X, Save, UserPlus } from 'lucide-react';
 import { getAllStudents, addStudent, updateStudent, deleteStudent, subscribeToUpdates, getStudentStats } from '../../../utils/studentStore';
-import { addStudent as addUserStudent } from '../../../utils/userStore';
+import { addStudent as addUserStudent, deleteStudentAndParent } from '../../../utils/userStore';
 import { useToast } from '../../../context/ToastContext';
 
 // Move modal components outside to prevent re-creation on every render
@@ -76,7 +76,13 @@ const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
                                     </div>
                                     <div>
                                         <label className={labelClass}>Date of Birth</label>
-                                        <input type="date" value={formData.dateOfBirth} onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })} className={inputClass} />
+                                        <input
+                                            type="date"
+                                            value={formData.dateOfBirth}
+                                            onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                                            max={new Date().toISOString().split('T')[0]}
+                                            className={inputClass}
+                                        />
                                     </div>
                                 </div>
                                 <div>
@@ -231,6 +237,24 @@ const Students = ({ darkMode }) => {
     const handleAddStudent = useCallback((e) => {
         e.preventDefault();
         try {
+            // Validation: Check if student email and parent email are the same
+            if (formData.email && formData.parentEmail &&
+                formData.email.toLowerCase().trim() === formData.parentEmail.toLowerCase().trim()) {
+                showError('Student email and parent email cannot be the same!');
+                return;
+            }
+
+            // Validation: Check if DOB is in the future
+            if (formData.dateOfBirth) {
+                const dob = new Date(formData.dateOfBirth);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (dob > today) {
+                    showError('Date of birth cannot be in the future!');
+                    return;
+                }
+            }
+
             // Add to studentStore (for student management)
             addStudent(formData);
 
@@ -241,7 +265,7 @@ const Students = ({ darkMode }) => {
                 class: formData.class,
                 rollNumber: formData.rollNo,
                 parentEmail: formData.parentEmail,
-                parentName: formData.parentName,
+                parentName: formData.parent,
                 phone: formData.phone,
                 address: formData.address,
                 dateOfBirth: formData.dateOfBirth,
@@ -266,11 +290,29 @@ const Students = ({ darkMode }) => {
         } catch (error) {
             showError('Error adding student: ' + error.message);
         }
-    }, [formData, resetForm]);
+    }, [formData, resetForm, showSuccess, showError]);
 
     const handleEditStudent = useCallback((e) => {
         e.preventDefault();
         try {
+            // Validation: Check if student email and parent email are the same
+            if (formData.email && formData.parentEmail &&
+                formData.email.toLowerCase().trim() === formData.parentEmail.toLowerCase().trim()) {
+                showError('Student email and parent email cannot be the same!');
+                return;
+            }
+
+            // Validation: Check if DOB is in the future
+            if (formData.dateOfBirth) {
+                const dob = new Date(formData.dateOfBirth);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (dob > today) {
+                    showError('Date of birth cannot be in the future!');
+                    return;
+                }
+            }
+
             updateStudent(selectedStudent.id, formData);
             setShowEditModal(false);
             setSelectedStudent(null);
@@ -279,18 +321,23 @@ const Students = ({ darkMode }) => {
         } catch (error) {
             showError('Error updating student: ' + error.message);
         }
-    }, [formData, selectedStudent, resetForm]);
+    }, [formData, selectedStudent, resetForm, showSuccess, showError]);
 
     const handleDeleteStudent = useCallback(() => {
         try {
+            // Delete from studentStore
             deleteStudent(selectedStudent.id);
+
+            // Delete from userStore (both student and parent profiles)
+            deleteStudentAndParent(selectedStudent.email, selectedStudent.parentEmail);
+
             setShowDeleteConfirm(false);
             setSelectedStudent(null);
-            showSuccess('Student deleted successfully!');
+            showSuccess('Student and associated parent profile deleted successfully!');
         } catch (error) {
             showError('Error deleting student: ' + error.message);
         }
-    }, [selectedStudent]);
+    }, [selectedStudent, showSuccess, showError]);
 
     const openEditModal = useCallback((student) => {
         setSelectedStudent(student);
@@ -452,14 +499,32 @@ const Students = ({ darkMode }) => {
                                             <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{student.parent}</p>
                                             <div className="flex gap-2 mt-1">
                                                 {student.parentEmail && (
-                                                    <button className="text-gray-400 hover:text-blue-500" title={student.parentEmail}>
+                                                    <a
+                                                        href={`mailto:${student.parentEmail}`}
+                                                        className="text-gray-400 hover:text-blue-500 transition-colors"
+                                                        title={`Email: ${student.parentEmail}`}
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            navigator.clipboard.writeText(student.parentEmail);
+                                                            showSuccess(`Email copied: ${student.parentEmail}`);
+                                                        }}
+                                                    >
                                                         <Mail className="w-4 h-4" />
-                                                    </button>
+                                                    </a>
                                                 )}
                                                 {student.parentPhone && (
-                                                    <button className="text-gray-400 hover:text-green-500" title={student.parentPhone}>
+                                                    <a
+                                                        href={`tel:${student.parentPhone}`}
+                                                        className="text-gray-400 hover:text-green-500 transition-colors"
+                                                        title={`Phone: ${student.parentPhone}`}
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            navigator.clipboard.writeText(student.parentPhone);
+                                                            showSuccess(`Phone copied: ${student.parentPhone}`);
+                                                        }}
+                                                    >
                                                         <Phone className="w-4 h-4" />
-                                                    </button>
+                                                    </a>
                                                 )}
                                             </div>
                                         </td>
