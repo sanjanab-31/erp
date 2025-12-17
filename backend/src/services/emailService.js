@@ -1,6 +1,38 @@
 import nodemailer from 'nodemailer';
+import twilio from 'twilio';
 import dotenv from 'dotenv';
 dotenv.config();
+
+// Twilio Client Setup
+let twilioClient;
+try {
+    if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+        twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    } else {
+        console.warn('Twilio credentials missing. SMS features will be disabled.');
+    }
+} catch (error) {
+    console.error('Error initializing Twilio client:', error);
+}
+
+const sendSMS = async (phone, message) => {
+    if (!twilioClient) {
+        console.log(`[SMS MOCK] (Twilio not configured) Sending to ${phone}: ${message}`);
+        return false;
+    }
+
+    try {
+        await twilioClient.messages.create({
+            body: message,
+            from: process.env.TWILIO_PHONE_NUMBER,
+            to: phone
+        });
+        return true;
+    } catch (error) {
+        console.error(`Twilio SMS Failed to ${phone}:`, error.message);
+        return false;
+    }
+};
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -97,4 +129,42 @@ export const sendTeacherCredentials = async (teacherEmail, password, teacherName
         console.error('Email Service Error:', error);
         throw error;
     }
+};
+
+export const sendAnnouncementEmail = async (recipientEmail, recipientName, title, description, attachment) => {
+    try {
+        const fromAddress = `"Sri Eshwar College Of Engineering" <${process.env.SMTP_EMAIL}>`;
+
+        await transporter.sendMail({
+            from: fromAddress,
+            to: recipientEmail,
+            subject: `📢 ${title}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                    <h2 style="color: #6d28d9;">New Announcement</h2>
+                    <p>Hello ${recipientName},</p>
+                    <p>A new announcement has been posted:</p>
+                    
+                    <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #4b5563;">${title}</h3>
+                        <p style="white-space: pre-wrap;">${description}</p>
+                        ${attachment ? `<p><a href="${attachment}" style="color: #6d28d9;">View Attachment</a></p>` : ''}
+                    </div>
+
+                    <p>Please check the portal for more details.</p>
+                </div>
+            `
+        });
+        return true;
+    } catch (error) {
+        console.error('Email Service Error (Announcement):', error);
+        // Don't throw here, just log failure so other emails can proceed
+        return false;
+    }
+};
+
+export const sendAnnouncementSMS = async (phone, title) => {
+    // Keep it short for SMS
+    const message = `ERP Alert: ${title.substring(0, 30)}${title.length > 30 ? '...' : ''}. Check portal for details.`;
+    return sendSMS(phone, message);
 };

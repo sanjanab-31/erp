@@ -107,7 +107,7 @@ const SettingsPage = ({ darkMode }) => {
         { id: 'general', name: 'General', icon: SettingsIcon },
         { id: 'notifications', name: 'Notifications', icon: Bell },
         { id: 'security', name: 'Security', icon: Lock },
-        { id: 'system', name: 'System', icon: Database }
+        // { id: 'system', name: 'System', icon: Database }
     ];
 
     const renderContent = () => {
@@ -334,62 +334,6 @@ const SettingsPage = ({ darkMode }) => {
                             >
                                 Update Password
                             </button>
-                        </div>
-                    </div>
-                );
-
-            case 'system':
-                return (
-                    <div className="space-y-6">
-                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-                            System Configuration
-                        </h3>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Language
-                                </label>
-                                <select
-                                    value={settings.language}
-                                    onChange={(e) => {
-                                        const updated = { ...settings, language: e.target.value };
-                                        setSettings(updated);
-                                        updateSettingsSection('admin', 'general', { language: e.target.value });
-                                    }}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode
-                                        ? 'bg-gray-700 border-gray-600 text-white'
-                                        : 'bg-white border-gray-300 text-gray-900'
-                                        } focus:outline-none focus:ring-2 focus:ring-purple-500`}
-                                >
-                                    <option>English</option>
-                                    <option>Spanish</option>
-                                    <option>French</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Currency
-                                </label>
-                                <select
-                                    value={settings.currency}
-                                    onChange={(e) => {
-                                        const updated = { ...settings, currency: e.target.value };
-                                        setSettings(updated);
-                                        updateSettingsSection('admin', 'general', { currency: e.target.value });
-                                    }}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode
-                                        ? 'bg-gray-700 border-gray-600 text-white'
-                                        : 'bg-white border-gray-300 text-gray-900'
-                                        } focus:outline-none focus:ring-2 focus:ring-purple-500`}
-                                >
-                                    <option>USD</option>
-                                    <option>EUR</option>
-                                    <option>GBP</option>
-                                    <option>INR</option>
-                                </select>
-                            </div>
                         </div>
                     </div>
                 );

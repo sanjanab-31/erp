@@ -1,5 +1,9 @@
 // Centralized Announcements Data Store
 // Provides real-time synchronization for Announcements across all portals
+import { getAllStudents } from './studentStore';
+import { getAllTeachers } from './teacherStore';
+
+const API_URL = 'http://localhost:5000/api/email';
 
 const STORAGE_KEY = 'erp_announcements';
 
@@ -79,10 +83,105 @@ export const addAnnouncement = (announcementData) => {
         announcements.unshift(newAnnouncement); // Add to beginning
         localStorage.setItem(STORAGE_KEY, JSON.stringify(announcements));
         window.dispatchEvent(new Event('announcementsUpdated'));
+
+        // Trigger Notifications (Async)
+        triggerNotifications(newAnnouncement);
+
         return newAnnouncement;
     } catch (error) {
         console.error('Error adding announcement:', error);
         throw error;
+    }
+};
+
+// Internal function to handle notifications
+const triggerNotifications = async (announcement) => {
+    try {
+        const recipients = [];
+        const { targetAudience, classes } = announcement;
+
+        console.log(`Preparing notifications for: ${targetAudience} (Classes: ${classes.join(', ') || 'All'})`);
+
+        // 1. Teachers
+        if (targetAudience === 'Teachers' || targetAudience === 'All') {
+            const teachers = getAllTeachers();
+            teachers.forEach(t => {
+                // Determine if we need to filter teachers (usually filter applies to students/classes, 
+                // but if teacher is class teacher, maybe? For now send to all active teachers if audience is Teachers)
+                if (t.status !== 'Updates' && t.email) {
+                    recipients.push({
+                        name: t.name,
+                        email: t.email,
+                        phone: t.phone || t.mobile // Handle generic mobile field
+                    });
+                }
+            });
+        }
+
+        // 2. Students & Parents
+        if (targetAudience === 'Students' || targetAudience === 'Parents' || targetAudience === 'All') {
+            let students = getAllStudents();
+
+            // Filter by Class
+            if (classes && classes.length > 0) {
+                students = students.filter(s => classes.includes(s.class));
+            }
+
+            students.forEach(s => {
+                // Student
+                if (targetAudience === 'Students' || targetAudience === 'All') {
+                    if (s.email) {
+                        recipients.push({
+                            name: s.name,
+                            email: s.email,
+                            phone: s.phone || s.mobile
+                        });
+                    }
+                }
+
+                // Parent
+                if (targetAudience === 'Parents' || targetAudience === 'All') {
+                    if (s.parentEmail) {
+                        recipients.push({
+                            name: `Parent of ${s.name}`,
+                            email: s.parentEmail,
+                            phone: s.parentPhone || s.parentMobile
+                        });
+                    }
+                }
+            });
+        }
+
+        if (recipients.length === 0) {
+            console.log('No recipients found for notification.');
+            return;
+        }
+
+        console.log(`Sending notifications to ${recipients.length} recipients via Backend...`);
+
+        // Call Backend API
+        const response = await fetch(`${API_URL}/send-announcement`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                recipients,
+                title: announcement.title,
+                description: announcement.description,
+                attachment: announcement.attachment
+            })
+        });
+
+        if (response.ok) {
+            console.log('Notifications sent successfully.');
+        } else {
+            console.error('Failed to send notifications via Backend:', await response.text());
+        }
+
+    } catch (error) {
+        console.error('Error triggering notifications:', error);
+        // Do not throw, this is a distinct process
     }
 };
 
