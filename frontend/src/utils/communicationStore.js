@@ -1,20 +1,20 @@
-// Centralized Communication Store
-// Real-time messaging system for all portals (Student, Teacher, Parent, Admin)
+
+
 
 const STORAGE_KEY = 'erp_communications';
 
-// Get current user from auth (you can modify this based on your auth system)
+
 const getCurrentUser = () => {
     const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
     return {
         id: user.id || 'user_1',
         name: user.name || 'Current User',
         email: user.email || 'user@school.com',
-        role: user.role || 'student' // student, teacher, parent, admin
+        role: user.role || 'student' 
     };
 };
 
-// Initialize default data
+
 const initializeDefaultData = () => {
     return {
         messages: [
@@ -31,7 +31,7 @@ const initializeDefaultData = () => {
                 text: 'Please submit your assignment by tomorrow',
                 timestamp: new Date('2025-12-15T10:30:00').toISOString(),
                 read: false,
-                type: 'direct' // direct, group, announcement
+                type: 'direct' 
             },
             {
                 id: 2,
@@ -73,8 +73,8 @@ const initializeDefaultData = () => {
                 authorId: 'admin_1',
                 authorName: 'Admin',
                 authorRole: 'admin',
-                recipients: 'all', // all, students, teachers, parents, specific IDs
-                priority: 'high', // high, medium, low
+                recipients: 'all', 
+                priority: 'high', 
                 category: 'Academic',
                 timestamp: new Date('2025-12-15T09:00:00').toISOString(),
                 read: []
@@ -118,7 +118,7 @@ const initializeDefaultData = () => {
     };
 };
 
-// Get all communication data
+
 export const getAllCommunications = () => {
     try {
         const data = localStorage.getItem(STORAGE_KEY);
@@ -134,7 +134,7 @@ export const getAllCommunications = () => {
     }
 };
 
-// Send a new message
+
 export const sendMessage = (messageData) => {
     try {
         const communications = getAllCommunications();
@@ -158,7 +158,7 @@ export const sendMessage = (messageData) => {
 
         communications.messages.push(newMessage);
 
-        // Update or create conversation
+        
         const convIndex = communications.conversations.findIndex(
             c => c.id === newMessage.conversationId
         );
@@ -188,7 +188,7 @@ export const sendMessage = (messageData) => {
     }
 };
 
-// Get messages for a specific conversation
+
 export const getConversationMessages = (conversationId) => {
     const communications = getAllCommunications();
     return communications.messages
@@ -196,7 +196,7 @@ export const getConversationMessages = (conversationId) => {
         .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 };
 
-// Get conversations for current user
+
 export const getUserConversations = () => {
     const communications = getAllCommunications();
     const currentUser = getCurrentUser();
@@ -221,7 +221,7 @@ export const getUserConversations = () => {
         .sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
 };
 
-// Mark message as read
+
 export const markMessageAsRead = (messageId) => {
     try {
         const communications = getAllCommunications();
@@ -237,20 +237,20 @@ export const markMessageAsRead = (messageId) => {
     }
 };
 
-// Mark conversation as read
+
 export const markConversationAsRead = (conversationId) => {
     try {
         const communications = getAllCommunications();
         const currentUser = getCurrentUser();
 
-        // Mark all messages in conversation as read
+        
         communications.messages = communications.messages.map(m =>
             m.conversationId === conversationId && m.recipientId === currentUser.id
                 ? { ...m, read: true }
                 : m
         );
 
-        // Reset unread count
+        
         const convIndex = communications.conversations.findIndex(c => c.id === conversationId);
         if (convIndex >= 0) {
             communications.conversations[convIndex].unreadCount[currentUser.id] = 0;
@@ -263,7 +263,7 @@ export const markConversationAsRead = (conversationId) => {
     }
 };
 
-// Create announcement
+
 export const createAnnouncement = (announcementData) => {
     try {
         const communications = getAllCommunications();
@@ -294,7 +294,7 @@ export const createAnnouncement = (announcementData) => {
     }
 };
 
-// Get announcements for current user
+
 export const getUserAnnouncements = () => {
     const communications = getAllCommunications();
     const currentUser = getCurrentUser();
@@ -307,7 +307,7 @@ export const getUserAnnouncements = () => {
     }).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 };
 
-// Mark announcement as read
+
 export const markAnnouncementAsRead = (announcementId) => {
     try {
         const communications = getAllCommunications();
@@ -324,7 +324,7 @@ export const markAnnouncementAsRead = (announcementId) => {
     }
 };
 
-// Get notifications for current user
+
 export const getUserNotifications = () => {
     const communications = getAllCommunications();
     const currentUser = getCurrentUser();
@@ -334,7 +334,7 @@ export const getUserNotifications = () => {
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 };
 
-// Create notification
+
 export const createNotification = (notificationData) => {
     try {
         const communications = getAllCommunications();
@@ -361,7 +361,7 @@ export const createNotification = (notificationData) => {
     }
 };
 
-// Mark notification as read
+
 export const markNotificationAsRead = (notificationId) => {
     try {
         const communications = getAllCommunications();
@@ -377,7 +377,7 @@ export const markNotificationAsRead = (notificationId) => {
     }
 };
 
-// Get unread counts
+
 export const getUnreadCounts = () => {
     const communications = getAllCommunications();
     const currentUser = getCurrentUser();
@@ -404,7 +404,7 @@ export const getUnreadCounts = () => {
     };
 };
 
-// Search messages
+
 export const searchMessages = (query) => {
     const communications = getAllCommunications();
     const currentUser = getCurrentUser();
@@ -418,12 +418,12 @@ export const searchMessages = (query) => {
     );
 };
 
-// Subscribe to real-time updates
+
 export const subscribeToCommunicationUpdates = (callback) => {
     const handler = () => callback(getAllCommunications());
     window.addEventListener('communicationsUpdated', handler);
 
-    // Return unsubscribe function
+    
     return () => window.removeEventListener('communicationsUpdated', handler);
 };
 

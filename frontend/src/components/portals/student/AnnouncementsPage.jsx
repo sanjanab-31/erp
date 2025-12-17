@@ -13,16 +13,16 @@ const AnnouncementsPage = ({ darkMode }) => {
     const [announcements, setAnnouncements] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // In a real app, this would come from the student's profile
-    const studentClass = 'Grade 10-A'; // Example: student's class
+    
+    const studentClass = 'Grade 10-A'; 
 
     useEffect(() => {
         const loadData = () => {
-            // Get announcements for Students and their class
+            
             const studentAnnouncements = announcementStore.getAnnouncementsForAudience('Students', studentClass);
             const allAnnouncements = announcementStore.getAnnouncementsForAudience('All', studentClass);
 
-            // Combine and remove duplicates
+            
             const combined = [...studentAnnouncements, ...allAnnouncements];
             const unique = combined.filter((item, index, self) =>
                 index === self.findIndex((t) => t.id === item.id)
@@ -43,7 +43,7 @@ const AnnouncementsPage = ({ darkMode }) => {
 
     return (
         <div className={`space-y-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            {/* Header */}
+            {}
             <div className="flex justify-between items-center bg-blue-50 p-4 rounded-xl border border-blue-100">
                 <div>
                     <h2 className="text-xl font-bold text-blue-900">Announcements</h2>
@@ -52,7 +52,7 @@ const AnnouncementsPage = ({ darkMode }) => {
                 <Megaphone className="w-8 h-8 text-blue-600" />
             </div>
 
-            {/* Search */}
+            {}
             <div className="relative">
                 <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                 <input
@@ -64,7 +64,7 @@ const AnnouncementsPage = ({ darkMode }) => {
                 />
             </div>
 
-            {/* Announcements List */}
+            {}
             <div className="space-y-4">
                 {filteredAnnouncements.map(announcement => (
                     <div

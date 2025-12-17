@@ -82,7 +82,7 @@ const FeeModal = ({ darkMode, onClose, onSave, editingFee, students }) => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    {/* Student Selection */}
+                    {}
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Select Student *
@@ -103,7 +103,7 @@ const FeeModal = ({ darkMode, onClose, onSave, editingFee, students }) => {
                         </select>
                     </div>
 
-                    {/* Fee Type */}
+                    {}
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Fee Type *
@@ -121,7 +121,7 @@ const FeeModal = ({ darkMode, onClose, onSave, editingFee, students }) => {
                         </select>
                     </div>
 
-                    {/* Amount */}
+                    {}
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Amount (₹) *
@@ -138,7 +138,7 @@ const FeeModal = ({ darkMode, onClose, onSave, editingFee, students }) => {
                         />
                     </div>
 
-                    {/* Due Date */}
+                    {}
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Due Date *
@@ -152,7 +152,7 @@ const FeeModal = ({ darkMode, onClose, onSave, editingFee, students }) => {
                         />
                     </div>
 
-                    {/* Action Buttons */}
+                    {}
                     <div className="flex justify-end space-x-3 pt-4">
                         <button
                             type="button"
@@ -228,7 +228,7 @@ const FeesAndFinancePage = ({ darkMode }) => {
         }
     }, []);
 
-    // Filter fees
+    
     const filteredFees = fees.filter(fee => {
         const matchesSearch = fee.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             fee.studentClass.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -254,7 +254,7 @@ const FeesAndFinancePage = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
+            {}
             <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Fees & Finance Management
@@ -262,7 +262,7 @@ const FeesAndFinancePage = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">Manage student fees and track payments (Real-time sync)</p>
             </div>
 
-            {/* Stats */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
@@ -301,10 +301,10 @@ const FeesAndFinancePage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Filters & Add Button */}
+            {}
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                    {/* Search */}
+                    {}
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                         <input
@@ -316,7 +316,7 @@ const FeesAndFinancePage = ({ darkMode }) => {
                         />
                     </div>
 
-                    {/* Status Filter */}
+                    {}
                     <select
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
@@ -341,7 +341,7 @@ const FeesAndFinancePage = ({ darkMode }) => {
                 </button>
             </div>
 
-            {/* Fees List */}
+            {}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
                 {filteredFees.length === 0 ? (
                     <div className="p-12 text-center">
@@ -422,7 +422,7 @@ const FeesAndFinancePage = ({ darkMode }) => {
                 )}
             </div>
 
-            {/* Modal */}
+            {}
             {showAddModal && (
                 <FeeModal
                     darkMode={darkMode}

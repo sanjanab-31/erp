@@ -21,7 +21,7 @@ const ReportsPage = ({ darkMode }) => {
         'Fee Statement': { summary: '', data: [] }
     });
 
-    // Get actual parent's email and fetch child info
+    
     const parentEmail = localStorage.getItem('userEmail') || '';
     const [childId, setChildId] = useState('');
     const [childName, setChildName] = useState('Student');
@@ -34,7 +34,7 @@ const ReportsPage = ({ darkMode }) => {
     ];
 
     useEffect(() => {
-        // Get parent's children from userStore
+        
         if (parentEmail) {
             const children = getChildrenByParentEmail(parentEmail);
             if (children && children.length > 0) {
@@ -53,7 +53,7 @@ const ReportsPage = ({ darkMode }) => {
     const loadReportData = () => {
         console.log('Loading report data for child ID:', childId);
 
-        // Load Academic Performance
+        
         const finalMarks = getStudentFinalMarks(childId);
         console.log('Final marks:', finalMarks);
 
@@ -65,15 +65,15 @@ const ReportsPage = ({ darkMode }) => {
                 subject: mark.courseName || `Subject ${index + 1}`,
                 grade,
                 percentage: Math.round(percentage),
-                rank: Math.floor(Math.random() * 10) + 1 // In real app, this would come from rankings
+                rank: Math.floor(Math.random() * 10) + 1 
             };
         });
 
-        // Load Attendance Report - Use getAllAttendance and filter by childId
+        
         const allAttendanceRecords = getAttendanceByStudent(childId);
         console.log('All attendance records:', allAttendanceRecords);
 
-        // Filter for this child
+        
         const attendanceRecords = allAttendanceRecords.filter(record =>
             record.studentId.toString() === childId.toString()
         );
@@ -110,7 +110,7 @@ const ReportsPage = ({ darkMode }) => {
 
         console.log('Attendance data for report:', attendanceData);
 
-        // Load Progress Report (term-wise)
+        
         const progressData = [];
         if (finalMarks.length > 0) {
             const avgMarks = finalMarks.reduce((sum, m) => sum + m.finalTotal, 0) / finalMarks.length;
@@ -124,7 +124,7 @@ const ReportsPage = ({ darkMode }) => {
             });
         }
 
-        // Load Fee Statement
+        
         const feeRecords = getFeesByStudent(childId);
         const feeData = feeRecords.map(fee => ({
             term: fee.type || 'Fee Payment',
@@ -177,7 +177,7 @@ const ReportsPage = ({ darkMode }) => {
                 </button>
             </div>
 
-            {/* Report Type Selector */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {reportTypes.map((type) => (
                     <button
@@ -200,7 +200,7 @@ const ReportsPage = ({ darkMode }) => {
                 ))}
             </div>
 
-            {/* Report Content */}
+            {}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-8 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="mb-6">
                     <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>

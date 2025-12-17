@@ -31,7 +31,7 @@ const StripePaymentModal = ({ darkMode, fee, studentName, onClose }) => {
                 feeType: fee.feeType
             });
 
-            // Validate amount
+            
             const amount = parseFloat(paymentData.amount);
 
             if (isNaN(amount) || amount <= 0) {
@@ -44,7 +44,7 @@ const StripePaymentModal = ({ darkMode, fee, studentName, onClose }) => {
 
             console.log('✅ Amount validated:', amount);
 
-            // Create checkout session
+            
             const { url, sessionId } = await createCheckoutSession(
                 amount,
                 fee.id,
@@ -54,14 +54,14 @@ const StripePaymentModal = ({ darkMode, fee, studentName, onClose }) => {
 
             console.log('✅ Session created:', sessionId);
 
-            // Store fee info in sessionStorage for when user returns
+            
             sessionStorage.setItem('pendingPayment', JSON.stringify({
                 feeId: fee.id,
                 amount: amount,
                 sessionId: sessionId
             }));
 
-            // Redirect to Stripe Checkout
+            
             window.location.href = url;
         } catch (err) {
             console.error('❌ Payment error:', err);
@@ -73,7 +73,7 @@ const StripePaymentModal = ({ darkMode, fee, studentName, onClose }) => {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full`}>
-                {/* Header */}
+                {}
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6 rounded-t-xl`}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
@@ -100,9 +100,9 @@ const StripePaymentModal = ({ darkMode, fee, studentName, onClose }) => {
                     </div>
                 </div>
 
-                {/* Payment Form */}
+                {}
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    {/* Fee Details */}
+                    {}
                     <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                         <div className="space-y-2">
                             <div className="flex justify-between">
@@ -128,7 +128,7 @@ const StripePaymentModal = ({ darkMode, fee, studentName, onClose }) => {
                         </div>
                     </div>
 
-                    {/* Payment Type */}
+                    {}
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Payment Type *
@@ -159,7 +159,7 @@ const StripePaymentModal = ({ darkMode, fee, studentName, onClose }) => {
                         </div>
                     </div>
 
-                    {/* Amount */}
+                    {}
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Amount (₹) *
@@ -181,7 +181,7 @@ const StripePaymentModal = ({ darkMode, fee, studentName, onClose }) => {
                         )}
                     </div>
 
-                    {/* Info Box */}
+                    {}
                     <div className={`p-4 rounded-lg ${darkMode ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200'} border`}>
                         <div className="flex items-start space-x-2">
                             <ExternalLink className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />

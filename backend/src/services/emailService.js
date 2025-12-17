@@ -38,16 +38,16 @@ const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: process.env.SMTP_EMAIL,
-        pass: process.env.SMTP_PASSWORD?.replace(/\s+/g, '') // Handle App Password spaces
+        pass: process.env.SMTP_PASSWORD?.replace(/\s+/g, '') 
     }
 });
 
 export const sendStudentCredentials = async (studentEmail, password, studentName, parentEmail = null) => {
-    // Sender with Name
+    
     const fromAddress = `"Sri Eshwar College Of Engineering" <${process.env.SMTP_EMAIL}>`;
 
     try {
-        // 1. Email to Student
+        
         await transporter.sendMail({
             from: fromAddress,
             to: studentEmail,
@@ -67,7 +67,7 @@ export const sendStudentCredentials = async (studentEmail, password, studentName
             `
         });
 
-        // 2. Email to Parent (if provided)
+        
         if (parentEmail) {
             await transporter.sendMail({
                 from: fromAddress,

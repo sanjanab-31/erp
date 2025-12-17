@@ -65,7 +65,7 @@ const PaymentModal = ({ darkMode, fee, onClose, onPaymentSuccess }) => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    {/* Fee Details */}
+                    { }
                     <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                         <div className="space-y-2">
                             <div className="flex justify-between">
@@ -87,7 +87,7 @@ const PaymentModal = ({ darkMode, fee, onClose, onPaymentSuccess }) => {
                         </div>
                     </div>
 
-                    {/* Payment Type */}
+                    { }
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Payment Type *
@@ -116,7 +116,7 @@ const PaymentModal = ({ darkMode, fee, onClose, onPaymentSuccess }) => {
                         </div>
                     </div>
 
-                    {/* Amount */}
+                    { }
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Amount (₹) *
@@ -138,7 +138,7 @@ const PaymentModal = ({ darkMode, fee, onClose, onPaymentSuccess }) => {
                         )}
                     </div>
 
-                    {/* Payment Method */}
+                    { }
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Payment Method *
@@ -154,7 +154,7 @@ const PaymentModal = ({ darkMode, fee, onClose, onPaymentSuccess }) => {
                         </select>
                     </div>
 
-                    {/* Transaction ID */}
+                    { }
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Transaction ID / Reference Number *
@@ -170,7 +170,7 @@ const PaymentModal = ({ darkMode, fee, onClose, onPaymentSuccess }) => {
                         <p className="text-xs text-gray-500 mt-1">Enter the transaction ID from your payment app/bank</p>
                     </div>
 
-                    {/* Action Buttons */}
+                    { }
                     <div className="flex justify-end space-x-3 pt-4">
                         <button
                             type="button"
@@ -213,7 +213,7 @@ const FeeManagementPage = ({ darkMode }) => {
         setLoading(true);
         console.log('Loading fees for parent email:', parentEmail);
 
-        // Find child by parent email
+
         const students = getAllStudents();
         console.log('All students:', students);
 
@@ -231,7 +231,7 @@ const FeeManagementPage = ({ darkMode }) => {
             console.log('Child not found for parent email:', parentEmail);
             console.log('Trying to match with student emails...');
 
-            // Debug: Show all parent/guardian emails
+
             students.forEach(s => {
                 console.log(`Student: ${s.name}, Parent Email: ${s.parentEmail}, Guardian Email: ${s.guardianEmail}`);
             });
@@ -290,7 +290,7 @@ const FeeManagementPage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {/* Header */}
+            { }
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     {childName ? `${childName}'s Fees` : 'Fee Management'}
@@ -298,7 +298,7 @@ const FeeManagementPage = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">View and pay fees (Real-time sync with Admin)</p>
             </div>
 
-            {/* Stats */}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
@@ -328,7 +328,7 @@ const FeeManagementPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Fees List */}
+            { }
             {fees.length === 0 ? (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-center`}>
                     <DollarSign className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -375,7 +375,7 @@ const FeeManagementPage = ({ darkMode }) => {
                                         </div>
                                     </div>
 
-                                    {/* Payment History */}
+                                    { }
                                     {fee.payments && fee.payments.length > 0 && (
                                         <div className="mt-4 pt-4 border-t border-gray-200">
                                             <p className="text-xs font-semibold text-gray-500 mb-2">Payment History:</p>
@@ -411,7 +411,7 @@ const FeeManagementPage = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Payment Modal */}
+            { }
             {showPaymentModal && selectedFee && (
                 <PaymentModal
                     darkMode={darkMode}
@@ -421,7 +421,7 @@ const FeeManagementPage = ({ darkMode }) => {
                 />
             )}
 
-            {/* Stripe Payment Modal */}
+            { }
             {showStripeModal && selectedFee && (
                 <StripePaymentModal
                     darkMode={darkMode}

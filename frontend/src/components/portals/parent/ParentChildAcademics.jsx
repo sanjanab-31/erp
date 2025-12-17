@@ -21,9 +21,9 @@ const ParentChildAcademics = ({ darkMode }) => {
     const [examSchedules, setExamSchedules] = useState([]);
     const [selectedCourse, setSelectedCourse] = useState(null);
 
-    // Get child info from parent's profile
+    
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-    const childId = currentUser.studentId || 'student_1'; // Link to child
+    const childId = currentUser.studentId || 'student_1'; 
     const childName = currentUser.childName || 'Student Name';
     const childClass = currentUser.childClass || 'Grade 10-A';
 
@@ -62,7 +62,7 @@ const ParentChildAcademics = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
+            {}
             <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     {childName}'s Academic Progress

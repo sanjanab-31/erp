@@ -34,29 +34,29 @@ import { useToast } from '../../../context/ToastContext';
 
 const AttendancePage = ({ darkMode }) => {
     const { showSuccess, showError } = useToast();
-    // Global State
-    const [activeTab, setActiveTab] = useState('teachers'); // 'teachers' | 'students'
+    
+    const [activeTab, setActiveTab] = useState('teachers'); 
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-    const [saveStatus, setSaveStatus] = useState(null); // 'saving' | 'saved' | 'error' | null
+    const [saveStatus, setSaveStatus] = useState(null); 
 
-    // Student State
-    const [studentViewMode, setStudentViewMode] = useState('summary'); // 'summary' | 'details'
+    
+    const [studentViewMode, setStudentViewMode] = useState('summary'); 
     const [selectedClassDetail, setSelectedClassDetail] = useState(null);
     const [allStudents, setAllStudents] = useState([]);
     const [studentAttendanceRecords, setStudentAttendanceRecords] = useState([]);
     const [studentStats, setStudentStats] = useState({ total: 0, present: 0, absent: 0, late: 0 });
 
-    // Teacher State
+    
     const [allTeachers, setAllTeachers] = useState([]);
-    // localTeacherAttendance: Local state for UI changes before saving
+    
     const [localTeacherAttendance, setLocalTeacherAttendance] = useState({});
-    // dbTeacherAttendance: Committed state from store
+    
     const [dbTeacherAttendance, setDbTeacherAttendance] = useState([]);
     const [teacherStats, setTeacherStats] = useState({ total: 0, present: 0, absent: 0, late: 0 });
 
     const classes = ['Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
 
-    // Load Data
+    
     useEffect(() => {
         loadStudentData();
         loadTeacherData();
@@ -75,7 +75,7 @@ const AttendancePage = ({ darkMode }) => {
 
     useEffect(() => {
         loadAttendanceData();
-        // Reset save status when date changes
+        
         setSaveStatus(null);
     }, [selectedDate]);
 
@@ -90,23 +90,23 @@ const AttendancePage = ({ darkMode }) => {
     };
 
     const loadAttendanceData = () => {
-        // Get fresh teacher data for stats calculation
+        
         const currentTeachers = getAllTeachers();
 
-        // Student Attendance (Read Only for Admin)
+        
         const sAttendance = getAttendanceByDate(selectedDate);
         setStudentAttendanceRecords(sAttendance);
         setStudentStats(getAttendanceStats(selectedDate));
 
-        // Teacher Attendance
+        
         const tAttendance = getTeacherAttendanceByDate(selectedDate);
         setDbTeacherAttendance(tAttendance);
 
-        // Calculate teacher stats based on actual records for this date
+        
         const tStats = getTeacherAttendanceStats(selectedDate, currentTeachers.length);
         setTeacherStats(tStats);
 
-        // Initialize local state from DB - ensure string keys for consistency
+        
         const initialMap = {};
         tAttendance.forEach(r => {
             initialMap[String(r.teacherId)] = r.status;
@@ -114,7 +114,7 @@ const AttendancePage = ({ darkMode }) => {
         setLocalTeacherAttendance(initialMap);
     };
 
-    // --- Student Logic ---
+    
     const getStudentAttendanceRecord = (studentId) => {
         return studentAttendanceRecords.find(r => r.studentId === studentId);
     };
@@ -141,31 +141,31 @@ const AttendancePage = ({ darkMode }) => {
         });
     };
 
-    // --- Teacher Logic ---
+    
     const handleLocalStatusChange = (teacherId, status) => {
         setLocalTeacherAttendance(prev => ({
             ...prev,
             [String(teacherId)]: status
         }));
-        setSaveStatus(null); // Reset save status on change
+        setSaveStatus(null); 
     };
 
     const saveTeacherAttendance = () => {
         setSaveStatus('saving');
         try {
-            // Iterate over allTeachers to preserve original ID types (numbers)
-            // and only save records for valid teachers
+            
+            
             const attendanceList = allTeachers
-                .filter(teacher => localTeacherAttendance[String(teacher.id)]) // Only include if status is set
+                .filter(teacher => localTeacherAttendance[String(teacher.id)]) 
                 .map(teacher => ({
                     date: selectedDate,
-                    teacherId: teacher.id, // Preserves original ID type (number)
+                    teacherId: teacher.id, 
                     status: localTeacherAttendance[String(teacher.id)],
                     markedBy: 'Admin'
                 }));
 
             if (attendanceList.length === 0 && Object.keys(localTeacherAttendance).length > 0) {
-                // Fallback if no matching teachers found but local state exists (shouldn't happen)
+                
                 console.warn("Mismatch between teachers list and attendance map");
             }
 
@@ -174,7 +174,7 @@ const AttendancePage = ({ darkMode }) => {
             showSuccess('Teacher attendance saved successfully!');
             setTimeout(() => setSaveStatus(null), 3000);
 
-            // Stats will update automatically via subscription
+            
         } catch (error) {
             console.error(error);
             setSaveStatus('error');
@@ -182,7 +182,7 @@ const AttendancePage = ({ darkMode }) => {
         }
     };
 
-    // Status Styles
+    
     const getStatusStyle = (status, isSelected) => {
         if (!isSelected) return 'bg-transparent border-gray-300 text-gray-500 hover:bg-gray-50';
 
@@ -205,7 +205,7 @@ const AttendancePage = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {/* Header & Toggle */}
+            {}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -238,7 +238,7 @@ const AttendancePage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Date Filter (Common) */}
+            {}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} p-4 rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="flex items-center gap-4">
                     <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -260,10 +260,10 @@ const AttendancePage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* TEACHER VIEW */}
+            {}
             {activeTab === 'teachers' && (
                 <div className="space-y-6">
-                    {/* Teacher Stats */}
+                    {}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <StatCard title="Total Staff" value={allTeachers.length} icon={Users} color="blue" darkMode={darkMode} />
                         <StatCard title="Present" value={teacherStats.present} icon={CheckCircle} color="green" darkMode={darkMode} />
@@ -276,7 +276,7 @@ const AttendancePage = ({ darkMode }) => {
                             <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                 Teacher Attendance Records
                             </h3>
-                            {/* Save Button */}
+                            {}
                             <button
                                 onClick={saveTeacherAttendance}
                                 disabled={saveStatus === 'saved'}
@@ -345,12 +345,12 @@ const AttendancePage = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* STUDENT VIEW */}
+            {}
             {activeTab === 'students' && (
                 <div className="space-y-6">
                     {studentViewMode === 'summary' ? (
                         <>
-                            {/* Stats (Overall) */}
+                            {}
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <StatCard title="Total Students" value={allStudents.length} icon={School} color="blue" darkMode={darkMode} />
                                 <StatCard title="Present Today" value={studentStats.present} icon={CheckCircle} color="green" darkMode={darkMode} />
@@ -358,7 +358,7 @@ const AttendancePage = ({ darkMode }) => {
                                 <StatCard title="Late Today" value={studentStats.late} icon={Clock} color="yellow" darkMode={darkMode} />
                             </div>
 
-                            {/* Class Summary Table */}
+                            {}
                             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
                                 <div className="p-6 border-b border-gray-200">
                                     <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -405,7 +405,7 @@ const AttendancePage = ({ darkMode }) => {
                             </div>
                         </>
                     ) : (
-                        // Details View (Read Only)
+                        
                         <div className="space-y-4">
                             <button
                                 onClick={() => setStudentViewMode('summary')}

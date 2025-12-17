@@ -29,7 +29,7 @@ const LibraryPage = ({ darkMode }) => {
     const [stats, setStats] = useState(libraryStore.getLibraryStats());
     const [searchQuery, setSearchQuery] = useState('');
     const [showModal, setShowModal] = useState(false);
-    const [modalType, setModalType] = useState(''); // 'addBook', 'editBook', 'issueBook'
+    const [modalType, setModalType] = useState(''); 
     const [selectedBook, setSelectedBook] = useState(null);
 
     useEffect(() => {
@@ -73,8 +73,8 @@ const LibraryPage = ({ darkMode }) => {
 
     const handleRejectRequest = (issueId) => {
         if (window.confirm('Reject this request?')) {
-            // For now just delete the issue record or we could add a 'Rejected' status
-            // Using 'Rejected' status is better for history but updateIssueStatus handles it
+            
+            
             try {
                 libraryStore.updateIssueStatus(issueId, 'Rejected');
             } catch (error) {
@@ -83,7 +83,7 @@ const LibraryPage = ({ darkMode }) => {
         }
     };
 
-    // Filtered Content
+    
     const filteredBooks = books.filter(b =>
         b.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         b.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -95,7 +95,7 @@ const LibraryPage = ({ darkMode }) => {
         i.userName.toLowerCase().includes(searchQuery.toLowerCase())
     ).sort((a, b) => new Date(b.issueDate) - new Date(a.issueDate));
 
-    // Modal Component
+    
     const Modal = () => {
         const [formData, setFormData] = useState(
             selectedBook || {
@@ -109,7 +109,7 @@ const LibraryPage = ({ darkMode }) => {
             }
         );
 
-        // For Issuing
+        
         const [issueData, setIssueData] = useState({
             userId: '',
             userName: '',
@@ -124,11 +124,11 @@ const LibraryPage = ({ darkMode }) => {
                 } else if (modalType === 'editBook') {
                     libraryStore.updateBook(selectedBook.id, formData);
                 } else if (modalType === 'issueBook') {
-                    // Logic to find book and issue is handled via predefined user input for now
-                    // In a real app, you'd select from a user list.
-                    // Here admin manually inputs user details or email.
+                    
+                    
+                    
 
-                    // Simple validation
+                    
                     if (!issueData.userId) {
                         showWarning('User ID is required');
                         return;
@@ -333,7 +333,7 @@ const LibraryPage = ({ darkMode }) => {
 
     return (
         <div className={`space-y-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            {/* Stats Cards */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6 shadow-sm`}>
                     <div className="flex items-center justify-between mb-4">
@@ -369,7 +369,7 @@ const LibraryPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Controls */}
+            {}
             <div className="flex justify-between items-center">
                 <div className="flex bg-gray-100 p-1 rounded-lg">
                     <button
@@ -413,7 +413,7 @@ const LibraryPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Main Content Table */}
+            {}
             <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl shadow-sm overflow-hidden`}>
                 {activeTab === 'books' && (
                     <div className="overflow-x-auto">
@@ -512,7 +512,7 @@ const LibraryPage = ({ darkMode }) => {
                                         return i.status === 'Issued' && new Date(i.dueDate) < new Date();
                                     }
                                     if (activeTab === 'issues') {
-                                        return i.status === 'Issued'; // Only show active issues (not returned)
+                                        return i.status === 'Issued'; 
                                     }
                                     return true;
                                 }).map((issue) => {

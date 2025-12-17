@@ -1,17 +1,17 @@
-// Centralized Timetable Data Store
-// This provides real-time timetable synchronization across Admin, Teacher, Student, and Parent portals
+
+
 
 const STORAGE_KEY = 'erp_timetable_data';
 
-// Initialize with default data if empty
+
 const initializeDefaultData = () => {
     return {
-        teachers: [],  // Teacher timetables
-        students: []   // Student timetables (by class)
+        teachers: [],  
+        students: []   
     };
 };
 
-// Get all timetables
+
 export const getAllTimetables = () => {
     try {
         const data = localStorage.getItem(STORAGE_KEY);
@@ -27,7 +27,7 @@ export const getAllTimetables = () => {
     }
 };
 
-// Add or update teacher timetable
+
 export const saveTeacherTimetable = (teacherId, timetableData) => {
     try {
         const allTimetables = getAllTimetables();
@@ -37,7 +37,7 @@ export const saveTeacherTimetable = (teacherId, timetableData) => {
             id: existingIndex >= 0 ? allTimetables.teachers[existingIndex].id : Date.now(),
             teacherId,
             teacherName: timetableData.teacherName,
-            schedule: timetableData.schedule, // Array of schedule entries
+            schedule: timetableData.schedule, 
             createdAt: existingIndex >= 0 ? allTimetables.teachers[existingIndex].createdAt : new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -50,7 +50,7 @@ export const saveTeacherTimetable = (teacherId, timetableData) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(allTimetables));
 
-        // Trigger storage event for real-time updates
+        
         window.dispatchEvent(new Event('timetableUpdated'));
 
         return timetableEntry;
@@ -60,7 +60,7 @@ export const saveTeacherTimetable = (teacherId, timetableData) => {
     }
 };
 
-// Add or update student/class timetable
+
 export const saveClassTimetable = (className, timetableData) => {
     try {
         const allTimetables = getAllTimetables();
@@ -69,7 +69,7 @@ export const saveClassTimetable = (className, timetableData) => {
         const timetableEntry = {
             id: existingIndex >= 0 ? allTimetables.students[existingIndex].id : Date.now(),
             className,
-            schedule: timetableData.schedule, // Array of schedule entries
+            schedule: timetableData.schedule, 
             createdAt: existingIndex >= 0 ? allTimetables.students[existingIndex].createdAt : new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -82,7 +82,7 @@ export const saveClassTimetable = (className, timetableData) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(allTimetables));
 
-        // Trigger storage event for real-time updates
+        
         window.dispatchEvent(new Event('timetableUpdated'));
 
         return timetableEntry;
@@ -92,31 +92,31 @@ export const saveClassTimetable = (className, timetableData) => {
     }
 };
 
-// Get teacher timetable by teacher ID
+
 export const getTeacherTimetable = (teacherId) => {
     const allTimetables = getAllTimetables();
     return allTimetables.teachers.find(t => t.teacherId === teacherId);
 };
 
-// Get class timetable by class name
+
 export const getClassTimetable = (className) => {
     const allTimetables = getAllTimetables();
     return allTimetables.students.find(t => t.className === className);
 };
 
-// Get all teacher timetables
+
 export const getAllTeacherTimetables = () => {
     const allTimetables = getAllTimetables();
     return allTimetables.teachers;
 };
 
-// Get all class timetables
+
 export const getAllClassTimetables = () => {
     const allTimetables = getAllTimetables();
     return allTimetables.students;
 };
 
-// Delete teacher timetable
+
 export const deleteTeacherTimetable = (teacherId) => {
     try {
         const allTimetables = getAllTimetables();
@@ -124,7 +124,7 @@ export const deleteTeacherTimetable = (teacherId) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(allTimetables));
 
-        // Trigger storage event for real-time updates
+        
         window.dispatchEvent(new Event('timetableUpdated'));
 
         return true;
@@ -134,7 +134,7 @@ export const deleteTeacherTimetable = (teacherId) => {
     }
 };
 
-// Delete class timetable
+
 export const deleteClassTimetable = (className) => {
     try {
         const allTimetables = getAllTimetables();
@@ -142,7 +142,7 @@ export const deleteClassTimetable = (className) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(allTimetables));
 
-        // Trigger storage event for real-time updates
+        
         window.dispatchEvent(new Event('timetableUpdated'));
 
         return true;
@@ -152,7 +152,7 @@ export const deleteClassTimetable = (className) => {
     }
 };
 
-// Get timetable statistics
+
 export const getTimetableStats = () => {
     const allTimetables = getAllTimetables();
 
@@ -162,22 +162,22 @@ export const getTimetableStats = () => {
     };
 };
 
-// Subscribe to real-time updates
+
 export const subscribeToUpdates = (callback) => {
     const handler = () => callback(getAllTimetables());
     window.addEventListener('timetableUpdated', handler);
 
-    // Return unsubscribe function
+    
     return () => window.removeEventListener('timetableUpdated', handler);
 };
 
-// Helper function to get schedule for a specific day
+
 export const getScheduleForDay = (schedule, day) => {
     if (!schedule || !Array.isArray(schedule)) return [];
     return schedule.filter(entry => entry.day === day);
 };
 
-// Helper function to format time
+
 export const formatTime = (time) => {
     if (!time) return '';
     const [hours, minutes] = time.split(':');

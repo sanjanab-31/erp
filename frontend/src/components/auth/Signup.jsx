@@ -12,7 +12,7 @@ const Signup = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    // Auto-dismiss error after 5 seconds or on any click within the page
+    
     useEffect(() => {
         if (!error) return;
         const timer = setTimeout(() => setError(''), 5000);
@@ -35,16 +35,16 @@ const Signup = () => {
             setError('');
             setLoading(true);
 
-            // Simulate account creation
+            
             await new Promise(resolve => setTimeout(resolve, 1000));
 
-            // Store user data
+            
             localStorage.setItem('isAuthenticated', 'true');
             localStorage.setItem('userRole', role);
             localStorage.setItem('userEmail', email);
             localStorage.setItem('userName', name);
 
-            // Redirect to login
+            
             navigate('/login');
         } catch (err) {
             console.error(err);

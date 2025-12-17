@@ -43,7 +43,7 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
     const [notifications, setNotifications] = useState([]);
     const [unreadCounts, setUnreadCounts] = useState({ messages: 0, announcements: 0, notifications: 0 });
 
-    // New message form
+    
     const [newMessage, setNewMessage] = useState({
         recipientId: '',
         recipientName: '',
@@ -52,7 +52,7 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
         text: ''
     });
 
-    // New announcement form
+    
     const [newAnnouncement, setNewAnnouncement] = useState({
         title: '',
         content: '',
@@ -61,7 +61,7 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
         category: 'General'
     });
 
-    // Load data on mount and subscribe to updates
+    
     useEffect(() => {
         loadData();
 
@@ -72,7 +72,7 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
         return () => unsubscribe();
     }, []);
 
-    // Load selected conversation messages
+    
     useEffect(() => {
         if (selectedConversation) {
             const messages = getConversationMessages(selectedConversation.id);
@@ -150,7 +150,7 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
 
     const renderMessagesTab = () => (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Conversations List */}
+            {}
             <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border overflow-hidden`}>
                 <div className="p-4 border-b border-gray-200">
                     <div className="flex items-center justify-between mb-4">
@@ -224,11 +224,11 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
                 </div>
             </div>
 
-            {/* Message Content */}
+            {}
             <div className={`lg:col-span-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border flex flex-col`}>
                 {selectedConversation ? (
                     <>
-                        {/* Chat Header */}
+                        {}
                         <div className={`p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} flex items-center justify-between`}>
                             <div className="flex items-center space-x-3">
                                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
@@ -243,7 +243,7 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
                             </div>
                         </div>
 
-                        {/* Messages */}
+                        {}
                         <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[400px]">
                             {currentMessages.map((message) => {
                                 const isSent = message.senderRole !== selectedConversation.otherParticipant?.role;
@@ -272,7 +272,7 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
                             })}
                         </div>
 
-                        {/* Message Input */}
+                        {}
                         <div className={`p-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                             <div className="flex items-center space-x-2">
                                 <input
@@ -402,7 +402,7 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
+            {}
             <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Communication Center
@@ -410,7 +410,7 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
                 <p className="text-sm text-gray-500">Messages, announcements, and notifications</p>
             </div>
 
-            {/* Stats Cards */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
@@ -443,7 +443,7 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
                 </div>
             </div>
 
-            {/* Tabs */}
+            {}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="border-b border-gray-200">
                     <div className="flex space-x-8 px-6">
@@ -474,7 +474,7 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
                 </div>
             </div>
 
-            {/* New Message Modal */}
+            {}
             {showNewMessageModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 max-w-md w-full`}>
@@ -539,7 +539,7 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
                 </div>
             )}
 
-            {/* New Announcement Modal */}
+            {}
             {showNewAnnouncementModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 max-w-md w-full`}>

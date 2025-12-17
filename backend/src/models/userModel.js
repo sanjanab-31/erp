@@ -6,7 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DATA_FILE = path.join(__dirname, '../../data/users.json');
 
-// Ensure data directory exists
+
 const ensureDataDir = () => {
     const dir = path.dirname(DATA_FILE);
     if (!fs.existsSync(dir)) {
@@ -28,7 +28,7 @@ class User {
         this.updatedAt = new Date().toISOString();
     }
 
-    // Helper to read users
+    
     static _readUsers() {
         ensureDataDir();
         try {
@@ -39,16 +39,16 @@ class User {
         }
     }
 
-    // Helper to write users
+    
     static _writeUsers(users) {
         ensureDataDir();
         fs.writeFileSync(DATA_FILE, JSON.stringify(users, null, 2));
     }
 
-    // Create a new user
+    
     static async create(userData) {
         const users = this._readUsers();
-        // Simulate ID generation
+        
         const id = userData.id || Math.random().toString(36).substr(2, 9);
         const newUser = new User({ ...userData, id });
 
@@ -58,17 +58,17 @@ class User {
         return newUser;
     }
 
-    // Find user by Email
+    
     static findOne(query) {
         const users = this._readUsers();
-        // Simple query support for email
+        
         if (query.email) {
             return users.find(u => u.email === query.email);
         }
         return null;
     }
 
-    // Find user by ID
+    
     static async findById(id) {
         const users = this._readUsers();
         return users.find(u => u.id === id);

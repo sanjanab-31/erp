@@ -45,12 +45,12 @@ const ReportsPage = ({ darkMode }) => {
     const loadReportData = () => {
         const allStudents = getAllStudents();
 
-        // Filter students by class if needed
+        
         const filteredStudents = selectedClass === 'All Classes'
             ? allStudents
             : allStudents.filter(s => s.class === selectedClass);
 
-        // Calculate attendance data
+        
         const attendanceStudents = filteredStudents.map(student => {
             const percentage = calculateAttendancePercentage(student.id);
             const attendanceRecords = getAttendanceByStudent(student.id);
@@ -74,7 +74,7 @@ const ReportsPage = ({ darkMode }) => {
         const totalPresent = attendanceStudents.reduce((sum, s) => sum + s.present, 0);
         const totalAbsent = attendanceStudents.reduce((sum, s) => sum + s.absent, 0);
 
-        // Calculate grades data
+        
         const gradesStudents = filteredStudents.map(student => {
             const finalMarks = getStudentFinalMarks(student.id);
             const avgMarks = finalMarks.length > 0
@@ -86,11 +86,11 @@ const ReportsPage = ({ darkMode }) => {
                 name: student.name,
                 grade,
                 marks: Math.round(avgMarks),
-                rank: 0 // Will be calculated after sorting
+                rank: 0 
             };
         }).sort((a, b) => b.marks - a.marks);
 
-        // Assign ranks
+        
         gradesStudents.forEach((student, index) => {
             student.rank = index + 1;
         });
@@ -100,7 +100,7 @@ const ReportsPage = ({ darkMode }) => {
             ? Math.round((gradesStudents.filter(s => s.marks >= 40).length / gradesStudents.length) * 100)
             : 0;
 
-        // Calculate assignments data
+        
         let totalAssignments = 0;
         let totalSubmitted = 0;
         let totalPending = 0;
@@ -123,7 +123,7 @@ const ReportsPage = ({ darkMode }) => {
 
         const avgScore = scoredCount > 0 ? Math.round(totalScore / scoredCount) : 0;
 
-        // Performance data
+        
         const topPerformer = gradesStudents.length > 0 ? gradesStudents[0].name : 'N/A';
         const needsAttention = gradesStudents.filter(s => s.marks < 60).length;
         const onTrack = gradesStudents.filter(s => s.marks >= 60).length;
@@ -134,16 +134,16 @@ const ReportsPage = ({ darkMode }) => {
                 averageAttendance: avgAttendance,
                 presentDays: Math.round(totalPresent / (filteredStudents.length || 1)),
                 absentDays: Math.round(totalAbsent / (filteredStudents.length || 1)),
-                students: attendanceStudents.slice(0, 10) // Top 10
+                students: attendanceStudents.slice(0, 10) 
             },
             grades: {
                 averageGrade: avgGrade,
                 totalAssessments: totalAssignments,
                 passRate,
-                students: gradesStudents.slice(0, 10) // Top 10
+                students: gradesStudents.slice(0, 10) 
             },
             performance: {
-                improvement: '+5%', // This would need historical data
+                improvement: '+5%', 
                 topPerformer,
                 needsAttention,
                 onTrack
@@ -376,7 +376,7 @@ const ReportsPage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {/* Header */}
+            {}
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Reports & Analytics
@@ -384,7 +384,7 @@ const ReportsPage = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">Generate and view detailed real-time reports</p>
             </div>
 
-            {/* Report Type Selection */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 {reportTypes.map((type) => (
                     <button
@@ -403,7 +403,7 @@ const ReportsPage = ({ darkMode }) => {
                 ))}
             </div>
 
-            {/* Filters */}
+            {}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6`}>
                 <div className="flex flex-col md:flex-row gap-4">
                     <select
@@ -444,7 +444,7 @@ const ReportsPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Report Content */}
+            {}
             {renderReportContent()}
         </div>
     );

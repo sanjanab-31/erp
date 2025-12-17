@@ -12,12 +12,7 @@ const Login = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const users = {
-        Student: { email: 'student@eshwar.com', password: 'student123' },
-        Teacher: { email: 'teacher@eshwar.com', password: 'teacher123' },
-        Admin: { email: 'admin@eshwar.com', password: 'admin123' },
-        Parent: { email: 'parent@eshwar.com', password: 'parent123' },
-    };
+
 
     const roles = [
         { name: 'Student', icon: User },
@@ -38,19 +33,15 @@ const Login = () => {
         setLoading(true);
 
         try {
-            // Use JWT mock login (simulates backend authentication)
-            const { mockLogin } = await import('../../utils/jwt');
-            const response = await mockLogin(email, password, activeRole);
+            const { login } = await import('../../utils/jwt');
+            const response = await login(email, password, activeRole);
 
-            // Store JWT token
             localStorage.setItem('authToken', response.token);
             localStorage.setItem('userRole', response.user.role);
             localStorage.setItem('userEmail', response.user.email);
             localStorage.setItem('userName', response.user.name);
 
-            // Log token for debugging (remove in production)
-            console.log('JWT Token generated:', response.token);
-            console.log('Token payload:', JSON.parse(atob(response.token.split('.')[1])));
+
 
             setTimeout(() => {
                 navigate(`/dashboard/${activeRole.toLowerCase()}`);
@@ -75,7 +66,6 @@ const Login = () => {
                 </div>
             )}
 
-            {/* Role Tabs */}
             <div className="mb-6 border-b">
                 <div className="flex justify-center gap-6">
                     {roles.map(({ name, icon: Icon }) => (
@@ -97,7 +87,6 @@ const Login = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Email */}
                 <div>
                     <label className="block text-sm font-medium mb-1">Email address</label>
                     <div className="relative">
@@ -113,7 +102,6 @@ const Login = () => {
                     </div>
                 </div>
 
-                {/* Password */}
                 <div>
                     <label className="block text-sm font-medium mb-1">Password</label>
                     <div className="relative">
@@ -129,7 +117,6 @@ const Login = () => {
                     </div>
                 </div>
 
-                {/* Remember + Forgot */}
                 <div className="flex justify-between items-center">
                     <label className="flex items-center gap-2 text-sm">
                         <input type="checkbox" className="rounded" />
@@ -140,7 +127,6 @@ const Login = () => {
                     </Link>
                 </div>
 
-                {/* Submit */}
                 <button
                     disabled={loading}
                     className="w-full bg-blue-600 text-white py-2.5 rounded-md hover:bg-blue-700 transition"
@@ -149,7 +135,6 @@ const Login = () => {
                 </button>
             </form>
 
-            {/* Create Account */}
             <div className="mt-6 text-center text-sm text-gray-600">
                 Don&apos;t have an account?
             </div>

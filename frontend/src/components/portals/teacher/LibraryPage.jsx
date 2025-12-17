@@ -81,7 +81,7 @@ const TeacherLibraryPage = ({ darkMode }) => {
                 <Book className="w-8 h-8 text-green-600" />
             </div>
 
-            {/* Tabs */}
+            {}
             <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
                 <button
                     onClick={() => setActiveTab('browse')}
@@ -97,7 +97,7 @@ const TeacherLibraryPage = ({ darkMode }) => {
                 </button>
             </div>
 
-            {/* Content */}
+            {}
             {activeTab === 'browse' && (
                 <div className="space-y-4">
                     <div className="relative">

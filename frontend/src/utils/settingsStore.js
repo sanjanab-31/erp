@@ -1,5 +1,5 @@
-// Centralized Settings Data Store
-// This provides real-time settings synchronization across all portals
+
+
 
 const STORAGE_KEYS = {
     STUDENT: 'erp_student_settings',
@@ -8,7 +8,7 @@ const STORAGE_KEYS = {
     ADMIN: 'erp_admin_settings'
 };
 
-// Initialize default settings for each portal
+
 const initializeDefaultSettings = (portal) => {
     const commonSettings = {
         notifications: {
@@ -129,7 +129,7 @@ const initializeDefaultSettings = (portal) => {
     }
 };
 
-// Get settings for a specific portal
+
 export const getSettings = (portal) => {
     try {
         const storageKey = STORAGE_KEYS[portal.toUpperCase()];
@@ -150,7 +150,7 @@ export const getSettings = (portal) => {
     }
 };
 
-// Update settings for a specific portal
+
 export const updateSettings = (portal, updates) => {
     try {
         const storageKey = STORAGE_KEYS[portal.toUpperCase()];
@@ -167,7 +167,7 @@ export const updateSettings = (portal, updates) => {
 
         localStorage.setItem(storageKey, JSON.stringify(updatedSettings));
 
-        // Trigger storage event for real-time updates
+        
         window.dispatchEvent(new CustomEvent('settingsUpdated', {
             detail: { portal, settings: updatedSettings }
         }));
@@ -179,7 +179,7 @@ export const updateSettings = (portal, updates) => {
     }
 };
 
-// Update specific section of settings
+
 export const updateSettingsSection = (portal, section, data) => {
     try {
         const currentSettings = getSettings(portal);
@@ -195,7 +195,7 @@ export const updateSettingsSection = (portal, section, data) => {
         const storageKey = STORAGE_KEYS[portal.toUpperCase()];
         localStorage.setItem(storageKey, JSON.stringify(updatedSettings));
 
-        // Trigger storage event for real-time updates
+        
         window.dispatchEvent(new CustomEvent('settingsUpdated', {
             detail: { portal, section, settings: updatedSettings }
         }));
@@ -207,11 +207,11 @@ export const updateSettingsSection = (portal, section, data) => {
     }
 };
 
-// Change password
+
 export const changePassword = (portal, currentPassword, newPassword) => {
     try {
-        // In a real application, you would validate the current password
-        // and hash the new password before storing
+        
+        
         const currentSettings = getSettings(portal);
         const updatedSettings = {
             ...currentSettings,
@@ -225,7 +225,7 @@ export const changePassword = (portal, currentPassword, newPassword) => {
         const storageKey = STORAGE_KEYS[portal.toUpperCase()];
         localStorage.setItem(storageKey, JSON.stringify(updatedSettings));
 
-        // Trigger storage event for real-time updates
+        
         window.dispatchEvent(new CustomEvent('settingsUpdated', {
             detail: { portal, section: 'security', settings: updatedSettings }
         }));
@@ -237,14 +237,14 @@ export const changePassword = (portal, currentPassword, newPassword) => {
     }
 };
 
-// Reset settings to default
+
 export const resetSettings = (portal) => {
     try {
         const defaultSettings = initializeDefaultSettings(portal);
         const storageKey = STORAGE_KEYS[portal.toUpperCase()];
         localStorage.setItem(storageKey, JSON.stringify(defaultSettings));
 
-        // Trigger storage event for real-time updates
+        
         window.dispatchEvent(new CustomEvent('settingsUpdated', {
             detail: { portal, settings: defaultSettings }
         }));
@@ -256,7 +256,7 @@ export const resetSettings = (portal) => {
     }
 };
 
-// Subscribe to real-time settings updates
+
 export const subscribeToSettingsUpdates = (portal, callback) => {
     const handler = (event) => {
         if (event.detail.portal === portal) {
@@ -265,7 +265,7 @@ export const subscribeToSettingsUpdates = (portal, callback) => {
     };
     window.addEventListener('settingsUpdated', handler);
 
-    // Return unsubscribe function
+    
     return () => window.removeEventListener('settingsUpdated', handler);
 };
 

@@ -1,21 +1,21 @@
-// Centralized Library Data Store
-// Provides real-time synchronization for Library Management System
+
+
 
 const STORAGE_KEY_BOOKS = 'erp_library_books';
 const STORAGE_KEY_ISSUES = 'erp_library_issues';
 const STORAGE_KEY_RULES = 'erp_library_rules';
 
-// Default Library Rules
+
 const DEFAULT_RULES = {
     maxBooksPerUser: 3,
     issueDurationDays: 14,
-    finePerDay: 5, // Currency unit
+    finePerDay: 5, 
     currency: '₹'
 };
 
-// Initialize default data if empty
+
 const initializeDefaultData = () => {
-    // Books
+    
     if (!localStorage.getItem(STORAGE_KEY_BOOKS)) {
         const defaultBooks = [
             {
@@ -58,18 +58,18 @@ const initializeDefaultData = () => {
         localStorage.setItem(STORAGE_KEY_BOOKS, JSON.stringify(defaultBooks));
     }
 
-    // Issues
+    
     if (!localStorage.getItem(STORAGE_KEY_ISSUES)) {
         localStorage.setItem(STORAGE_KEY_ISSUES, JSON.stringify([]));
     }
 
-    // Rules
+    
     if (!localStorage.getItem(STORAGE_KEY_RULES)) {
         localStorage.setItem(STORAGE_KEY_RULES, JSON.stringify(DEFAULT_RULES));
     }
 };
 
-// --- BOOKS OPERATIONS ---
+
 
 export const getAllBooks = () => {
     try {
@@ -91,7 +91,7 @@ export const addBook = (bookData) => {
         const newBook = {
             id: Date.now(),
             ...bookData,
-            available: bookData.quantity, // Initially all are available
+            available: bookData.quantity, 
             addedAt: new Date().toISOString()
         };
         books.push(newBook);
@@ -110,7 +110,7 @@ export const updateBook = (bookId, updates) => {
         const index = books.findIndex(b => b.id === bookId);
         if (index === -1) throw new Error('Book not found');
 
-        // Adjust available count if quantity changes
+        
         if (updates.quantity !== undefined) {
             const diff = updates.quantity - books[index].quantity;
             books[index].available += diff;
@@ -139,7 +139,7 @@ export const deleteBook = (bookId) => {
     }
 };
 
-// --- ISSUE OPERATIONS ---
+
 
 export const getAllIssues = () => {
     try {
@@ -157,7 +157,7 @@ export const issueBook = (bookId, user, rules = null, status = 'Issued') => {
         const bookIndex = books.findIndex(b => b.id === bookId);
         if (bookIndex === -1) throw new Error('Book not found');
         if (books[bookIndex].available <= 0 && status === 'Issued') throw new Error('Book not available');
-        // Allow request even if not available? Maybe not for now.
+        
 
         const activeRules = rules || getLibraryRules();
         const issueDate = new Date();
@@ -168,22 +168,22 @@ export const issueBook = (bookId, user, rules = null, status = 'Issued') => {
             id: Date.now(),
             bookId,
             bookTitle: books[bookIndex].title,
-            userId: user.id, // email or id
+            userId: user.id, 
             userName: user.name,
-            userRole: user.role, // 'Student' or 'Teacher'
+            userRole: user.role, 
             issueDate: issueDate.toISOString(),
             dueDate: dueDate.toISOString(),
-            status: status, // 'Issued' or 'Requested'
+            status: status, 
             fine: 0
         };
 
-        // Update book availability only if Issued
+        
         if (status === 'Issued') {
             books[bookIndex].available -= 1;
             localStorage.setItem(STORAGE_KEY_BOOKS, JSON.stringify(books));
         }
 
-        // Add issue record
+        
         const issues = getAllIssues();
         issues.push(newIssue);
         localStorage.setItem(STORAGE_KEY_ISSUES, JSON.stringify(issues));
@@ -205,7 +205,7 @@ export const updateIssueStatus = (issueId, newStatus) => {
         const issue = issues[issueIndex];
         const oldStatus = issue.status;
 
-        // If changing from Requested to Issued, decrease availability
+        
         if (oldStatus === 'Requested' && newStatus === 'Issued') {
             const books = getAllBooks();
             const bookIndex = books.findIndex(b => b.id === issue.bookId);
@@ -216,11 +216,11 @@ export const updateIssueStatus = (issueId, newStatus) => {
             }
         }
 
-        // If Rejecting a request (deleting or marking rejected), no availability change needed as it wasn't deducted
+        
 
         issue.status = newStatus;
         if (newStatus === 'Issued') {
-            // Reset due date to start from now
+            
             const rules = getLibraryRules();
             const dueDate = new Date();
             dueDate.setDate(dueDate.getDate() + rules.issueDurationDays);
@@ -247,7 +247,7 @@ export const returnBook = (issueId) => {
         const issue = issues[issueIndex];
         if (issue.status === 'Returned') throw new Error('Book already returned');
 
-        // Calculate fine
+        
         const fine = calculateFine(issue.dueDate);
 
         issue.returnDate = new Date().toISOString();
@@ -257,7 +257,7 @@ export const returnBook = (issueId) => {
         issues[issueIndex] = issue;
         localStorage.setItem(STORAGE_KEY_ISSUES, JSON.stringify(issues));
 
-        // Update book availability
+        
         const books = getAllBooks();
         const bookIndex = books.findIndex(b => b.id === issue.bookId);
         if (bookIndex !== -1) {
@@ -273,7 +273,7 @@ export const returnBook = (issueId) => {
     }
 };
 
-// --- RULES & UTILS ---
+
 
 export const getLibraryRules = () => {
     try {
@@ -295,7 +295,7 @@ export const calculateFine = (dueDateStr) => {
     const dueDate = new Date(dueDateStr);
     const today = new Date();
 
-    // Reset time parts for accurate day calculation
+    
     dueDate.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
 
@@ -307,11 +307,11 @@ export const calculateFine = (dueDateStr) => {
     return diffDays * rules.finePerDay;
 };
 
-// --- STATS & QUERIES ---
+
 
 export const getIssuesByUser = (userId) => {
     const issues = getAllIssues();
-    // Update fines on the fly for display
+    
     return issues.filter(i => i.userId === userId).map(issue => {
         if (issue.status === 'Issued') {
             issue.fine = calculateFine(issue.dueDate);
@@ -355,7 +355,7 @@ export const subscribeToUpdates = (callback) => {
     return () => window.removeEventListener('libraryUpdated', handler);
 };
 
-// Initialize on load
+
 initializeDefaultData();
 
 export default {

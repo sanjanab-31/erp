@@ -14,7 +14,7 @@ const TimetablePage = ({ darkMode }) => {
     const [timetable, setTimetable] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Get logged-in teacher info
+    
     const teacherEmail = localStorage.getItem('userEmail');
     const teacherName = localStorage.getItem('userName');
 
@@ -29,7 +29,7 @@ const TimetablePage = ({ darkMode }) => {
         '15:00-16:00'
     ];
 
-    // Load timetable
+    
     useEffect(() => {
         loadTimetable();
         const unsubscribe = subscribeToUpdates(loadTimetable);
@@ -40,11 +40,11 @@ const TimetablePage = ({ darkMode }) => {
         setLoading(true);
         console.log('Loading teacher timetable for:', { teacherEmail, teacherName });
 
-        // Get all teachers to find current teacher's ID
+        
         const teachers = getAllTeachers();
         console.log('All teachers:', teachers);
 
-        // Find teacher by email or name
+        
         const currentTeacher = teachers.find(t =>
             t.email === teacherEmail || t.name === teacherName
         );
@@ -52,11 +52,11 @@ const TimetablePage = ({ darkMode }) => {
         console.log('Current teacher found:', currentTeacher);
 
         if (currentTeacher) {
-            // Get all teacher timetables
+            
             const allTimetables = getAllTeacherTimetables();
             console.log('All teacher timetables:', allTimetables);
 
-            // Find timetable for this teacher
+            
             const teacherTT = allTimetables.find(tt =>
                 tt.teacherId === currentTeacher.id.toString() ||
                 tt.teacherId === currentTeacher.id
@@ -71,7 +71,7 @@ const TimetablePage = ({ darkMode }) => {
         setLoading(false);
     }, [teacherEmail, teacherName]);
 
-    // Organize schedule by day
+    
     const scheduleByDay = {};
     days.forEach(day => {
         scheduleByDay[day] = [];
@@ -85,9 +85,9 @@ const TimetablePage = ({ darkMode }) => {
         });
     }
 
-    // Calculate stats
+    
     const totalClasses = timetable?.schedule?.length || 0;
-    const todayIndex = new Date().getDay() - 1; // 0 = Monday
+    const todayIndex = new Date().getDay() - 1; 
     const todayClasses = todayIndex >= 0 && todayIndex < 5 ? scheduleByDay[days[todayIndex]]?.length || 0 : 0;
 
     const formatTime = (time) => {
@@ -116,7 +116,7 @@ const TimetablePage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {/* Header */}
+            {}
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     My Timetable
@@ -169,7 +169,7 @@ const TimetablePage = ({ darkMode }) => {
                         </div>
                     </div>
 
-                    {/* Timetable Grid */}
+                    {}
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
                         <div className="p-6 border-b border-gray-200">
                             <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>

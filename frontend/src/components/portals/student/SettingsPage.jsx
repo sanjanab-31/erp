@@ -57,7 +57,7 @@ const SettingsPage = ({ darkMode }) => {
     });
 
     const handleLogout = () => {
-        localStorage.removeItem('authToken'); // JWT token
+        localStorage.removeItem('authToken'); 
         localStorage.removeItem('isAuthenticated');
         localStorage.removeItem('userRole');
         localStorage.removeItem('userEmail');
@@ -67,12 +67,12 @@ const SettingsPage = ({ darkMode }) => {
     };
 
 
-    // Load student data from studentStore and settings from settingsStore
+    
     useEffect(() => {
         const studentEmail = localStorage.getItem('userEmail');
 
         if (studentEmail) {
-            // Fetch student data from studentStore
+            
             const students = getAllStudents();
             const student = students.find(s => s.email === studentEmail);
 
@@ -98,7 +98,7 @@ const SettingsPage = ({ darkMode }) => {
             }
         }
 
-        // Load settings from settingsStore
+        
         const settings = getSettings('student');
         if (settings.notifications) setNotificationSettings(settings.notifications);
         if (settings.appearance) setAppearanceSettings(settings.appearance);
@@ -106,7 +106,7 @@ const SettingsPage = ({ darkMode }) => {
 
         setLoading(false);
 
-        // Subscribe to real-time updates
+        
         const unsubscribe = subscribeToSettingsUpdates('student', (updatedSettings) => {
             if (updatedSettings.notifications) setNotificationSettings(updatedSettings.notifications);
             if (updatedSettings.appearance) setAppearanceSettings(updatedSettings.appearance);
@@ -122,7 +122,7 @@ const SettingsPage = ({ darkMode }) => {
             [field]: value
         };
         setProfileData(updatedProfile);
-        // Auto-save to store
+        
         updateSettingsSection('student', 'profile', updatedProfile);
     };
 
@@ -132,12 +132,12 @@ const SettingsPage = ({ darkMode }) => {
             [setting]: !notificationSettings[setting]
         };
         setNotificationSettings(updatedNotifications);
-        // Auto-save to store
+        
         updateSettingsSection('student', 'notifications', updatedNotifications);
     };
 
     const handleSaveChanges = () => {
-        // Save all sections
+        
         updateSettingsSection('student', 'profile', profileData);
         updateSettingsSection('student', 'notifications', notificationSettings);
         updateSettingsSection('student', 'appearance', appearanceSettings);
@@ -148,7 +148,7 @@ const SettingsPage = ({ darkMode }) => {
     };
 
     const handleCancel = () => {
-        // Reload settings from store
+        
         const settings = getSettings('student');
         if (settings.profile) setProfileData(settings.profile);
         if (settings.notifications) setNotificationSettings(settings.notifications);
@@ -164,7 +164,7 @@ const SettingsPage = ({ darkMode }) => {
             <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>Profile Information</h3>
             <p className="text-sm text-gray-500 mb-6">Update your personal information and profile details</p>
 
-            {/* Profile Photo */}
+            {}
             <div className="mb-8">
                 <div className="flex items-center space-x-6">
                     <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-3xl">
@@ -180,9 +180,9 @@ const SettingsPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Form Fields */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                {/* Full Name */}
+                {}
                 <div>
                     <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Full Name
@@ -198,7 +198,7 @@ const SettingsPage = ({ darkMode }) => {
                     />
                 </div>
 
-                {/* Email */}
+                {}
                 <div>
                     <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Email
@@ -217,7 +217,7 @@ const SettingsPage = ({ darkMode }) => {
                     </div>
                 </div>
 
-                {/* Phone Number */}
+                {}
                 <div>
                     <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Phone Number
@@ -236,7 +236,7 @@ const SettingsPage = ({ darkMode }) => {
                     </div>
                 </div>
 
-                {/* Role */}
+                {}
                 <div>
                     <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Role
@@ -252,7 +252,7 @@ const SettingsPage = ({ darkMode }) => {
                     />
                 </div>
 
-                {/* Class */}
+                {}
                 <div>
                     <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Class
@@ -268,7 +268,7 @@ const SettingsPage = ({ darkMode }) => {
                     />
                 </div>
 
-                {/* Roll Number */}
+                {}
                 <div>
                     <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Roll Number
@@ -284,7 +284,7 @@ const SettingsPage = ({ darkMode }) => {
                     />
                 </div>
 
-                {/* Date of Birth */}
+                {}
                 <div>
                     <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Date of Birth
@@ -300,7 +300,7 @@ const SettingsPage = ({ darkMode }) => {
                     />
                 </div>
 
-                {/* Gender */}
+                {}
                 <div>
                     <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Gender
@@ -316,7 +316,7 @@ const SettingsPage = ({ darkMode }) => {
                     />
                 </div>
 
-                {/* Blood Group */}
+                {}
                 <div>
                     <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Blood Group
@@ -333,13 +333,13 @@ const SettingsPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Parent Information Section */}
+            {}
             <div className="mt-8 mb-6">
                 <h4 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                     Parent/Guardian Information
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Parent Name */}
+                    {}
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Parent/Guardian Name
@@ -355,7 +355,7 @@ const SettingsPage = ({ darkMode }) => {
                         />
                     </div>
 
-                    {/* Parent Phone */}
+                    {}
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Parent/Guardian Phone
@@ -371,7 +371,7 @@ const SettingsPage = ({ darkMode }) => {
                         />
                     </div>
 
-                    {/* Parent Email */}
+                    {}
                     <div className="md:col-span-2">
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Parent/Guardian Email
@@ -389,7 +389,7 @@ const SettingsPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Address */}
+            {}
             <div className="mb-6">
                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                     Address
@@ -406,7 +406,7 @@ const SettingsPage = ({ darkMode }) => {
                 />
             </div>
 
-            {/* Bio */}
+            {}
             <div className="mb-6">
                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                     Bio
@@ -423,7 +423,7 @@ const SettingsPage = ({ darkMode }) => {
                 />
             </div>
 
-            {/* Action Buttons */}
+            {}
             <div className="flex items-center justify-end space-x-4">
                 {saveMessage && (
                     <span className={`text-sm font-medium ${saveMessage.includes('success') || saveMessage.includes('updated') ? 'text-green-600' : 'text-red-600'}`}>
@@ -455,7 +455,7 @@ const SettingsPage = ({ darkMode }) => {
             <p className="text-sm text-gray-500 mb-6">Manage how you receive notifications</p>
 
             <div className="space-y-6">
-                {/* Email Notifications */}
+                {}
                 <div className="flex items-center justify-between">
                     <div>
                         <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Email Notifications</h4>
@@ -472,7 +472,7 @@ const SettingsPage = ({ darkMode }) => {
                     </label>
                 </div>
 
-                {/* Push Notifications */}
+                {}
                 <div className="flex items-center justify-between">
                     <div>
                         <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Push Notifications</h4>
@@ -491,7 +491,7 @@ const SettingsPage = ({ darkMode }) => {
 
                 <hr className={`${darkMode ? 'border-gray-700' : 'border-gray-200'}`} />
 
-                {/* Assignment Reminders */}
+                {}
                 <div className="flex items-center justify-between">
                     <div>
                         <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Assignment Reminders</h4>
@@ -508,7 +508,7 @@ const SettingsPage = ({ darkMode }) => {
                     </label>
                 </div>
 
-                {/* Grade Updates */}
+                {}
                 <div className="flex items-center justify-between">
                     <div>
                         <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Grade Updates</h4>
@@ -525,7 +525,7 @@ const SettingsPage = ({ darkMode }) => {
                     </label>
                 </div>
 
-                {/* Attendance Alerts */}
+                {}
                 <div className="flex items-center justify-between">
                     <div>
                         <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Attendance Alerts</h4>
@@ -542,7 +542,7 @@ const SettingsPage = ({ darkMode }) => {
                     </label>
                 </div>
 
-                {/* Transport Updates */}
+                {}
                 <div className="flex items-center justify-between">
                     <div>
                         <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Transport Updates</h4>
@@ -559,7 +559,7 @@ const SettingsPage = ({ darkMode }) => {
                     </label>
                 </div>
 
-                {/* Library Reminders */}
+                {}
                 <div className="flex items-center justify-between">
                     <div>
                         <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Library Reminders</h4>
@@ -576,7 +576,7 @@ const SettingsPage = ({ darkMode }) => {
                     </label>
                 </div>
 
-                {/* Fee Reminders */}
+                {}
                 <div className="flex items-center justify-between">
                     <div>
                         <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Fee Reminders</h4>
@@ -602,7 +602,7 @@ const SettingsPage = ({ darkMode }) => {
             <p className="text-sm text-gray-500 mb-6">Update your password and security preferences</p>
 
             <div className="space-y-6 max-w-2xl">
-                {/* Current Password */}
+                {}
                 <div>
                     <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Current Password
@@ -619,7 +619,7 @@ const SettingsPage = ({ darkMode }) => {
                     />
                 </div>
 
-                {/* New Password */}
+                {}
                 <div>
                     <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         New Password
@@ -636,7 +636,7 @@ const SettingsPage = ({ darkMode }) => {
                     />
                 </div>
 
-                {/* Confirm Password */}
+                {}
                 <div>
                     <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Confirm New Password
@@ -684,7 +684,7 @@ const SettingsPage = ({ darkMode }) => {
             <p className="text-sm text-gray-500 mb-6">Customize how the portal looks</p>
 
             <div className="space-y-6 max-w-2xl">
-                {/* Theme */}
+                {}
                 <div>
                     <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Theme
@@ -707,7 +707,7 @@ const SettingsPage = ({ darkMode }) => {
                     </select>
                 </div>
 
-                {/* Font Size */}
+                {}
                 <div>
                     <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Font Size
@@ -730,7 +730,7 @@ const SettingsPage = ({ darkMode }) => {
                     </select>
                 </div>
 
-                {/* Language */}
+                {}
                 <div>
                     <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Language
@@ -763,7 +763,7 @@ const SettingsPage = ({ darkMode }) => {
             <p className="text-sm text-gray-500 mb-6">Manage your portal preferences</p>
 
             <div className="space-y-6 max-w-2xl">
-                {/* Default Page */}
+                {}
                 <div>
                     <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Default Page
@@ -786,7 +786,7 @@ const SettingsPage = ({ darkMode }) => {
                     </select>
                 </div>
 
-                {/* Items Per Page */}
+                {}
                 <div>
                     <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Items Per Page
@@ -810,7 +810,7 @@ const SettingsPage = ({ darkMode }) => {
                     </select>
                 </div>
 
-                {/* Date Format */}
+                {}
                 <div>
                     <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Date Format
@@ -833,7 +833,7 @@ const SettingsPage = ({ darkMode }) => {
                     </select>
                 </div>
 
-                {/* Time Format */}
+                {}
                 <div>
                     <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Time Format
@@ -868,7 +868,7 @@ const SettingsPage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {/* Page Header */}
+            {}
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Settings
@@ -876,7 +876,7 @@ const SettingsPage = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">Manage your account settings and preferences</p>
             </div>
 
-            {/* Tabs */}
+            {}
             <div className="mb-6">
                 <div className="flex items-center justify-between border-b border-gray-200">
                     <div className="flex space-x-1 overflow-x-auto">
@@ -897,7 +897,7 @@ const SettingsPage = ({ darkMode }) => {
                             );
                         })}
                     </div>
-                    {/* Logout Button */}
+                    {}
                     <button
                         onClick={handleLogout}
                         className="flex items-center space-x-2 px-6 py-3 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors whitespace-nowrap ml-4"
@@ -908,7 +908,7 @@ const SettingsPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Tab Content */}
+            {}
             {activeTab === 'Profile' && renderProfileTab()}
             {activeTab === 'Notifications' && renderNotificationsTab()}
             {activeTab === 'Security' && renderSecurityTab()}

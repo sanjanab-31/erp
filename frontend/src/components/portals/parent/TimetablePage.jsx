@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { getClassTimetable, subscribeToUpdates } from '../../../utils/timetableStore';
 import { getAllStudents } from '../../../utils/studentStore';
+import { getChildrenByParentEmail } from '../../../utils/userStore';
 
 const TimetablePage = ({ darkMode }) => {
     const [timetable, setTimetable] = useState(null);
@@ -16,7 +17,7 @@ const TimetablePage = ({ darkMode }) => {
     const [childClass, setChildClass] = useState('');
     const [childName, setChildName] = useState('');
 
-    // Get logged-in parent info
+
     const parentEmail = localStorage.getItem('userEmail');
 
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -30,7 +31,7 @@ const TimetablePage = ({ darkMode }) => {
         '15:00-16:00'
     ];
 
-    // Load child's class and timetable
+
     useEffect(() => {
         loadChildClass();
     }, []);
@@ -45,20 +46,26 @@ const TimetablePage = ({ darkMode }) => {
 
     const loadChildClass = useCallback(() => {
         console.log('Loading child class for parent email:', parentEmail);
-        // Find student by parent email to get their class
-        const students = getAllStudents();
-        console.log('All students:', students);
 
-        // Assuming parent email is linked to student's parentEmail field
-        const child = students.find(s => s.parentEmail === parentEmail || s.guardianEmail === parentEmail);
-        console.log('Child found:', child);
+        if (parentEmail) {
+            const children = getChildrenByParentEmail(parentEmail);
+            console.log('Children found:', children);
 
-        if (child) {
-            setChildClass(child.class);
-            setChildName(child.name);
-            console.log('Child class set to:', child.class, 'Name:', child.name);
-        } else {
-            console.log('Child not found for parent email:', parentEmail);
+            if (children && children.length > 0) {
+                const students = getAllStudents();
+                const child = students.find(s => s.id === children[0].id);
+                console.log('Child found:', child);
+
+                if (child) {
+                    setChildClass(child.class);
+                    setChildName(child.name);
+                    console.log('Child class set to:', child.class, 'Name:', child.name);
+                } else {
+                    console.log('Child student record not found for ID:', children[0].id);
+                }
+            } else {
+                console.log('No children found for parent email:', parentEmail);
+            }
         }
         setLoading(false);
     }, [parentEmail]);
@@ -72,7 +79,7 @@ const TimetablePage = ({ darkMode }) => {
         }
     }, [childClass]);
 
-    // Organize schedule by day
+
     const scheduleByDay = {};
     days.forEach(day => {
         scheduleByDay[day] = [];
@@ -86,12 +93,12 @@ const TimetablePage = ({ darkMode }) => {
         });
     }
 
-    // Calculate stats
+
     const totalClasses = timetable?.schedule?.length || 0;
-    const todayIndex = new Date().getDay() - 1; // 0 = Monday
+    const todayIndex = new Date().getDay() - 1;
     const todayClasses = todayIndex >= 0 && todayIndex < 5 ? scheduleByDay[days[todayIndex]]?.length || 0 : 0;
 
-    // Get unique subjects
+
     const uniqueSubjects = timetable?.schedule
         ? [...new Set(timetable.schedule.map(entry => entry.subject).filter(s => s))]
         : [];
@@ -137,7 +144,7 @@ const TimetablePage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {/* Header */}
+            { }
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     {childName ? `${childName}'s Timetable` : 'Child\'s Timetable'}
@@ -161,7 +168,7 @@ const TimetablePage = ({ darkMode }) => {
                 </div>
             ) : (
                 <>
-                    {/* Stats Cards */}
+                    { }
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                             <div className="flex items-center justify-between mb-4">

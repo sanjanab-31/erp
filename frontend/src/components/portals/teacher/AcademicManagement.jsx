@@ -55,7 +55,7 @@ const AcademicManagement = ({ darkMode }) => {
     const teacherId = currentUser.id || localStorage.getItem('userId') || 'teacher_1';
     const teacherName = currentUser.name || localStorage.getItem('userName') || 'Teacher';
 
-    // Course form
+    
     const [courseForm, setCourseForm] = useState({
         name: '',
         code: '',
@@ -63,7 +63,7 @@ const AcademicManagement = ({ darkMode }) => {
         description: ''
     });
 
-    // Assignment form
+    
     const [assignmentForm, setAssignmentForm] = useState({
         title: '',
         description: '',
@@ -71,13 +71,13 @@ const AcademicManagement = ({ darkMode }) => {
         maxMarks: 100
     });
 
-    // Grading form
+    
     const [gradingForm, setGradingForm] = useState({
         marks: '',
         feedback: ''
     });
 
-    // Exam marks form
+    
     const [examMarksForm, setExamMarksForm] = useState({
         studentId: '',
         studentName: '',
@@ -86,7 +86,7 @@ const AcademicManagement = ({ darkMode }) => {
         exam3: ''
     });
 
-    // Material form
+    
     const [materialForm, setMaterialForm] = useState({
         title: '',
         description: '',
@@ -94,7 +94,7 @@ const AcademicManagement = ({ darkMode }) => {
         type: 'link'
     });
 
-    // Load data
+    
     useEffect(() => {
         loadCourses();
         const unsubscribe = subscribeToAcademicUpdates(() => {
@@ -630,7 +630,7 @@ const AcademicManagement = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
+            {}
             <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Academic Management
@@ -638,7 +638,7 @@ const AcademicManagement = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">Manage courses, assignments, and student marks</p>
             </div>
 
-            {/* Tabs */}
+            {}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="border-b border-gray-200">
                     <div className="flex space-x-8 px-6">
@@ -665,7 +665,7 @@ const AcademicManagement = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Create Course Modal */}
+            {}
             {showCreateCourseModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>
@@ -746,7 +746,7 @@ const AcademicManagement = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Add Assignment Modal */}
+            {}
             {showAddAssignmentModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>
@@ -814,7 +814,7 @@ const AcademicManagement = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Grading Modal */}
+            {}
             {showGradingModal && selectedSubmission && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>
@@ -865,7 +865,7 @@ const AcademicManagement = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Exam Marks Modal */}
+            {}
             {showExamMarksModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>
@@ -956,7 +956,7 @@ const AcademicManagement = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Upload Material Modal */}
+            {}
             {showMaterialModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>
