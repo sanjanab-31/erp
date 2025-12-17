@@ -9,6 +9,7 @@ import TimetablePage from './TimetablePage';
 import LibraryPage from './LibraryPage';
 import SettingsPage from './SettingsPage';
 import AnnouncementsPage from './AnnouncementsPage';
+import ReportsPage from './ReportsPage';
 import {
     Home,
     Calendar,
@@ -26,6 +27,7 @@ import {
     BookOpenCheck,
     Library,
     Megaphone,
+    FileText,
     LogOut
 } from 'lucide-react';
 import { calculateAttendancePercentage, subscribeToUpdates as subscribeToAttendance } from '../../../utils/attendanceStore';
@@ -71,6 +73,7 @@ const StudentPortal = () => {
         { icon: Clock, label: 'Timetable' },
         { icon: BookMarked, label: 'Library' },
         { icon: Megaphone, label: 'Announcements' },
+        { icon: FileText, label: 'Reports' },
         { icon: Settings, label: 'Settings' },
         // { icon: BookOpen, label: 'My Courses' }
 
@@ -180,6 +183,10 @@ const StudentPortal = () => {
 
         if (activeTab === 'Announcements') {
             return <AnnouncementsPage darkMode={darkMode} />;
+        }
+
+        if (activeTab === 'Reports') {
+            return <ReportsPage darkMode={darkMode} />;
         }
 
         if (activeTab === 'Settings') {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     FileText,
     Download,
@@ -13,13 +13,22 @@ import {
     Clock,
     CheckCircle
 } from 'lucide-react';
+import { getAllStudents } from '../../../utils/studentStore';
+import { calculateAttendancePercentage, getAttendanceByStudent } from '../../../utils/attendanceStore';
+import { getStudentFinalMarks, getSubmissionsByStudent } from '../../../utils/academicStore';
 
 const ReportsPage = ({ darkMode }) => {
     const [selectedReportType, setSelectedReportType] = useState('attendance');
     const [selectedClass, setSelectedClass] = useState('All Classes');
     const [dateRange, setDateRange] = useState('This Month');
+    const [reportData, setReportData] = useState({
+        attendance: null,
+        grades: null,
+        performance: null,
+        assignments: null
+    });
 
-    const classes = ['All Classes', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B'];
+    const classes = ['All Classes', 'Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
     const dateRanges = ['This Week', 'This Month', 'This Quarter', 'This Year', 'Custom'];
 
     const reportTypes = [
@@ -29,46 +38,140 @@ const ReportsPage = ({ darkMode }) => {
         { id: 'assignments', name: 'Assignments Report', icon: FileText, color: 'yellow' }
     ];
 
-    const attendanceData = {
-        totalClasses: 45,
-        averageAttendance: 92,
-        presentDays: 41,
-        absentDays: 4,
-        students: [
-            { name: 'John Doe', attendance: 95, present: 43, absent: 2 },
-            { name: 'Jane Smith', attendance: 88, present: 40, absent: 5 },
-            { name: 'Mike Wilson', attendance: 92, present: 41, absent: 4 }
-        ]
-    };
+    useEffect(() => {
+        loadReportData();
+    }, [selectedClass, dateRange]);
 
-    const gradesData = {
-        averageGrade: 'A-',
-        totalAssessments: 12,
-        passRate: 95,
-        students: [
-            { name: 'John Doe', grade: 'A', marks: 95, rank: 1 },
-            { name: 'Mike Wilson', grade: 'A-', marks: 91, rank: 2 },
-            { name: 'Jane Smith', grade: 'B+', marks: 87, rank: 3 }
-        ]
-    };
+    const loadReportData = () => {
+        const allStudents = getAllStudents();
 
-    const performanceData = {
-        improvement: '+5%',
-        topPerformer: 'John Doe',
-        needsAttention: 2,
-        onTrack: 28
-    };
+        // Filter students by class if needed
+        const filteredStudents = selectedClass === 'All Classes'
+            ? allStudents
+            : allStudents.filter(s => s.class === selectedClass);
 
-    const assignmentsData = {
-        totalAssignments: 15,
-        submitted: 420,
-        pending: 30,
-        averageScore: 85
+        // Calculate attendance data
+        const attendanceStudents = filteredStudents.map(student => {
+            const percentage = calculateAttendancePercentage(student.id);
+            const attendanceRecords = getAttendanceByStudent(student.id);
+            const present = attendanceRecords.filter(r => r.status === 'Present').length;
+            const absent = attendanceRecords.filter(r => r.status === 'Absent').length;
+
+            return {
+                name: student.name,
+                attendance: percentage,
+                present,
+                absent
+            };
+        });
+
+        const totalClasses = attendanceStudents.length > 0
+            ? attendanceStudents[0].present + attendanceStudents[0].absent
+            : 0;
+        const avgAttendance = attendanceStudents.length > 0
+            ? Math.round(attendanceStudents.reduce((sum, s) => sum + s.attendance, 0) / attendanceStudents.length)
+            : 0;
+        const totalPresent = attendanceStudents.reduce((sum, s) => sum + s.present, 0);
+        const totalAbsent = attendanceStudents.reduce((sum, s) => sum + s.absent, 0);
+
+        // Calculate grades data
+        const gradesStudents = filteredStudents.map(student => {
+            const finalMarks = getStudentFinalMarks(student.id);
+            const avgMarks = finalMarks.length > 0
+                ? finalMarks.reduce((sum, m) => sum + m.finalTotal, 0) / finalMarks.length
+                : 0;
+            const grade = avgMarks >= 90 ? 'A+' : avgMarks >= 80 ? 'A' : avgMarks >= 70 ? 'B+' : avgMarks >= 60 ? 'B' : 'C';
+
+            return {
+                name: student.name,
+                grade,
+                marks: Math.round(avgMarks),
+                rank: 0 // Will be calculated after sorting
+            };
+        }).sort((a, b) => b.marks - a.marks);
+
+        // Assign ranks
+        gradesStudents.forEach((student, index) => {
+            student.rank = index + 1;
+        });
+
+        const avgGrade = gradesStudents.length > 0 ? gradesStudents[0].grade : 'N/A';
+        const passRate = gradesStudents.length > 0
+            ? Math.round((gradesStudents.filter(s => s.marks >= 40).length / gradesStudents.length) * 100)
+            : 0;
+
+        // Calculate assignments data
+        let totalAssignments = 0;
+        let totalSubmitted = 0;
+        let totalPending = 0;
+        let totalScore = 0;
+        let scoredCount = 0;
+
+        filteredStudents.forEach(student => {
+            const submissions = getSubmissionsByStudent(student.id);
+            totalAssignments += submissions.length;
+            totalSubmitted += submissions.filter(s => s.status === 'graded' || s.status === 'submitted').length;
+            totalPending += submissions.filter(s => s.status === 'pending' || !s.marks).length;
+
+            submissions.forEach(sub => {
+                if (sub.marks) {
+                    totalScore += sub.marks;
+                    scoredCount++;
+                }
+            });
+        });
+
+        const avgScore = scoredCount > 0 ? Math.round(totalScore / scoredCount) : 0;
+
+        // Performance data
+        const topPerformer = gradesStudents.length > 0 ? gradesStudents[0].name : 'N/A';
+        const needsAttention = gradesStudents.filter(s => s.marks < 60).length;
+        const onTrack = gradesStudents.filter(s => s.marks >= 60).length;
+
+        setReportData({
+            attendance: {
+                totalClasses,
+                averageAttendance: avgAttendance,
+                presentDays: Math.round(totalPresent / (filteredStudents.length || 1)),
+                absentDays: Math.round(totalAbsent / (filteredStudents.length || 1)),
+                students: attendanceStudents.slice(0, 10) // Top 10
+            },
+            grades: {
+                averageGrade: avgGrade,
+                totalAssessments: totalAssignments,
+                passRate,
+                students: gradesStudents.slice(0, 10) // Top 10
+            },
+            performance: {
+                improvement: '+5%', // This would need historical data
+                topPerformer,
+                needsAttention,
+                onTrack
+            },
+            assignments: {
+                totalAssignments,
+                submitted: totalSubmitted,
+                pending: totalPending,
+                averageScore: avgScore
+            }
+        });
     };
 
     const renderReportContent = () => {
+        if (!reportData[selectedReportType]) {
+            return (
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 text-center border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                    <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className={`text-lg ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        Loading report data...
+                    </p>
+                </div>
+            );
+        }
+
         switch (selectedReportType) {
             case 'attendance':
+                const attendanceData = reportData.attendance;
                 return (
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -92,7 +195,7 @@ const ReportsPage = ({ darkMode }) => {
                             </div>
                             <div className={`${darkMode ? 'bg-gray-700' : 'bg-purple-50'} rounded-lg p-4`}>
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm text-gray-500">Present Days</span>
+                                    <span className="text-sm text-gray-500">Avg. Present</span>
                                     <CheckCircle className="w-5 h-5 text-purple-500" />
                                 </div>
                                 <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -101,7 +204,7 @@ const ReportsPage = ({ darkMode }) => {
                             </div>
                             <div className={`${darkMode ? 'bg-gray-700' : 'bg-red-50'} rounded-lg p-4`}>
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm text-gray-500">Absent Days</span>
+                                    <span className="text-sm text-gray-500">Avg. Absent</span>
                                     <Clock className="w-5 h-5 text-red-500" />
                                 </div>
                                 <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -150,6 +253,13 @@ const ReportsPage = ({ darkMode }) => {
                                             </td>
                                         </tr>
                                     ))}
+                                    {attendanceData.students.length === 0 && (
+                                        <tr>
+                                            <td colSpan="4" className="px-4 py-8 text-center text-gray-500">
+                                                No attendance data available
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
@@ -157,6 +267,7 @@ const ReportsPage = ({ darkMode }) => {
                 );
 
             case 'grades':
+                const gradesData = reportData.grades;
                 return (
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -171,11 +282,11 @@ const ReportsPage = ({ darkMode }) => {
                             </div>
                             <div className={`${darkMode ? 'bg-gray-700' : 'bg-green-50'} rounded-lg p-4`}>
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm text-gray-500">Total Assessments</span>
-                                    <FileText className="w-5 h-5 text-green-500" />
+                                    <span className="text-sm text-gray-500">Total Students</span>
+                                    <Users className="w-5 h-5 text-green-500" />
                                 </div>
                                 <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                    {gradesData.totalAssessments}
+                                    {gradesData.students.length}
                                 </p>
                             </div>
                             <div className={`${darkMode ? 'bg-gray-700' : 'bg-purple-50'} rounded-lg p-4`}>
@@ -193,7 +304,7 @@ const ReportsPage = ({ darkMode }) => {
                                     <TrendingUp className="w-5 h-5 text-yellow-500" />
                                 </div>
                                 <p className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                    {gradesData.students[0].name}
+                                    {gradesData.students[0]?.name || 'N/A'}
                                 </p>
                             </div>
                         </div>
@@ -232,12 +343,19 @@ const ReportsPage = ({ darkMode }) => {
                                                 {student.marks}/100
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                                <span className={`px-3 py-1 rounded-full text-sm font-bold ${student.grade.startsWith('A') ? 'bg-green-100 text-green-600' : 'bg-green-100 text-green-600'}`}>
+                                                <span className={`px-3 py-1 rounded-full text-sm font-bold ${student.grade.startsWith('A') ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
                                                     {student.grade}
                                                 </span>
                                             </td>
                                         </tr>
                                     ))}
+                                    {gradesData.students.length === 0 && (
+                                        <tr>
+                                            <td colSpan="4" className="px-4 py-8 text-center text-gray-500">
+                                                No grades data available
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
@@ -263,7 +381,7 @@ const ReportsPage = ({ darkMode }) => {
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Reports & Analytics
                 </h1>
-                <p className="text-sm text-gray-500">Generate and view detailed reports</p>
+                <p className="text-sm text-gray-500">Generate and view detailed real-time reports</p>
             </div>
 
             {/* Report Type Selection */}
@@ -333,4 +451,3 @@ const ReportsPage = ({ darkMode }) => {
 };
 
 export default ReportsPage;
-

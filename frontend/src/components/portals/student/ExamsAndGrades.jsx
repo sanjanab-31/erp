@@ -16,24 +16,42 @@ import {
     getSubmissionsByStudent,
     subscribeToAcademicUpdates
 } from '../../../utils/academicStore';
+import { getAllStudents } from '../../../utils/studentStore';
 
 const ExamsAndGrades = ({ darkMode }) => {
     const [activeTab, setActiveTab] = useState('My Grades');
     const [courses, setCourses] = useState([]);
     const [examSchedules, setExamSchedules] = useState([]);
     const [allMarks, setAllMarks] = useState([]);
+    const [studentId, setStudentId] = useState('');
+    const [studentClass, setStudentClass] = useState('');
 
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-    const studentId = currentUser.id || localStorage.getItem('userId') || 'student_1';
-    const studentClass = currentUser.class || 'Grade 10-A';
+    const studentEmail = localStorage.getItem('userEmail') || '';
+
+    // Get student ID and class from email
+    useEffect(() => {
+        if (studentEmail) {
+            const students = getAllStudents();
+            const student = students.find(s => s.email === studentEmail);
+            if (student) {
+                setStudentId(student.id);
+                setStudentClass(student.class);
+                console.log('Found student for Exams & Grades:', student);
+                console.log('Student ID:', student.id);
+                console.log('Student Class:', student.class);
+            }
+        }
+    }, [studentEmail]);
 
     useEffect(() => {
-        loadData();
-        const unsubscribe = subscribeToAcademicUpdates(() => {
+        if (studentId && studentClass) {
             loadData();
-        });
-        return unsubscribe;
-    }, []);
+            const unsubscribe = subscribeToAcademicUpdates(() => {
+                loadData();
+            });
+            return unsubscribe;
+        }
+    }, [studentId, studentClass]);
 
     const loadData = () => {
         const classCourses = getCoursesByClass(studentClass);

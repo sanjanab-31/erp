@@ -36,6 +36,7 @@ import SettingsPage from './SettingsPage';
 import AdminExamSchedules from './AdminExamSchedules';
 import LibraryPage from './LibraryPage';
 import AnnouncementsPage from './AnnouncementsPage';
+import ReportsPage from './ReportsPage';
 import { getStudentStats, subscribeToUpdates as subscribeToStudents } from '../../../utils/studentStore';
 import { getTeacherStats, subscribeToUpdates as subscribeToTeachers } from '../../../utils/teacherStore';
 import { getFeeStats, subscribeToUpdates as subscribeToFees } from '../../../utils/feeStore';
@@ -419,6 +420,8 @@ const AdminDashboard = () => {
                 return <LibraryPage darkMode={darkMode} />;
             case 'Announcements':
                 return <AnnouncementsPage darkMode={darkMode} />;
+            case 'Reports':
+                return <ReportsPage darkMode={darkMode} />;
             case 'Dashboard':
             default:
                 return (

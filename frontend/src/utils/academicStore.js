@@ -381,10 +381,10 @@ export const getStudentCourseMarks = (studentId, courseId) => {
 export const calculateFinalMarks = (studentId, courseId) => {
     const data = getAllAcademicData();
 
-    // Get assignment submissions
+    // Get assignment submissions - only graded ones
     const courseAssignments = data.assignments.filter(a => a.courseId === courseId);
     const submissions = data.submissions.filter(
-        s => s.studentId === studentId && s.courseId === courseId && s.marks !== null
+        s => s.studentId === studentId && s.courseId === courseId && s.marks !== null && s.marks !== undefined && s.status === 'graded'
     );
 
     // Calculate assignment marks (out of 25)
@@ -392,7 +392,7 @@ export const calculateFinalMarks = (studentId, courseId) => {
     let assignmentCount = 0;
 
     submissions.forEach(sub => {
-        if (sub.marks !== null) {
+        if (sub.marks !== null && sub.marks !== undefined && sub.status === 'graded') {
             assignmentTotal += parseFloat(sub.marks);
             assignmentCount++;
         }
