@@ -12,15 +12,15 @@ const ParentLibraryPage = ({ darkMode }) => {
     const [childIssues, setChildIssues] = useState([]);
     const [rules, setRules] = useState(libraryStore.getLibraryRules());
 
-    // In a real app, we would get the linked student IDs from the parent profile.
-    // Here we will simulate by fetching issues for the demo student 'student@eshwar.com'.
+    
+    
     const childId = 'student@eshwar.com';
 
     useEffect(() => {
         console.log('ParentLibrary: Loading data for child:', childId);
 
         const loadData = () => {
-            // Get issues for specific child
+            
             const issues = libraryStore.getIssuesByUser(childId);
             const currentRules = libraryStore.getLibraryRules();
 

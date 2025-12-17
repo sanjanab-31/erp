@@ -25,12 +25,12 @@ import {
 
 const AdminExamSchedules = ({ darkMode }) => {
     const { showSuccess, showError, showWarning } = useToast();
-    const [selectedClass, setSelectedClass] = useState('Grade 10-A'); // Default class
+    const [selectedClass, setSelectedClass] = useState('Grade 10-A'); 
     const [schedules, setSchedules] = useState([]);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editData, setEditData] = useState(null);
 
-    // Grouped schedules state
+    
     const [groupedSchedules, setGroupedSchedules] = useState({});
     const [expandedExam, setExpandedExam] = useState(null);
 
@@ -39,7 +39,7 @@ const AdminExamSchedules = ({ darkMode }) => {
 
     const classes = ['Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
 
-    // Subjects list for suggestions (could be fetched from courses)
+    
     const [subjects, setSubjects] = useState([]);
 
     useEffect(() => {
@@ -55,7 +55,7 @@ const AdminExamSchedules = ({ darkMode }) => {
         const classSchedules = getExamSchedulesByClass(selectedClass);
         setSchedules(classSchedules);
 
-        // Group by Exam Name
+        
         const groups = {};
         classSchedules.forEach(schedule => {
             if (!groups[schedule.examName]) {
@@ -65,7 +65,7 @@ const AdminExamSchedules = ({ darkMode }) => {
         });
         setGroupedSchedules(groups);
 
-        // Extract subjects from courses for this class
+        
         const classCourses = data.courses.filter(c => c.class === selectedClass && c.active);
         setSubjects(classCourses.map(c => c.name));
     };
@@ -108,14 +108,14 @@ const AdminExamSchedules = ({ darkMode }) => {
 
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Helper for stats
+    
     const getUpcomingCount = () => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         return schedules.filter(s => new Date(s.examDate) >= today).length;
     };
 
-    // Filter logic
+    
     const filteredExamGroups = useMemo(() => {
         if (!searchTerm) return Object.entries(groupedSchedules);
         const term = searchTerm.toLowerCase();
@@ -125,12 +125,12 @@ const AdminExamSchedules = ({ darkMode }) => {
         });
     }, [searchTerm, groupedSchedules]);
 
-    // Get today's date for min attribute
+    
     const todayStr = new Date().toISOString().split('T')[0];
 
     return (
         <div className="space-y-6">
-            {/* Header */}
+            {}
             <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Exam Schedule Management
@@ -138,7 +138,7 @@ const AdminExamSchedules = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">Create and manage exam schedules for students</p>
             </div>
 
-            {/* Controls */}
+            {}
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto flex-1">
                     <div className="w-full sm:w-64">
@@ -156,7 +156,7 @@ const AdminExamSchedules = ({ darkMode }) => {
                         </select>
                     </div>
 
-                    {/* Search Bar */}
+                    {}
                     <div className="w-full sm:w-64 relative">
                         <label className={`block text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-700'} mb-1`}>
                             Search Exams
@@ -186,7 +186,7 @@ const AdminExamSchedules = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Statistics */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 border ${darkMode ? 'border-gray-700' : 'border-gray-200'} shadow-sm`}>
                     <div className="flex items-center justify-between">
@@ -231,7 +231,7 @@ const AdminExamSchedules = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Exam Groups List */}
+            {}
             {filteredExamGroups.length === 0 ? (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 text-center border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -246,7 +246,7 @@ const AdminExamSchedules = ({ darkMode }) => {
                 <div className="space-y-4">
                     {filteredExamGroups.map(([examName, papers]) => (
                         <div key={examName} className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden shadow-sm`}>
-                            {/* Exam Header */}
+                            {}
                             <div
                                 className={`p-4 flex items-center justify-between cursor-pointer ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
                                 onClick={() => setExpandedExam(expandedExam === examName ? null : examName)}
@@ -287,7 +287,7 @@ const AdminExamSchedules = ({ darkMode }) => {
                                 </div>
                             </div>
 
-                            {/* Papers Table */}
+                            {}
                             {expandedExam === examName && (
                                 <div className={`border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                     <div className="overflow-x-auto">
@@ -336,7 +336,7 @@ const AdminExamSchedules = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Create/Edit Schedule Modal */}
+            {}
             {showCreateModal && (
                 <CreateExamModal
                     darkMode={darkMode}
@@ -382,7 +382,7 @@ const CreateExamModal = ({ darkMode, selectedClass, subjects, editData, onClose,
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validation
+        
         if (!examName) {
             showWarning('Please enter an exam name');
             return;
@@ -396,15 +396,15 @@ const CreateExamModal = ({ darkMode, selectedClass, subjects, editData, onClose,
 
         try {
             if (editData) {
-                // EDIT MODE
+                
                 const originalIds = new Set(editData.originalIds);
                 const currentIds = new Set(rows.map(r => r.id));
 
-                // 1. Identify Deletions
+                
                 const idsToDelete = editData.originalIds.filter(id => !currentIds.has(id));
                 idsToDelete.forEach(id => deleteExamSchedule(id));
 
-                // 2. Identify Updates (Existing IDs)
+                
                 const rowsToUpdate = rows.filter(r => typeof r.id === 'string' && originalIds.has(r.id));
                 rowsToUpdate.forEach(row => {
                     updateExamSchedule(row.id, {
@@ -417,7 +417,7 @@ const CreateExamModal = ({ darkMode, selectedClass, subjects, editData, onClose,
                     });
                 });
 
-                // 3. Identify Creates (New IDs - numbers)
+                
                 const rowsToCreate = rows.filter(r => typeof r.id !== 'string');
                 if (rowsToCreate.length > 0) {
                     const newSchedules = rowsToCreate.map(row => ({
@@ -436,7 +436,7 @@ const CreateExamModal = ({ darkMode, selectedClass, subjects, editData, onClose,
 
                 showSuccess('Exam schedule updated successfully!');
             } else {
-                // CREATE MODE
+                
                 const schedulesData = validRows.map(row => ({
                     class: selectedClass,
                     examName: examName,
@@ -446,7 +446,7 @@ const CreateExamModal = ({ darkMode, selectedClass, subjects, editData, onClose,
                     endTime: row.endTime,
                     venue: row.venue,
                     createdBy: adminId,
-                    courseName: row.subject // Fallback
+                    courseName: row.subject 
                 }));
 
                 createBulkExamSchedules(schedulesData);

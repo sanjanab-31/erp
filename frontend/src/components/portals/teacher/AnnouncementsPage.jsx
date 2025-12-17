@@ -19,13 +19,13 @@ const AnnouncementsPage = ({ darkMode }) => {
     const [announcements, setAnnouncements] = useState([]);
     const [myAnnouncements, setMyAnnouncements] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeTab, setActiveTab] = useState('all'); // 'all' or 'my'
+    const [activeTab, setActiveTab] = useState('all'); 
     const [showModal, setShowModal] = useState(false);
-    const [modalType, setModalType] = useState('add'); // 'add' or 'edit'
+    const [modalType, setModalType] = useState('add'); 
     const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
 
-    // In a real app, this would come from the teacher's profile
-    const teacherClass = 'Grade 10-A'; // Example: teacher's assigned class
+    
+    const teacherClass = 'Grade 10-A'; 
     const teacherName = localStorage.getItem('userName') || 'Teacher';
     const teacherEmail = localStorage.getItem('userEmail') || 'teacher@eshwar.com';
 
@@ -33,11 +33,11 @@ const AnnouncementsPage = ({ darkMode }) => {
 
     useEffect(() => {
         const loadData = () => {
-            // Get all announcements for Teachers
+            
             const teacherAnnouncements = announcementStore.getAnnouncementsForAudience('Teachers', teacherClass);
             const allAnnouncements = announcementStore.getAnnouncementsForAudience('All', teacherClass);
 
-            // Combine and remove duplicates
+            
             const combined = [...teacherAnnouncements, ...allAnnouncements];
             const unique = combined.filter((item, index, self) =>
                 index === self.findIndex((t) => t.id === item.id)
@@ -45,7 +45,7 @@ const AnnouncementsPage = ({ darkMode }) => {
 
             setAnnouncements(unique);
 
-            // Get announcements created by this teacher
+            
             const allAnnouncementsData = announcementStore.getAllAnnouncements();
             const teacherCreated = allAnnouncementsData.filter(a =>
                 a.createdBy === 'Teacher' && a.createdByName === teacherName
@@ -91,8 +91,8 @@ const AnnouncementsPage = ({ darkMode }) => {
             selectedAnnouncement || {
                 title: '',
                 description: '',
-                targetAudience: 'Students', // Teachers can only create for Students
-                classes: [teacherClass], // Default to teacher's class
+                targetAudience: 'Students', 
+                classes: [teacherClass], 
                 attachment: '',
                 publishDate: new Date().toISOString().split('T')[0],
                 createdBy: 'Teacher',
@@ -226,7 +226,7 @@ const AnnouncementsPage = ({ darkMode }) => {
 
     return (
         <div className={`space-y-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            {/* Header */}
+            {}
             <div className="flex justify-between items-center bg-green-50 p-4 rounded-xl border border-green-100">
                 <div>
                     <h2 className="text-xl font-bold text-green-900">Announcements</h2>
@@ -244,7 +244,7 @@ const AnnouncementsPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Tabs */}
+            {}
             <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
                 <button
                     onClick={() => setActiveTab('all')}
@@ -260,7 +260,7 @@ const AnnouncementsPage = ({ darkMode }) => {
                 </button>
             </div>
 
-            {/* Search */}
+            {}
             <div className="relative">
                 <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                 <input
@@ -272,7 +272,7 @@ const AnnouncementsPage = ({ darkMode }) => {
                 />
             </div>
 
-            {/* Announcements List */}
+            {}
             <div className="space-y-4">
                 {activeTab === 'all' && filteredAnnouncements.map(announcement => (
                     <div

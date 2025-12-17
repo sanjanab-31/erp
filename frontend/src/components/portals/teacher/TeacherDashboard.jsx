@@ -29,8 +29,10 @@ import {
     LogOut,
     Megaphone
 } from 'lucide-react';
-import { getCoursesByTeacher, getSubmissionsByAssignment, getAssignmentsByCourse, subscribeToAcademicUpdates } from '../../../utils/academicStore';
+import { getCoursesByTeacher, subscribeToUpdates } from '../../../utils/courseStore';
 import { getAllStudents } from '../../../utils/studentStore';
+import { getTeacherTimetable } from '../../../utils/timetableStore';
+import { getAllTeachers } from '../../../utils/teacherStore';
 
 const TeacherDashboard = () => {
     const navigate = useNavigate();
@@ -76,59 +78,85 @@ const TeacherDashboard = () => {
 
     useEffect(() => {
         const fetchDashboardData = () => {
-            // Get teacher's courses (using email as teacherId for now)
-            const teacherId = userEmail;
             const allStudents = getAllStudents();
+            const allTeachers = getAllTeachers();
 
-            // For now, show all courses since we don't have teacher-course mapping
-            // In production, you'd filter by teacherId
+            const teacherObj = allTeachers.find(t => t.email === userEmail);
+            let teacherId = userEmail;
+            if (teacherObj) {
+                teacherId = teacherObj.id;
+            }
+
             const teacherCourses = getCoursesByTeacher(teacherId);
 
-            // Get all assignments for teacher's courses
+            let todayClassesData = [];
+
+            if (teacherObj) {
+                const teacherTimetable = getTeacherTimetable(teacherObj.id);
+                if (teacherTimetable && teacherTimetable.schedule) {
+                    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                    const currentDay = days[new Date().getDay()];
+
+                    todayClassesData = teacherTimetable.schedule
+                        .filter(s => s.day === currentDay)
+                        .sort((a, b) => {
+                            const timeA = parseInt(a.time.split('-')[0].replace(':', ''));
+                            const timeB = parseInt(b.time.split('-')[0].replace(':', ''));
+                            return timeA - timeB;
+                        })
+                        .map((s, idx) => ({
+                            id: idx,
+                            subject: s.subject,
+                            class: teacherObj.subject || 'Class',
+                            time: s.time,
+                            room: s.room
+                        }));
+                }
+            }
+
+            const teacherClasses = [...new Set(teacherCourses.map(c => c.class))];
+            const myStudents = allStudents.filter(s => teacherClasses.includes(s.class));
+
             let totalPendingSubmissions = 0;
             const recentSubs = [];
 
             teacherCourses.forEach(course => {
-                const assignments = getAssignmentsByCourse(course.id);
+                const assignments = course.assignments || [];
                 assignments.forEach(assignment => {
-                    const submissions = getSubmissionsByAssignment(assignment.id);
-                    const pending = submissions.filter(s => s.status === 'submitted');
-                    totalPendingSubmissions += pending.length;
+                    const submissions = assignment.submissions || [];
+                    
+                    totalPendingSubmissions += submissions.length;
 
-                    // Add to recent submissions
-                    pending.slice(0, 2).forEach(sub => {
+                    submissions.forEach(sub => {
                         recentSubs.push({
                             id: sub.id,
                             student: sub.studentName,
                             assignment: assignment.title,
-                            subject: course.name,
-                            status: 'pending'
+                            subject: course.courseName,
+                            status: 'pending',
+                            date: new Date(sub.submittedAt || sub.createdAt)
                         });
                     });
                 });
             });
 
+            recentSubs.sort((a, b) => b.date - a.date);
+
             setDashboardData({
                 totalClasses: teacherCourses.length,
-                totalStudents: allStudents.length,
+                totalStudents: myStudents.length > 0 ? myStudents.length : allStudents.length,
                 pendingAssignments: totalPendingSubmissions,
-                upcomingClasses: teacherCourses.length,
-                todayClasses: teacherCourses.slice(0, 3).map((course, idx) => ({
-                    id: idx + 1,
-                    subject: course.name,
-                    class: course.class,
-                    time: ['09:00 AM', '11:00 AM', '02:00 PM'][idx] || '09:00 AM',
-                    room: `Room ${201 + idx}`
-                })),
-                recentSubmissions: recentSubs.slice(0, 2)
+                upcomingClasses: todayClassesData.length,
+                todayClasses: todayClassesData,
+                recentSubmissions: recentSubs.slice(0, 5)
             });
         };
 
-        // Initial fetch
+        
         fetchDashboardData();
 
-        // Subscribe to academic updates
-        const unsubscribe = subscribeToAcademicUpdates(fetchDashboardData);
+        
+        const unsubscribe = subscribeToUpdates(fetchDashboardData);
 
         return () => unsubscribe();
     }, [userEmail]);
@@ -140,7 +168,7 @@ const TeacherDashboard = () => {
         return 'Good evening';
     };
 
-    // Render content based on active tab
+    
     const renderContent = () => {
         if (activeTab === 'Students') {
             return <StudentsPage darkMode={darkMode} />;
@@ -178,7 +206,7 @@ const TeacherDashboard = () => {
             return <AnnouncementsPage darkMode={darkMode} />;
         }
 
-        // Default Dashboard Content
+        
         return (
             <div className="flex-1 overflow-y-auto p-8">
                 <div className="mb-8">
@@ -359,7 +387,7 @@ const TeacherDashboard = () => {
                 </header>
 
 
-                {/* Dynamic Content */}
+                {}
                 {renderContent()}
             </main>
         </div>

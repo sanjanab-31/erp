@@ -97,7 +97,7 @@ const Toast = ({ toast }) => {
                 </button>
             </div>
 
-            {/* Progress bar */}
+            {}
             <div className="mt-2 w-full bg-gray-200 rounded-full h-1 overflow-hidden">
                 <div
                     className={`h-1 rounded-full transition-all duration-100 ease-linear ${getProgressColor()}`}

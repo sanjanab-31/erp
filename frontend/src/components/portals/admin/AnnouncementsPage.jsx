@@ -22,7 +22,7 @@ const AnnouncementsPage = ({ darkMode }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterAudience, setFilterAudience] = useState('All');
     const [showModal, setShowModal] = useState(false);
-    const [modalType, setModalType] = useState('add'); // 'add' or 'edit'
+    const [modalType, setModalType] = useState('add'); 
     const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
 
     const availableClasses = ['Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
@@ -52,7 +52,7 @@ const AnnouncementsPage = ({ darkMode }) => {
 
     const handleDelete = (id) => {
         setModalType('delete');
-        setSelectedAnnouncement({ id }); // Only need ID for delete
+        setSelectedAnnouncement({ id }); 
         setShowModal(true);
     };
 
@@ -254,7 +254,7 @@ const AnnouncementsPage = ({ darkMode }) => {
 
     return (
         <div className={`space-y-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            {/* Header */}
+            {}
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold">Announcements Management</h1>
@@ -269,7 +269,7 @@ const AnnouncementsPage = ({ darkMode }) => {
                 </button>
             </div>
 
-            {/* Filters */}
+            {}
             <div className="flex space-x-3">
                 <div className="relative flex-1">
                     <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
@@ -293,7 +293,7 @@ const AnnouncementsPage = ({ darkMode }) => {
                 </select>
             </div>
 
-            {/* Announcements List */}
+            {}
             <div className="space-y-4">
                 {filteredAnnouncements.map(announcement => (
                     <div

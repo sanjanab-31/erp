@@ -56,7 +56,7 @@ const AdminDashboard = () => {
     const [modalType, setModalType] = useState('');
     const [showNotificationPanel, setShowNotificationPanel] = useState(false);
 
-    // Real-time dashboard data with live updates
+    
     const [dashboardData, setDashboardData] = useState({
         totalStudents: 0,
         totalTeachers: 0,
@@ -110,25 +110,25 @@ const AdminDashboard = () => {
         { icon: Settings, label: 'Settings' }
     ];
 
-    // Recent announcements state
+    
     const [recentAnnouncements, setRecentAnnouncements] = useState([]);
 
-    // Fetch and subscribe to real-time data updates
+    
     useEffect(() => {
         const fetchDashboardData = () => {
-            // Get student stats
+            
             const studentStats = getStudentStats();
 
-            // Get teacher stats
+            
             const teacherStats = getTeacherStats();
 
-            // Get fee stats
+            
             const feeStats = getFeeStats();
 
-            // Get attendance stats
+            
             const attendanceStats = getOverallAttendanceStats();
 
-            // Calculate attendance rate
+            
             const attendanceRate = attendanceStats.totalRecords > 0
                 ? Math.round(((attendanceStats.present + attendanceStats.late) / attendanceStats.totalRecords) * 100)
                 : 0;
@@ -145,16 +145,16 @@ const AdminDashboard = () => {
             });
         };
 
-        // Initial fetch
+        
         fetchDashboardData();
 
-        // Subscribe to updates
+        
         const unsubscribeStudents = subscribeToStudents(fetchDashboardData);
         const unsubscribeTeachers = subscribeToTeachers(fetchDashboardData);
         const unsubscribeFees = subscribeToFees(fetchDashboardData);
         const unsubscribeAttendance = subscribeToAttendance(fetchDashboardData);
 
-        // Cleanup subscriptions
+        
         return () => {
             unsubscribeStudents();
             unsubscribeTeachers();
@@ -170,16 +170,16 @@ const AdminDashboard = () => {
         return 'Good evening';
     };
 
-    // Fetch recent activities from activity log
+    
     useEffect(() => {
-        // Initialize activity log
+        
         initializeActivityLog();
 
         const fetchRecentActivities = () => {
             try {
                 const activityLog = JSON.parse(localStorage.getItem('adminActivityLog') || '[]');
 
-                // Get last 3 activities
+                
                 const recentActivitiesData = activityLog.slice(0, 3).map(activity => ({
                     id: activity.id || Date.now(),
                     type: activity.type || 'info',
@@ -200,14 +200,14 @@ const AdminDashboard = () => {
 
         fetchRecentActivities();
 
-        // Listen for new activities
+        
         const handleNewActivity = () => {
             fetchRecentActivities();
         };
 
         window.addEventListener('adminActivityAdded', handleNewActivity);
 
-        // Refresh activities every 30 seconds
+        
         const interval = setInterval(fetchRecentActivities, 30000);
 
         return () => {
@@ -216,7 +216,7 @@ const AdminDashboard = () => {
         };
     }, []);
 
-    // Fetch recent announcements
+    
     useEffect(() => {
         const fetchAnnouncements = () => {
             const announcements = getLatestAnnouncements('All', null, 3);
@@ -225,7 +225,7 @@ const AdminDashboard = () => {
 
         fetchAnnouncements();
 
-        // Subscribe to announcement updates
+        
         const unsubscribe = subscribeToAnnouncements(fetchAnnouncements);
 
         return unsubscribe;
@@ -258,10 +258,10 @@ const AdminDashboard = () => {
 
         const handleSubmit = (e) => {
             e.preventDefault();
-            // Handle form submission based on type
+            
             console.log('Form submitted:', type, formData);
 
-            // Add new activity
+            
             const newActivity = {
                 id: Date.now(),
                 type: 'success',
@@ -628,9 +628,9 @@ const AdminDashboard = () => {
 
     return (
         <div className={`flex h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-            {/* Sidebar */}
+            {}
             <aside className={`w-64 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r flex flex-col`}>
-                {/* Logo */}
+                {}
                 <div className={`px-6 py-3 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg flex items-center justify-center">
@@ -643,7 +643,7 @@ const AdminDashboard = () => {
                     </div>
                 </div>
 
-                {/* Navigation */}
+                {}
                 <nav className="flex-1 p-4 overflow-y-auto">
                     <ul className="space-y-1">
                         {menuItems.map((item, index) => (
@@ -664,9 +664,9 @@ const AdminDashboard = () => {
                 </nav>
             </aside>
 
-            {/* Main Content */}
+            {}
             <main className="flex-1 flex flex-col overflow-hidden">
-                {/* Header */}
+                {}
                 <header className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b px-8 py-4`}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
@@ -680,7 +680,7 @@ const AdminDashboard = () => {
                         </div>
 
                         <div className="flex items-center space-x-4">
-                            {/* Search */}
+                            {}
                             <div className="relative">
                                 <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                                 <input
@@ -695,7 +695,7 @@ const AdminDashboard = () => {
                                 />
                             </div>
 
-                            {/* Notifications */}
+                            {}
                             <div className="relative">
                                 <button
                                     onClick={() => setShowNotificationPanel(!showNotificationPanel)}
@@ -709,7 +709,7 @@ const AdminDashboard = () => {
                                     )}
                                 </button>
 
-                                {/* Notification Panel */}
+                                {}
                                 {showNotificationPanel && (
                                     <div className={`absolute top-full right-0 mt-2 w-80 rounded-xl shadow-2xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} z-50 overflow-hidden`}>
                                         <div className={`p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
@@ -747,7 +747,7 @@ const AdminDashboard = () => {
                                 )}
                             </div>
 
-                            {/* Dark Mode Toggle */}
+                            {}
                             <button
                                 onClick={() => setDarkMode(!darkMode)}
                                 className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}
@@ -755,7 +755,7 @@ const AdminDashboard = () => {
                                 {darkMode ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-gray-700" />}
                             </button>
 
-                            {/* Settings */}
+                            {}
                             <button
                                 onClick={() => setActiveTab('Settings')}
                                 className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}
@@ -766,13 +766,13 @@ const AdminDashboard = () => {
                     </div>
                 </header>
 
-                {/* Dashboard Content */}
+                {}
                 <div className="flex-1 overflow-y-auto p-8">
                     {renderContent()}
                 </div>
             </main>
 
-            {/* Modals */}
+            {}
             {showModal && <Modal type={modalType} onClose={() => setShowModal(false)} />}
         </div>
     );

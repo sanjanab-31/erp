@@ -1,14 +1,14 @@
-// Centralized Fee Data Store
-// This provides real-time fee synchronization across Admin, Student, and Parent portals
+
+
 
 const STORAGE_KEY = 'erp_fee_data';
 
-// Initialize with default data if empty
+
 const initializeDefaultData = () => {
     return [];
 };
 
-// Get all fees
+
 export const getAllFees = () => {
     try {
         const data = localStorage.getItem(STORAGE_KEY);
@@ -24,7 +24,7 @@ export const getAllFees = () => {
     }
 };
 
-// Add new fee
+
 export const addFee = (feeData) => {
     try {
         const fees = getAllFees();
@@ -47,7 +47,7 @@ export const addFee = (feeData) => {
         fees.push(newFee);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(fees));
 
-        // Trigger storage event for real-time updates
+        
         window.dispatchEvent(new Event('feesUpdated'));
 
         return newFee;
@@ -57,7 +57,7 @@ export const addFee = (feeData) => {
     }
 };
 
-// Update fee
+
 export const updateFee = (feeId, updates) => {
     try {
         const fees = getAllFees();
@@ -75,7 +75,7 @@ export const updateFee = (feeId, updates) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(fees));
 
-        // Trigger storage event for real-time updates
+        
         window.dispatchEvent(new Event('feesUpdated'));
 
         return fees[index];
@@ -85,7 +85,7 @@ export const updateFee = (feeId, updates) => {
     }
 };
 
-// Make payment (partial or full)
+
 export const makePayment = (feeId, paymentData) => {
     try {
         const fees = getAllFees();
@@ -98,13 +98,13 @@ export const makePayment = (feeId, paymentData) => {
         const payment = {
             id: Date.now(),
             amount: parseFloat(paymentData.amount),
-            paymentMethod: paymentData.paymentMethod, // 'UPI' or 'Bank Transfer'
+            paymentMethod: paymentData.paymentMethod, 
             transactionId: paymentData.transactionId,
             paymentDate: new Date().toISOString(),
             paidBy: paymentData.paidBy || 'Parent'
         };
 
-        // Update fee with payment
+        
         const newPaidAmount = fee.paidAmount + payment.amount;
         const newRemainingAmount = fee.amount - newPaidAmount;
 
@@ -122,7 +122,7 @@ export const makePayment = (feeId, paymentData) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(fees));
 
-        // Trigger storage event for real-time updates
+        
         window.dispatchEvent(new Event('feesUpdated'));
 
         return updatedFee;
@@ -132,7 +132,7 @@ export const makePayment = (feeId, paymentData) => {
     }
 };
 
-// Delete fee
+
 export const deleteFee = (feeId) => {
     try {
         const fees = getAllFees();
@@ -140,7 +140,7 @@ export const deleteFee = (feeId) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredFees));
 
-        // Trigger storage event for real-time updates
+        
         window.dispatchEvent(new Event('feesUpdated'));
 
         return true;
@@ -150,7 +150,7 @@ export const deleteFee = (feeId) => {
     }
 };
 
-// Get fees by student ID
+
 export const getFeesByStudent = (studentId) => {
     console.log('getFeesByStudent called with studentId:', studentId);
     const fees = getAllFees();
@@ -166,14 +166,14 @@ export const getFeesByStudent = (studentId) => {
     return filtered;
 };
 
-// Get fees by student email
+
 export const getFeesByStudentEmail = (studentEmail) => {
     const fees = getAllFees();
-    // You'll need to match with student store to get student ID
-    return fees; // Filter this based on your student matching logic
+    
+    return fees; 
 };
 
-// Get fee statistics
+
 export const getFeeStats = () => {
     const fees = getAllFees();
 
@@ -198,7 +198,7 @@ export const getFeeStats = () => {
     };
 };
 
-// Get overdue fees
+
 export const getOverdueFees = () => {
     const fees = getAllFees();
     const today = new Date();
@@ -212,12 +212,12 @@ export const getOverdueFees = () => {
     });
 };
 
-// Subscribe to real-time updates
+
 export const subscribeToUpdates = (callback) => {
     const handler = () => callback(getAllFees());
     window.addEventListener('feesUpdated', handler);
 
-    // Return unsubscribe function
+    
     return () => window.removeEventListener('feesUpdated', handler);
 };
 

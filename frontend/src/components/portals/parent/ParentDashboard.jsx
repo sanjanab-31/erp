@@ -86,11 +86,11 @@ const ParentDashboard = () => {
 
     useEffect(() => {
         const fetchDashboardData = () => {
-            // Get only this parent's children
+            
             const parentEmail = userEmail;
             const myChildren = getChildrenByParentEmail(parentEmail);
 
-            // If no children found, show empty state
+            
             if (myChildren.length === 0) {
                 setDashboardData({
                     children: [],
@@ -106,21 +106,21 @@ const ParentDashboard = () => {
                 return;
             }
 
-            // Map children to dashboard data
+            
             const childrenData = myChildren.map(student => {
                 const studentId = student.id;
 
-                // Get attendance
+                
                 const attendance = calculateAttendancePercentage(studentId);
 
-                // Get grades
+                
                 const finalMarks = getStudentFinalMarks(studentId);
                 const avgGrade = finalMarks.length > 0
                     ? finalMarks.reduce((sum, m) => sum + m.finalTotal, 0) / finalMarks.length
                     : 0;
                 const currentGrade = avgGrade >= 90 ? 'A' : avgGrade >= 80 ? 'B+' : avgGrade >= 70 ? 'B' : avgGrade >= 60 ? 'C' : 'D';
 
-                // Get fees
+                
                 const fees = getFeesByStudent(studentId);
                 const pendingFees = fees.reduce((sum, f) => sum + f.remainingAmount, 0);
 
@@ -135,7 +135,7 @@ const ParentDashboard = () => {
                 };
             });
 
-            // Calculate total fee status for all children
+            
             const allFees = myChildren.flatMap(s => getFeesByStudent(s.id));
             const totalFees = allFees.reduce((sum, f) => sum + f.amount, 0);
             const paidFees = allFees.reduce((sum, f) => sum + f.paidAmount, 0);
@@ -143,8 +143,8 @@ const ParentDashboard = () => {
 
             setDashboardData({
                 children: childrenData,
-                recentActivities: [], // Would come from activity log
-                upcomingEvents: [], // Would come from calendar/events store
+                recentActivities: [], 
+                upcomingEvents: [], 
                 feeStatus: {
                     total: totalFees,
                     paid: paidFees,
@@ -154,10 +154,10 @@ const ParentDashboard = () => {
             });
         };
 
-        // Initial fetch
+        
         fetchDashboardData();
 
-        // Subscribe to updates
+        
         const unsubscribeAttendance = subscribeToAttendance(fetchDashboardData);
         const unsubscribeAcademic = subscribeToAcademicUpdates(fetchDashboardData);
         const unsubscribeFees = subscribeToFees(fetchDashboardData);
@@ -169,7 +169,7 @@ const ParentDashboard = () => {
         };
     }, [userEmail]);
 
-    // Handle payment return from Stripe
+    
     useEffect(() => {
         const handlePaymentReturn = async () => {
             const urlParams = new URLSearchParams(window.location.search);
@@ -177,27 +177,27 @@ const ParentDashboard = () => {
             const sessionId = urlParams.get('session_id');
 
             if (paymentStatus === 'success' && sessionId) {
-                // Check if this session was already processed
+                
                 const processedSessions = JSON.parse(sessionStorage.getItem('processedSessions') || '[]');
                 if (processedSessions.includes(sessionId)) {
                     console.log('Session already processed, skipping...');
-                    // Clean up URL
+                    
                     window.history.replaceState({}, document.title, window.location.pathname);
                     return;
                 }
 
-                // Get pending payment info from sessionStorage
+                
                 const pendingPaymentStr = sessionStorage.getItem('pendingPayment');
 
                 if (pendingPaymentStr) {
                     try {
                         const pendingPayment = JSON.parse(pendingPaymentStr);
 
-                        // Verify the payment with Stripe
+                        
                         const session = await getCheckoutSession(sessionId);
 
                         if (session.status === 'paid') {
-                            // Record the payment
+                            
                             makePayment(pendingPayment.feeId, {
                                 amount: pendingPayment.amount,
                                 paymentMethod: 'Stripe (Card)',
@@ -206,17 +206,17 @@ const ParentDashboard = () => {
                                 stripeSessionId: sessionId,
                             });
 
-                            // Mark this session as processed
+                            
                             processedSessions.push(sessionId);
                             sessionStorage.setItem('processedSessions', JSON.stringify(processedSessions));
 
-                            // Clear pending payment
+                            
                             sessionStorage.removeItem('pendingPayment');
 
-                            // Show success message
+                            
                             showSuccess('Payment successful! Your fee has been updated.');
 
-                            // Navigate to Fee Management to see the update
+                            
                             setActiveTab('Fee Management');
                         }
                     } catch (err) {
@@ -225,14 +225,14 @@ const ParentDashboard = () => {
                     }
                 }
 
-                // Clean up URL
+                
                 window.history.replaceState({}, document.title, window.location.pathname);
             } else if (paymentStatus === 'cancelled') {
-                // Clear pending payment
+                
                 sessionStorage.removeItem('pendingPayment');
                 showError('Payment was cancelled. You can try again anytime.');
 
-                // Clean up URL
+                
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
         };
@@ -258,7 +258,7 @@ const ParentDashboard = () => {
         if (activeTab === 'Child Academics') return <ParentChildAcademics darkMode={darkMode} />;
         if (activeTab === 'Library') return <LibraryPage darkMode={darkMode} />;
         if (activeTab === 'Announcements') return <AnnouncementsPage darkMode={darkMode} />;
-        // Default Dashboard
+        
         return (
             <>
                 <div className="mb-8">

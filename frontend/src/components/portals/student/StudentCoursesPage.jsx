@@ -94,7 +94,7 @@ const StudentCoursesPage = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
+            {}
             <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     My Courses
@@ -102,7 +102,7 @@ const StudentCoursesPage = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">View courses, submit assignments, and track your progress</p>
             </div>
 
-            {/* Courses Grid */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {courses.map((course) => {
                     const finalMarks = calculateFinalMarks(studentId, course.id);
@@ -148,14 +148,14 @@ const StudentCoursesPage = ({ darkMode }) => {
                 })}
             </div>
 
-            {/* Course Details */}
+            {}
             {selectedCourse && (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6`}>
                     <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-6`}>
                         {selectedCourse.name} - Details
                     </h2>
 
-                    {/* Assignments Section */}
+                    {}
                     <div className="mb-8">
                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                             Assignments
@@ -246,7 +246,7 @@ const StudentCoursesPage = ({ darkMode }) => {
                         )}
                     </div>
 
-                    {/* Exam Marks Section */}
+                    {}
                     <div className="mb-8">
                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                             Exam Marks
@@ -290,7 +290,7 @@ const StudentCoursesPage = ({ darkMode }) => {
                         })()}
                     </div>
 
-                    {/* Final Marks Summary */}
+                    {}
                     <div className="mb-8">
                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                             Final Marks Summary
@@ -336,7 +336,7 @@ const StudentCoursesPage = ({ darkMode }) => {
                         })()}
                     </div>
 
-                    {/* Course Materials */}
+                    {}
                     <div className="mb-8">
                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                             Course Materials
@@ -373,7 +373,7 @@ const StudentCoursesPage = ({ darkMode }) => {
                         )}
                     </div>
 
-                    {/* Exam Schedules */}
+                    {}
                     <div>
                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                             Exam Schedules
@@ -423,7 +423,7 @@ const StudentCoursesPage = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Submit Assignment Modal */}
+            {}
             {showSubmitModal && selectedAssignment && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>

@@ -21,29 +21,29 @@ const MyChildrenPage = ({ darkMode }) => {
     const [selectedChild, setSelectedChild] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Fetch children data
+    
     useEffect(() => {
         const parentEmail = localStorage.getItem('userEmail');
 
         if (parentEmail) {
-            // Get children IDs for this parent
+            
             const parentChildren = getChildrenByParentEmail(parentEmail);
             console.log('Parent children:', parentChildren);
 
             if (parentChildren && parentChildren.length > 0) {
-                // Get full student data for each child
+                
                 const students = getAllStudents();
                 const childrenData = parentChildren.map(child => {
                     const student = students.find(s => s.id === child.id);
                     if (!student) return null;
 
-                    // Get attendance percentage
+                    
                     const attendance = calculateAttendancePercentage(student.id);
 
-                    // Get final marks
+                    
                     const finalMarks = getStudentFinalMarks(student.id);
 
-                    // Calculate average grade
+                    
                     let avgGrade = 0;
                     let currentGrade = 'N/A';
                     if (finalMarks.length > 0) {
@@ -51,7 +51,7 @@ const MyChildrenPage = ({ darkMode }) => {
                         currentGrade = avgGrade >= 90 ? 'A+' : avgGrade >= 85 ? 'A' : avgGrade >= 75 ? 'B+' : avgGrade >= 70 ? 'B' : avgGrade >= 60 ? 'C' : 'D';
                     }
 
-                    // Get submissions for recent activities
+                    
                     const submissions = getSubmissionsByStudent(student.id);
                     const recentActivities = submissions.slice(0, 3).map((sub, idx) => ({
                         id: idx + 1,
@@ -61,7 +61,7 @@ const MyChildrenPage = ({ darkMode }) => {
                         score: sub.marks || null
                     }));
 
-                    // Format subjects from final marks
+                    
                     const subjects = finalMarks.map(mark => ({
                         name: mark.courseName,
                         grade: mark.finalTotal >= 90 ? 'A+' : mark.finalTotal >= 85 ? 'A' : mark.finalTotal >= 75 ? 'B+' : mark.finalTotal >= 70 ? 'B' : mark.finalTotal >= 60 ? 'C' : 'D',
@@ -79,7 +79,7 @@ const MyChildrenPage = ({ darkMode }) => {
                         address: student.address,
                         attendance: attendance,
                         currentGrade: currentGrade,
-                        rank: 'N/A', // Would need ranking logic
+                        rank: 'N/A', 
                         subjects: subjects,
                         recentActivities: recentActivities
                     };
@@ -105,7 +105,7 @@ const MyChildrenPage = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
+            {}
             <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     My Children

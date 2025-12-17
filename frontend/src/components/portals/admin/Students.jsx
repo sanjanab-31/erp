@@ -5,7 +5,7 @@ import { addStudent as addUserStudent, deleteStudentAndParent } from '../../../u
 import { useToast } from '../../../context/ToastContext';
 import { sendStudentCredentials } from '../../../utils/emailService';
 
-// Move modal components outside to prevent re-creation on every render
+
 const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, darkMode }) => {
     const classes = ['Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
 
@@ -17,7 +17,7 @@ const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl w-full max-w-6xl shadow-2xl flex flex-col max-h-[90vh]`}>
 
-                {/* Header */}
+                {}
                 <div className={`flex items-center justify-between p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                         {isEdit ? 'Edit Student Details' : 'Add New Student'}
@@ -27,11 +27,11 @@ const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
                     </button>
                 </div>
 
-                {/* Form Content */}
+                {}
                 <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-6">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                        {/* COLUMN 1: Academic Info */}
+                        {}
                         <div className="space-y-4">
                             <h3 className={sectionTitleClass}>Academic Identity</h3>
                             <div className="space-y-3">
@@ -61,7 +61,7 @@ const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
                             </div>
                         </div>
 
-                        {/* COLUMN 2: Personal & Contact */}
+                        {}
                         <div className="space-y-4">
                             <h3 className={sectionTitleClass}>Personal Details</h3>
                             <div className="space-y-3">
@@ -97,7 +97,7 @@ const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
                             </div>
                         </div>
 
-                        {/* COLUMN 3: Parent & Address */}
+                        {}
                         <div className="space-y-4">
                             <h3 className={sectionTitleClass}>Family & Address</h3>
                             <div className="space-y-3">
@@ -124,7 +124,7 @@ const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
 
                     </div>
 
-                    {/* Action Buttons */}
+                    {}
                     <div className="flex justify-end gap-3 pt-6 mt-2 border-gray-200 dark:border-gray-700">
                         <button
                             type="button"
@@ -203,7 +203,7 @@ const Students = ({ darkMode }) => {
         grade: 'A'
     });
 
-    // Load students on mount and subscribe to updates
+    
     useEffect(() => {
         loadStudents();
         const unsubscribe = subscribeToUpdates(loadStudents);
@@ -238,14 +238,14 @@ const Students = ({ darkMode }) => {
     const handleAddStudent = useCallback((e) => {
         e.preventDefault();
         try {
-            // Validation: Check if student email and parent email are the same
+            
             if (formData.email && formData.parentEmail &&
                 formData.email.toLowerCase().trim() === formData.parentEmail.toLowerCase().trim()) {
                 showError('Student email and parent email cannot be the same!');
                 return;
             }
 
-            // Validation: Check if DOB is in the future
+            
             if (formData.dateOfBirth) {
                 const dob = new Date(formData.dateOfBirth);
                 const today = new Date();
@@ -256,10 +256,10 @@ const Students = ({ darkMode }) => {
                 }
             }
 
-            // Add to studentStore (for student management)
+            
             addStudent(formData);
 
-            // Add to userStore (for authentication) with default password
+            
             addUserStudent({
                 email: formData.email,
                 name: formData.name,
@@ -275,7 +275,7 @@ const Students = ({ darkMode }) => {
 
             setShowAddModal(false);
             resetForm();
-            // Show credentials for both student and parent
+            
             let message = 'Student added successfully!\n\n';
             message += '📚 Student Login:\n';
             message += 'Email: ' + formData.email + '\n';
@@ -287,10 +287,10 @@ const Students = ({ darkMode }) => {
                 message += 'Password: password';
             }
 
-            // Send Email Notifications (Async)
+            
             sendStudentCredentials({
                 email: formData.email,
-                password: 'password', // Default password
+                password: 'password', 
                 name: formData.name,
                 parentEmail: formData.parentEmail
             }).then(response => {
@@ -310,14 +310,14 @@ const Students = ({ darkMode }) => {
     const handleEditStudent = useCallback((e) => {
         e.preventDefault();
         try {
-            // Validation: Check if student email and parent email are the same
+            
             if (formData.email && formData.parentEmail &&
                 formData.email.toLowerCase().trim() === formData.parentEmail.toLowerCase().trim()) {
                 showError('Student email and parent email cannot be the same!');
                 return;
             }
 
-            // Validation: Check if DOB is in the future
+            
             if (formData.dateOfBirth) {
                 const dob = new Date(formData.dateOfBirth);
                 const today = new Date();
@@ -340,10 +340,10 @@ const Students = ({ darkMode }) => {
 
     const handleDeleteStudent = useCallback(() => {
         try {
-            // Delete from studentStore
+            
             deleteStudent(selectedStudent.id);
 
-            // Delete from userStore (both student and parent profiles)
+            
             deleteStudentAndParent(selectedStudent.email, selectedStudent.parentEmail);
 
             setShowDeleteConfirm(false);
@@ -394,7 +394,7 @@ const Students = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {/* Header with Stats */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <p className="text-sm text-gray-500">Total Students</p>
@@ -414,7 +414,7 @@ const Students = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Controls */}
+            {}
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                     Students Management
@@ -464,7 +464,7 @@ const Students = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Students Table */}
+            {}
             <div className={`overflow-hidden rounded-xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="overflow-x-auto">
                     <table className={`w-full text-left ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -579,7 +579,7 @@ const Students = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Modals */}
+            {}
             {showAddModal && (
                 <StudentFormModal
                     isEdit={false}

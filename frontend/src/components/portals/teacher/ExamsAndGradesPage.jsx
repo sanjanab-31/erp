@@ -65,7 +65,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
     };
 
     const loadCourseData = (courseId) => {
-        // Get all students from the course's class
+        
         const course = courses.find(c => c.id === courseId) || selectedCourse;
         if (!course) return;
 
@@ -73,14 +73,14 @@ const ExamsAndGradesPage = ({ darkMode }) => {
         const classStudents = allStudents.filter(s => s.class === course.class);
         setStudents(classStudents);
 
-        // Load existing marks for each student
+        
         const marksMap = {};
         const assignments = getAssignmentsByCourse(courseId);
 
         classStudents.forEach(student => {
             const examMarks = getExamMarksByCourse(courseId).find(m => m.studentId === student.id);
 
-            // Get assignment marks
+            
             let assignment1 = 0;
             let assignment2 = 0;
 
@@ -119,13 +119,13 @@ const ExamsAndGradesPage = ({ darkMode }) => {
     const calculateTotals = (studentId) => {
         const marks = marksData[studentId] || {};
 
-        // Exam Total: Sum of 3 exams, scaled to 75
+        
         const examTotal = ((parseFloat(marks.exam1) || 0) + (parseFloat(marks.exam2) || 0) + (parseFloat(marks.exam3) || 0)) / 300 * 75;
 
-        // Assignment Total: Sum of 2 assignments, scaled to 25
+        
         const assignmentTotal = ((parseFloat(marks.assignment1) || 0) + (parseFloat(marks.assignment2) || 0)) / 200 * 25;
 
-        // Final Total: Exam (75) + Assignment (25) = 100
+        
         const finalTotal = examTotal + assignmentTotal;
 
         return {
@@ -154,11 +154,11 @@ const ExamsAndGradesPage = ({ darkMode }) => {
             const assignments = getAssignmentsByCourse(selectedCourse.id);
             console.log('Assignments found for save:', assignments);
 
-            // Save marks for each student
+            
             for (const student of students) {
                 const marks = marksData[student.id];
                 if (marks) {
-                    // Save exam marks
+                    
                     await enterExamMarks({
                         courseId: selectedCourse.id,
                         studentId: student.id,
@@ -169,7 +169,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                         enteredBy: teacherId
                     });
 
-                    // Save assignment 1 marks
+                    
                     if (assignments.length > 0) {
                         const assignmentId = assignments[0].id;
                         const submissions = getSubmissionsByAssignment(assignmentId);
@@ -195,7 +195,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                         }
                     }
 
-                    // Save assignment 2 marks
+                    
                     if (assignments.length > 1) {
                         const assignmentId = assignments[1].id;
                         const submissions = getSubmissionsByAssignment(assignmentId);
@@ -225,7 +225,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
 
             showSuccess('Marks saved successfully!');
             setEditMode(false);
-            loadCourseData(selectedCourse.id); // Reload to show updated marks
+            loadCourseData(selectedCourse.id); 
         } catch (error) {
             console.error(error);
             showError('Error saving marks: ' + error.message);
@@ -239,7 +239,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
         student.rollNo?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // Calculate statistics
+    
     const calculateStats = () => {
         if (filteredStudents.length === 0) return { average: 0, topScore: 0, passRate: 0 };
 
@@ -259,7 +259,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {/* Header */}
+            {}
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Exams & Grades
@@ -267,7 +267,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">Manage student marks and assessments</p>
             </div>
 
-            {/* Stats Cards */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
@@ -302,7 +302,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Filters */}
+            {}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6`}>
                 <div className="flex flex-col md:flex-row gap-4 mb-4">
                     <select
@@ -377,7 +377,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Info Alert */}
+            {}
             {editMode && (
                 <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start space-x-3">
                     <AlertCircle className="w-5 h-5 text-green-600 mt-0.5" />
@@ -391,7 +391,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Gradebook Table */}
+            {}
             {!selectedCourse ? (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 text-center border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -451,7 +451,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
 
                                     return (
                                         <tr key={student.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}>
-                                            {/* Student Name */}
+                                            {}
                                             <td className={`px-4 py-3 whitespace-nowrap sticky left-0 ${darkMode ? 'bg-gray-800' : 'bg-white'} z-10`}>
                                                 <div className="flex items-center">
                                                     <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">
@@ -465,12 +465,12 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                                                 </div>
                                             </td>
 
-                                            {/* Student ID */}
+                                            {}
                                             <td className="px-4 py-3 text-center">
                                                 <span className="text-xs text-gray-500">{student.rollNo || student.id}</span>
                                             </td>
 
-                                            {/* Exam 1 */}
+                                            {}
                                             <td className="px-4 py-3 text-center bg-green-50">
                                                 {editMode ? (
                                                     <input
@@ -489,7 +489,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                                                 )}
                                             </td>
 
-                                            {/* Exam 2 */}
+                                            {}
                                             <td className="px-4 py-3 text-center bg-green-50">
                                                 {editMode ? (
                                                     <input
@@ -508,7 +508,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                                                 )}
                                             </td>
 
-                                            {/* Exam 3 */}
+                                            {}
                                             <td className="px-4 py-3 text-center bg-green-50">
                                                 {editMode ? (
                                                     <input
@@ -527,14 +527,14 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                                                 )}
                                             </td>
 
-                                            {/* Exam Total (75) */}
+                                            {}
                                             <td className="px-4 py-3 text-center bg-green-100">
                                                 <span className="text-sm font-bold text-green-700">
                                                     {totals.examTotal}
                                                 </span>
                                             </td>
 
-                                            {/* Assignment 1 */}
+                                            {}
                                             <td className="px-4 py-3 text-center bg-green-50">
                                                 {editMode ? (
                                                     <input
@@ -553,7 +553,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                                                 )}
                                             </td>
 
-                                            {/* Assignment 2 */}
+                                            {}
                                             <td className="px-4 py-3 text-center bg-green-50">
                                                 {editMode ? (
                                                     <input
@@ -572,21 +572,21 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                                                 )}
                                             </td>
 
-                                            {/* Assignment Total (25) */}
+                                            {}
                                             <td className="px-4 py-3 text-center bg-green-100">
                                                 <span className="text-sm font-bold text-green-700">
                                                     {totals.assignmentTotal}
                                                 </span>
                                             </td>
 
-                                            {/* Final Total (100) */}
+                                            {}
                                             <td className="px-4 py-3 text-center bg-purple-100">
                                                 <span className="text-lg font-bold text-purple-700">
                                                     {totals.finalTotal}
                                                 </span>
                                             </td>
 
-                                            {/* Grade */}
+                                            {}
                                             <td className="px-4 py-3 text-center">
                                                 <span className={`px-3 py-1 rounded-full text-sm font-bold ${gradeInfo.color}`}>
                                                     {gradeInfo.grade}

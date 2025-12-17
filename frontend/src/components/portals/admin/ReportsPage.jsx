@@ -48,12 +48,12 @@ const ReportsPage = ({ darkMode }) => {
         const allTeachers = getAllTeachers();
         const allFees = getAllFees();
 
-        // Filter students by class if needed
+        
         const filteredStudents = selectedClass === 'All Classes'
             ? allStudents
             : allStudents.filter(s => s.class === selectedClass);
 
-        // Overview Data
+        
         const attendanceStats = getOverallAttendanceStats();
         const feeStats = getFeeStats();
         const pendingFeesList = allFees.filter(f => f.status !== 'Paid');
@@ -64,14 +64,14 @@ const ReportsPage = ({ darkMode }) => {
             averageAttendance: attendanceStats.averageAttendance || 0,
             totalRevenue: feeStats.totalCollected || 0,
             pendingFees: feeStats.totalPending || 0,
-            activeClasses: classes.length - 1, // Exclude "All Classes"
-            // Details for Print
+            activeClasses: classes.length - 1, 
+            
             detailedStudents: allStudents,
             detailedTeachers: allTeachers,
             detailedPendingFees: pendingFeesList
         };
 
-        // Attendance Data
+        
         const attendanceStudents = filteredStudents.map(student => {
             const percentage = calculateAttendancePercentage(student.id);
             const attendanceRecords = getAttendanceByStudent(student.id);
@@ -94,7 +94,7 @@ const ReportsPage = ({ darkMode }) => {
             ? Math.round(attendanceStudents.reduce((sum, s) => sum + s.attendance, 0) / attendanceStudents.length)
             : 0;
 
-        // Academic Data
+        
         const academicStudents = filteredStudents.map(student => {
             const finalMarks = getStudentFinalMarks(student.id);
             const avgMarks = finalMarks.length > 0
@@ -111,7 +111,7 @@ const ReportsPage = ({ darkMode }) => {
             };
         }).sort((a, b) => b.marks - a.marks);
 
-        // Assign ranks
+        
         academicStudents.forEach((student, index) => {
             student.rank = index + 1;
         });
@@ -121,7 +121,7 @@ const ReportsPage = ({ darkMode }) => {
             ? Math.round((academicStudents.filter(s => s.marks >= 40).length / academicStudents.length) * 100)
             : 0;
 
-        // Financial Data
+        
         const filteredFees = selectedClass === 'All Classes'
             ? allFees
             : allFees.filter(f => f.studentClass === selectedClass);
@@ -131,12 +131,12 @@ const ReportsPage = ({ darkMode }) => {
             attendance: {
                 totalClasses,
                 averageAttendance: avgAttendance,
-                students: attendanceStudents // Full list
+                students: attendanceStudents 
             },
             academic: {
                 averageGrade: avgGrade,
                 passRate,
-                students: academicStudents // Full list
+                students: academicStudents 
             },
             financial: {
                 totalRevenue: feeStats.totalCollected || 0,
@@ -144,7 +144,7 @@ const ReportsPage = ({ darkMode }) => {
                 collectionRate: feeStats.totalCollected > 0
                     ? Math.round((feeStats.totalCollected / (feeStats.totalCollected + feeStats.totalPending)) * 100)
                     : 0,
-                detailedFees: filteredFees // Full list
+                detailedFees: filteredFees 
             }
         });
     };
@@ -644,7 +644,7 @@ const ReportsPage = ({ darkMode }) => {
             {renderPrintContent()}
 
             <div className="flex-1 overflow-y-auto p-8 no-print">
-                {/* Header */}
+                {}
                 <div className="mb-8">
                     <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                         Reports & Analytics
@@ -652,7 +652,7 @@ const ReportsPage = ({ darkMode }) => {
                     <p className="text-sm text-gray-500">Comprehensive real-time system reports</p>
                 </div>
 
-                {/* Report Type Selection */}
+                {}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                     {reportTypes.map((type) => (
                         <button
@@ -671,7 +671,7 @@ const ReportsPage = ({ darkMode }) => {
                     ))}
                 </div>
 
-                {/* Filters */}
+                {}
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6`}>
                     <div className="flex flex-col md:flex-row gap-4">
                         <select
@@ -710,7 +710,7 @@ const ReportsPage = ({ darkMode }) => {
                     </div>
                 </div>
 
-                {/* Report Content */}
+                {}
                 {renderReportContent()}
             </div>
         </>

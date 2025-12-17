@@ -28,7 +28,7 @@ const ExamsAndGrades = ({ darkMode }) => {
 
     const studentEmail = localStorage.getItem('userEmail') || '';
 
-    // Get student ID and class from email
+    
     useEffect(() => {
         if (studentEmail) {
             const students = getAllStudents();
@@ -60,7 +60,7 @@ const ExamsAndGrades = ({ darkMode }) => {
         const classSchedules = getExamSchedulesByClass(studentClass);
         setExamSchedules(classSchedules);
 
-        // Calculate all marks for all courses
+        
         const marksData = classCourses.map(course => {
             const finalMarks = calculateFinalMarks(studentId, course.id);
             const examMarks = getStudentCourseMarks(studentId, course.id);
@@ -76,7 +76,7 @@ const ExamsAndGrades = ({ darkMode }) => {
         setAllMarks(marksData);
     };
 
-    // Calculate statistics
+    
     const calculateStats = () => {
         const totalCourses = allMarks.length;
         const totalMarks = allMarks.reduce((sum, m) => sum + m.finalMarks.finalTotal, 0);
@@ -230,7 +230,7 @@ const ExamsAndGrades = ({ darkMode }) => {
     );
 
     const renderExamSchedule = () => {
-        // Group schedules by Exam Name
+        
         const groupedSchedules = {};
         examSchedules.forEach(schedule => {
             if (!groupedSchedules[schedule.examName]) {
@@ -338,7 +338,7 @@ const ExamsAndGrades = ({ darkMode }) => {
                 </div>
             ) : (
                 <div className="space-y-6">
-                    {/* Overall Performance */}
+                    {}
                     <div className={`${darkMode ? 'bg-gradient-to-r from-blue-900 to-purple-900' : 'bg-gradient-to-r from-blue-500 to-purple-600'} rounded-xl p-6 text-white`}>
                         <h4 className="text-lg font-semibold mb-4">Overall Performance</h4>
                         <div className="grid grid-cols-3 gap-4">
@@ -357,7 +357,7 @@ const ExamsAndGrades = ({ darkMode }) => {
                         </div>
                     </div>
 
-                    {/* Subject-wise Performance */}
+                    {}
                     <div>
                         <h4 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                             Subject-wise Performance
@@ -422,7 +422,7 @@ const ExamsAndGrades = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {/* Page Header */}
+            {}
             <div className="mb-6">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Exams & Grades
@@ -430,9 +430,9 @@ const ExamsAndGrades = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">View your exam schedules and academic performance</p>
             </div>
 
-            {/* Stats Cards */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                {/* Overall Grade Card */}
+                {}
                 <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl p-6 shadow-sm border`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -448,7 +448,7 @@ const ExamsAndGrades = ({ darkMode }) => {
                     <p className="text-sm text-gray-500">{stats.average}% average</p>
                 </div>
 
-                {/* Exams Completed Card */}
+                {}
                 <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl p-6 shadow-sm border`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -464,7 +464,7 @@ const ExamsAndGrades = ({ darkMode }) => {
                     <p className="text-sm text-gray-500">Out of {courses.length} courses</p>
                 </div>
 
-                {/* Upcoming Exams Card */}
+                {}
                 <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl p-6 shadow-sm border`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -480,7 +480,7 @@ const ExamsAndGrades = ({ darkMode }) => {
                     <p className="text-sm text-gray-500">Scheduled exams</p>
                 </div>
 
-                {/* Performance Card */}
+                {}
                 <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl p-6 shadow-sm border`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -500,7 +500,7 @@ const ExamsAndGrades = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Tabs */}
+            {}
             <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl shadow-sm border`}>
                 <div className="border-b border-gray-200">
                     <div className="flex space-x-8 px-6">
@@ -534,7 +534,7 @@ const ExamsAndGrades = ({ darkMode }) => {
                     </div>
                 </div>
 
-                {/* Tab Content */}
+                {}
                 {activeTab === 'My Grades' && renderMyGrades()}
                 {activeTab === 'Exam Schedule' && renderExamSchedule()}
                 {activeTab === 'Performance Analysis' && renderPerformanceAnalysis()}

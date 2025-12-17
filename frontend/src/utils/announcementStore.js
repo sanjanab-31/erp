@@ -1,9 +1,9 @@
-// Centralized Announcements Data Store
-// Provides real-time synchronization for Announcements across all portals
+
+
 
 const STORAGE_KEY = 'erp_announcements';
 
-// Initialize with default data if empty
+
 const initializeDefaultData = () => {
     if (!localStorage.getItem(STORAGE_KEY)) {
         const defaultAnnouncements = [
@@ -11,14 +11,14 @@ const initializeDefaultData = () => {
                 id: 1,
                 title: 'Welcome to New Academic Year 2024-25',
                 description: 'We are excited to welcome all students, teachers, and parents to the new academic year. Let\'s make this year productive and successful!',
-                targetAudience: 'All', // 'Teachers', 'Students', 'Parents', 'All'
-                classes: [], // Empty means all classes
+                targetAudience: 'All', 
+                classes: [], 
                 attachment: '',
                 publishDate: new Date().toISOString(),
                 createdBy: 'Admin',
                 createdByName: 'John Admin',
                 createdAt: new Date().toISOString(),
-                status: 'Published' // 'Draft', 'Published', 'Archived'
+                status: 'Published' 
             },
             {
                 id: 2,
@@ -51,7 +51,7 @@ const initializeDefaultData = () => {
     }
 };
 
-// Get all announcements
+
 export const getAllAnnouncements = () => {
     try {
         const data = localStorage.getItem(STORAGE_KEY);
@@ -66,7 +66,7 @@ export const getAllAnnouncements = () => {
     }
 };
 
-// Add new announcement
+
 export const addAnnouncement = (announcementData) => {
     try {
         const announcements = getAllAnnouncements();
@@ -76,7 +76,7 @@ export const addAnnouncement = (announcementData) => {
             createdAt: new Date().toISOString(),
             status: announcementData.status || 'Published'
         };
-        announcements.unshift(newAnnouncement); // Add to beginning
+        announcements.unshift(newAnnouncement); 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(announcements));
         window.dispatchEvent(new Event('announcementsUpdated'));
         return newAnnouncement;
@@ -86,7 +86,7 @@ export const addAnnouncement = (announcementData) => {
     }
 };
 
-// Update announcement
+
 export const updateAnnouncement = (id, updates) => {
     try {
         const announcements = getAllAnnouncements();
@@ -108,7 +108,7 @@ export const updateAnnouncement = (id, updates) => {
     }
 };
 
-// Delete announcement
+
 export const deleteAnnouncement = (id) => {
     try {
         const announcements = getAllAnnouncements();
@@ -122,7 +122,7 @@ export const deleteAnnouncement = (id) => {
     }
 };
 
-// Archive announcement
+
 export const archiveAnnouncement = (id) => {
     try {
         return updateAnnouncement(id, { status: 'Archived' });
@@ -132,7 +132,7 @@ export const archiveAnnouncement = (id) => {
     }
 };
 
-// Unarchive announcement
+
 export const unarchiveAnnouncement = (id) => {
     try {
         return updateAnnouncement(id, { status: 'Published' });
@@ -142,19 +142,19 @@ export const unarchiveAnnouncement = (id) => {
     }
 };
 
-// Get announcements for specific audience
+
 export const getAnnouncementsForAudience = (audience, userClass = null) => {
     const announcements = getAllAnnouncements();
 
     return announcements.filter(a => {
-        // Only show published announcements
+        
         if (a.status !== 'Published') return false;
 
-        // Check audience match
+        
         const audienceMatch = a.targetAudience === 'All' || a.targetAudience === audience;
         if (!audienceMatch) return false;
 
-        // Check class match (if classes are specified)
+        
         if (a.classes && a.classes.length > 0 && userClass) {
             return a.classes.includes(userClass);
         }
@@ -163,13 +163,13 @@ export const getAnnouncementsForAudience = (audience, userClass = null) => {
     });
 };
 
-// Get latest announcements (for dashboard preview)
+
 export const getLatestAnnouncements = (audience, userClass = null, limit = 3) => {
     const announcements = getAnnouncementsForAudience(audience, userClass);
     return announcements.slice(0, limit);
 };
 
-// Auto-archive old announcements (older than 30 days)
+
 export const autoArchiveOldAnnouncements = () => {
     try {
         const announcements = getAllAnnouncements();
@@ -194,7 +194,7 @@ export const autoArchiveOldAnnouncements = () => {
     }
 };
 
-// Subscribe to real-time updates
+
 export const subscribeToUpdates = (callback) => {
     const handler = () => {
         callback(getAllAnnouncements());
@@ -209,10 +209,10 @@ export const subscribeToUpdates = (callback) => {
     };
 };
 
-// Initialize on load
+
 initializeDefaultData();
 
-// Run auto-archive on load
+
 autoArchiveOldAnnouncements();
 
 export default {

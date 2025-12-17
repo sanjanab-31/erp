@@ -20,7 +20,7 @@ const FeePage = ({ darkMode }) => {
         setLoading(true);
         console.log('Loading fees for student email:', studentEmail);
 
-        // Find student by email
+        
         const students = getAllStudents();
         console.log('All students:', students);
 
@@ -38,7 +38,7 @@ const FeePage = ({ darkMode }) => {
             console.log('Student not found with email:', studentEmail);
             console.log('Available student emails:');
 
-            // Debug: Show all student emails
+            
             students.forEach(s => {
                 console.log(`Student: ${s.name}, Email: ${s.email}`);
             });
@@ -83,7 +83,7 @@ const FeePage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {/* Header */}
+            {}
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     My Fees
@@ -91,7 +91,7 @@ const FeePage = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">View your fee details (Real-time sync with Admin)</p>
             </div>
 
-            {/* Stats */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
@@ -132,7 +132,7 @@ const FeePage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Info Note */}
+            {}
             <div className={`${darkMode ? 'bg-blue-900 border-blue-700' : 'bg-blue-50 border-blue-200'} border rounded-xl p-4 mb-6`}>
                 <div className="flex items-start space-x-3">
                     <Info className={`w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'} mt-0.5`} />
@@ -147,7 +147,7 @@ const FeePage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Fees List */}
+            {}
             {fees.length === 0 ? (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-center`}>
                     <DollarSign className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -192,7 +192,7 @@ const FeePage = ({ darkMode }) => {
                                 </div>
                             </div>
 
-                            {/* Payment History */}
+                            {}
                             {fee.payments && fee.payments.length > 0 && (
                                 <div className="mt-4 pt-4 border-t border-gray-200">
                                     <p className="text-xs font-semibold text-gray-500 mb-2">Payment History:</p>
@@ -210,7 +210,7 @@ const FeePage = ({ darkMode }) => {
                                 </div>
                             )}
 
-                            {/* Progress Bar */}
+                            {}
                             <div className="mt-4">
                                 <div className="flex justify-between text-xs text-gray-500 mb-1">
                                     <span>Payment Progress</span>

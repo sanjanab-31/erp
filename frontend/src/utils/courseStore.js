@@ -1,14 +1,14 @@
-// Centralized Course Data Store
-// This provides real-time course synchronization between Teacher and Student portals
+
+
 
 const STORAGE_KEY = 'erp_course_data';
 
-// Initialize with default data if empty
+
 const initializeDefaultData = () => {
     return [];
 };
 
-// Get all courses
+
 export const getAllCourses = () => {
     try {
         const data = localStorage.getItem(STORAGE_KEY);
@@ -24,7 +24,7 @@ export const getAllCourses = () => {
     }
 };
 
-// Add new course
+
 export const addCourse = (courseData) => {
     try {
         console.log('Adding course with data:', courseData);
@@ -49,7 +49,7 @@ export const addCourse = (courseData) => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
         console.log('Course saved to localStorage');
 
-        // Trigger storage event for real-time updates
+        
         window.dispatchEvent(new Event('coursesUpdated'));
         console.log('coursesUpdated event dispatched');
 
@@ -60,7 +60,7 @@ export const addCourse = (courseData) => {
     }
 };
 
-// Update course
+
 export const updateCourse = (courseId, updates) => {
     try {
         const courses = getAllCourses();
@@ -78,7 +78,7 @@ export const updateCourse = (courseId, updates) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
 
-        // Trigger storage event for real-time updates
+        
         window.dispatchEvent(new Event('coursesUpdated'));
 
         return courses[index];
@@ -88,7 +88,7 @@ export const updateCourse = (courseId, updates) => {
     }
 };
 
-// Delete course
+
 export const deleteCourse = (courseId) => {
     try {
         const courses = getAllCourses();
@@ -96,7 +96,7 @@ export const deleteCourse = (courseId) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredCourses));
 
-        // Trigger storage event for real-time updates
+        
         window.dispatchEvent(new Event('coursesUpdated'));
 
         return true;
@@ -106,7 +106,7 @@ export const deleteCourse = (courseId) => {
     }
 };
 
-// Add course material
+
 export const addCourseMaterial = (courseId, materialData) => {
     try {
         const courses = getAllCourses();
@@ -121,7 +121,7 @@ export const addCourseMaterial = (courseId, materialData) => {
             title: materialData.title,
             description: materialData.description || '',
             link: materialData.link,
-            type: materialData.type || 'link', // 'link', 'drive', 'document'
+            type: materialData.type || 'link', 
             uploadedAt: new Date().toISOString()
         };
 
@@ -133,7 +133,7 @@ export const addCourseMaterial = (courseId, materialData) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
 
-        // Trigger storage event for real-time updates
+        
         window.dispatchEvent(new Event('coursesUpdated'));
 
         return newMaterial;
@@ -143,7 +143,7 @@ export const addCourseMaterial = (courseId, materialData) => {
     }
 };
 
-// Delete course material
+
 export const deleteCourseMaterial = (courseId, materialId) => {
     try {
         const courses = getAllCourses();
@@ -161,7 +161,7 @@ export const deleteCourseMaterial = (courseId, materialId) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
 
-        // Trigger storage event for real-time updates
+        
         window.dispatchEvent(new Event('coursesUpdated'));
 
         return true;
@@ -171,7 +171,7 @@ export const deleteCourseMaterial = (courseId, materialId) => {
     }
 };
 
-// Add assignment
+
 export const addAssignment = (courseId, assignmentData) => {
     try {
         const courses = getAllCourses();
@@ -198,7 +198,7 @@ export const addAssignment = (courseId, assignmentData) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
 
-        // Trigger storage event for real-time updates
+        
         window.dispatchEvent(new Event('coursesUpdated'));
 
         return newAssignment;
@@ -208,7 +208,7 @@ export const addAssignment = (courseId, assignmentData) => {
     }
 };
 
-// Delete assignment
+
 export const deleteAssignment = (courseId, assignmentId) => {
     try {
         const courses = getAllCourses();
@@ -226,7 +226,7 @@ export const deleteAssignment = (courseId, assignmentId) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
 
-        // Trigger storage event for real-time updates
+        
         window.dispatchEvent(new Event('coursesUpdated'));
 
         return true;
@@ -236,7 +236,7 @@ export const deleteAssignment = (courseId, assignmentId) => {
     }
 };
 
-// Submit assignment (student)
+
 export const submitAssignment = (courseId, assignmentId, submissionData) => {
     try {
         const courses = getAllCourses();
@@ -252,7 +252,7 @@ export const submitAssignment = (courseId, assignmentId, submissionData) => {
             throw new Error('Assignment not found');
         }
 
-        // Check if student already submitted
+        
         const existingSubmissionIndex = assignment.submissions.findIndex(
             s => s.studentId === submissionData.studentId
         );
@@ -266,10 +266,10 @@ export const submitAssignment = (courseId, assignmentId, submissionData) => {
         };
 
         if (existingSubmissionIndex >= 0) {
-            // Update existing submission
+            
             assignment.submissions[existingSubmissionIndex] = newSubmission;
         } else {
-            // Add new submission
+            
             assignment.submissions.push(newSubmission);
         }
 
@@ -280,7 +280,7 @@ export const submitAssignment = (courseId, assignmentId, submissionData) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
 
-        // Trigger storage event for real-time updates
+        
         window.dispatchEvent(new Event('coursesUpdated'));
 
         return newSubmission;
@@ -290,7 +290,7 @@ export const submitAssignment = (courseId, assignmentId, submissionData) => {
     }
 };
 
-// Get courses by teacher
+
 export const getCoursesByTeacher = (teacherId) => {
     console.log('getCoursesByTeacher called with teacherId:', teacherId);
     const courses = getAllCourses();
@@ -306,7 +306,7 @@ export const getCoursesByTeacher = (teacherId) => {
     return filtered;
 };
 
-// Get courses by class
+
 export const getCoursesByClass = (className) => {
     console.log('getCoursesByClass called with className:', className);
     const courses = getAllCourses();
@@ -322,7 +322,7 @@ export const getCoursesByClass = (className) => {
     return filtered;
 };
 
-// Get courses for student
+
 export const getCoursesForStudent = (studentId) => {
     const courses = getAllCourses();
     return courses.filter(c =>
@@ -330,12 +330,12 @@ export const getCoursesForStudent = (studentId) => {
     );
 };
 
-// Subscribe to real-time updates
+
 export const subscribeToUpdates = (callback) => {
     const handler = () => callback(getAllCourses());
     window.addEventListener('coursesUpdated', handler);
 
-    // Return unsubscribe function
+    
     return () => window.removeEventListener('coursesUpdated', handler);
 };
 

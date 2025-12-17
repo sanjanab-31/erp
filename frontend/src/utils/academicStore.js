@@ -1,9 +1,9 @@
-// Academic Management Store
-// Manages courses, assignments, marks, and exam schedules
+
+
 
 const STORAGE_KEY = 'erp_academic_data';
 
-// Initialize default data
+
 const initializeDefaultData = () => {
     return {
         courses: [],
@@ -15,7 +15,7 @@ const initializeDefaultData = () => {
     };
 };
 
-// Get all academic data
+
 export const getAllAcademicData = () => {
     try {
         const data = localStorage.getItem(STORAGE_KEY);
@@ -31,15 +31,15 @@ export const getAllAcademicData = () => {
     }
 };
 
-// Save academic data
+
 const saveAcademicData = (data) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     window.dispatchEvent(new Event('academicDataUpdated'));
 };
 
-// ==================== COURSES ====================
 
-// Create course (Teacher only)
+
+
 export const createCourse = (courseData) => {
     try {
         const data = getAllAcademicData();
@@ -67,25 +67,25 @@ export const createCourse = (courseData) => {
     }
 };
 
-// Get courses by teacher
+
 export const getCoursesByTeacher = (teacherId) => {
     const data = getAllAcademicData();
     return data.courses.filter(c => c.teacherId === teacherId && c.active);
 };
 
-// Get courses by class
+
 export const getCoursesByClass = (className) => {
     const data = getAllAcademicData();
     return data.courses.filter(c => c.class === className && c.active);
 };
 
-// Get course by ID
+
 export const getCourseById = (courseId) => {
     const data = getAllAcademicData();
     return data.courses.find(c => c.id === courseId);
 };
 
-// Update course
+
 export const updateCourse = (courseId, updates) => {
     try {
         const data = getAllAcademicData();
@@ -105,7 +105,7 @@ export const updateCourse = (courseId, updates) => {
     }
 };
 
-// Delete course
+
 export const deleteCourse = (courseId) => {
     try {
         const data = getAllAcademicData();
@@ -125,14 +125,14 @@ export const deleteCourse = (courseId) => {
     }
 };
 
-// ==================== ASSIGNMENTS ====================
 
-// Create assignment (Max 2 per course)
+
+
 export const createAssignment = (assignmentData) => {
     try {
         const data = getAllAcademicData();
 
-        // Check if course already has 2 assignments
+        
         const courseAssignments = data.assignments.filter(a => a.courseId === assignmentData.courseId);
         if (courseAssignments.length >= 2) {
             throw new Error('Maximum 2 assignments per course allowed');
@@ -159,13 +159,13 @@ export const createAssignment = (assignmentData) => {
     }
 };
 
-// Get assignments by course
+
 export const getAssignmentsByCourse = (courseId) => {
     const data = getAllAcademicData();
     return data.assignments.filter(a => a.courseId === courseId);
 };
 
-// Update assignment
+
 export const updateAssignment = (assignmentId, updates) => {
     try {
         const data = getAllAcademicData();
@@ -185,7 +185,7 @@ export const updateAssignment = (assignmentId, updates) => {
     }
 };
 
-// Delete assignment
+
 export const deleteAssignment = (assignmentId) => {
     try {
         const data = getAllAcademicData();
@@ -205,25 +205,25 @@ export const deleteAssignment = (assignmentId) => {
     }
 };
 
-// ==================== SUBMISSIONS ====================
 
-// Submit assignment (Student)
+
+
 export const submitAssignment = (submissionData) => {
     try {
         const data = getAllAcademicData();
 
-        // Check if already submitted
+        
         const existingSubmission = data.submissions.find(
             s => s.assignmentId === submissionData.assignmentId && s.studentId === submissionData.studentId
         );
 
         if (existingSubmission) {
-            // Update existing submission
+            
             existingSubmission.driveLink = submissionData.driveLink;
             existingSubmission.submittedAt = new Date().toISOString();
             existingSubmission.status = 'submitted';
         } else {
-            // Create new submission
+            
             const newSubmission = {
                 id: `submission_${Date.now()}`,
                 assignmentId: submissionData.assignmentId,
@@ -248,25 +248,25 @@ export const submitAssignment = (submissionData) => {
     }
 };
 
-// Get submissions by assignment
+
 export const getSubmissionsByAssignment = (assignmentId) => {
     const data = getAllAcademicData();
     return data.submissions.filter(s => s.assignmentId === assignmentId);
 };
 
-// Get submissions by student
+
 export const getSubmissionsByStudent = (studentId) => {
     const data = getAllAcademicData();
     return data.submissions.filter(s => s.studentId === studentId);
 };
 
-// Get submission by student and assignment
+
 export const getSubmission = (studentId, assignmentId) => {
     const data = getAllAcademicData();
     return data.submissions.find(s => s.studentId === studentId && s.assignmentId === assignmentId);
 };
 
-// Create submission (for teacher grading when student hasn't submitted)
+
 export const createSubmission = (submissionData) => {
     try {
         const data = getAllAcademicData();
@@ -294,7 +294,7 @@ export const createSubmission = (submissionData) => {
     }
 };
 
-// Grade submission (Teacher)
+
 export const gradeSubmission = (submissionId, marks, feedback = '') => {
     try {
         const data = getAllAcademicData();
@@ -318,9 +318,9 @@ export const gradeSubmission = (submissionId, marks, feedback = '') => {
     }
 };
 
-// ==================== MARKS (EXAMS) ====================
 
-// Enter exam marks (Teacher) - 3 exams per course per student
+
+
 export const enterExamMarks = (marksData) => {
     try {
         const data = getAllAcademicData();
@@ -337,7 +337,7 @@ export const enterExamMarks = (marksData) => {
             enteredAt: new Date().toISOString()
         };
 
-        // Check if marks already exist
+        
         const existingMarksIndex = data.marks.findIndex(
             m => m.courseId === marksData.courseId && m.studentId === marksData.studentId
         );
@@ -357,37 +357,37 @@ export const enterExamMarks = (marksData) => {
     }
 };
 
-// Get exam marks by course
+
 export const getExamMarksByCourse = (courseId) => {
     const data = getAllAcademicData();
     return data.marks.filter(m => m.courseId === courseId);
 };
 
-// Get exam marks by student
+
 export const getExamMarksByStudent = (studentId) => {
     const data = getAllAcademicData();
     return data.marks.filter(m => m.studentId === studentId);
 };
 
-// Get student marks for a course
+
 export const getStudentCourseMarks = (studentId, courseId) => {
     const data = getAllAcademicData();
     return data.marks.find(m => m.studentId === studentId && m.courseId === courseId);
 };
 
-// ==================== FINAL MARKS CALCULATION ====================
 
-// Calculate final marks for a student in a course
+
+
 export const calculateFinalMarks = (studentId, courseId) => {
     const data = getAllAcademicData();
 
-    // Get assignment submissions - only graded ones
+    
     const courseAssignments = data.assignments.filter(a => a.courseId === courseId);
     const submissions = data.submissions.filter(
         s => s.studentId === studentId && s.courseId === courseId && s.marks !== null && s.marks !== undefined && s.status === 'graded'
     );
 
-    // Calculate assignment marks (out of 25)
+    
     let assignmentTotal = 0;
     let assignmentCount = 0;
 
@@ -398,20 +398,20 @@ export const calculateFinalMarks = (studentId, courseId) => {
         }
     });
 
-    // Scale to 25 marks
+    
     const assignmentMarks = assignmentCount > 0 ? (assignmentTotal / assignmentCount) * 0.25 : 0;
 
-    // Get exam marks
+    
     const examMarks = data.marks.find(m => m.studentId === studentId && m.courseId === courseId);
 
-    // Calculate exam total (out of 75)
+    
     let examTotal = 0;
     if (examMarks) {
         const totalExamMarks = (examMarks.exam1 || 0) + (examMarks.exam2 || 0) + (examMarks.exam3 || 0);
-        examTotal = (totalExamMarks / 300) * 75; // Scale to 75 marks (assuming each exam is out of 100)
+        examTotal = (totalExamMarks / 300) * 75; 
     }
 
-    // Final total
+    
     const finalTotal = assignmentMarks + examTotal;
 
     return {
@@ -429,12 +429,12 @@ export const calculateFinalMarks = (studentId, courseId) => {
     };
 };
 
-// Get all final marks for a student
+
 export const getStudentFinalMarks = (studentId) => {
     const data = getAllAcademicData();
     const studentCourses = new Set();
 
-    // Get all courses student has submissions or marks for
+    
     data.submissions.filter(s => s.studentId === studentId).forEach(s => studentCourses.add(s.courseId));
     data.marks.filter(m => m.studentId === studentId).forEach(m => studentCourses.add(m.courseId));
 
@@ -454,9 +454,9 @@ export const getStudentFinalMarks = (studentId) => {
     return finalMarks;
 };
 
-// ==================== EXAM SCHEDULES ====================
 
-// Create exam schedule (Admin only)
+
+
 export const createExamSchedule = (scheduleData) => {
     try {
         const data = getAllAcademicData();
@@ -465,7 +465,7 @@ export const createExamSchedule = (scheduleData) => {
             id: `schedule_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             courseId: scheduleData.courseId || '',
             courseName: scheduleData.courseName || '',
-            subject: scheduleData.subject || scheduleData.courseName || '', // Added subject
+            subject: scheduleData.subject || scheduleData.courseName || '', 
             class: scheduleData.class,
             examName: scheduleData.examName,
             examDate: scheduleData.examDate,
@@ -487,7 +487,7 @@ export const createExamSchedule = (scheduleData) => {
     }
 };
 
-// Create multiple exam schedules (Bulk)
+
 export const createBulkExamSchedules = (schedulesData) => {
     try {
         const data = getAllAcademicData();
@@ -517,21 +517,21 @@ export const createBulkExamSchedules = (schedulesData) => {
     }
 };
 
-// Get exam schedules by class
+
 export const getExamSchedulesByClass = (className) => {
     const data = getAllAcademicData();
     return data.examSchedules.filter(s => s.class === className)
         .sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
 };
 
-// Get exam schedules by course
+
 export const getExamSchedulesByCourse = (courseId) => {
     const data = getAllAcademicData();
     return data.examSchedules.filter(s => s.courseId === courseId)
         .sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
 };
 
-// Update exam schedule
+
 export const updateExamSchedule = (scheduleId, updates) => {
     try {
         const data = getAllAcademicData();
@@ -551,7 +551,7 @@ export const updateExamSchedule = (scheduleId, updates) => {
     }
 };
 
-// Delete exam schedule
+
 export const deleteExamSchedule = (scheduleId) => {
     try {
         const data = getAllAcademicData();
@@ -571,9 +571,9 @@ export const deleteExamSchedule = (scheduleId) => {
     }
 };
 
-// ==================== COURSE MATERIALS ====================
 
-// Upload course material (Teacher)
+
+
 export const uploadCourseMaterial = (materialData) => {
     try {
         const data = getAllAcademicData();
@@ -584,7 +584,7 @@ export const uploadCourseMaterial = (materialData) => {
             title: materialData.title,
             description: materialData.description || '',
             link: materialData.link,
-            type: materialData.type || 'link', // link, drive, document
+            type: materialData.type || 'link', 
             uploadedBy: materialData.uploadedBy,
             uploadedAt: new Date().toISOString()
         };
@@ -599,14 +599,14 @@ export const uploadCourseMaterial = (materialData) => {
     }
 };
 
-// Get course materials
+
 export const getCourseMaterials = (courseId) => {
     const data = getAllAcademicData();
     return data.courseMaterials.filter(m => m.courseId === courseId)
         .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
 };
 
-// Delete course material
+
 export const deleteCourseMaterial = (materialId) => {
     try {
         const data = getAllAcademicData();
@@ -626,7 +626,7 @@ export const deleteCourseMaterial = (materialId) => {
     }
 };
 
-// ==================== SUBSCRIBE TO UPDATES ====================
+
 
 export const subscribeToAcademicUpdates = (callback) => {
     const handler = () => callback(getAllAcademicData());
@@ -635,7 +635,7 @@ export const subscribeToAcademicUpdates = (callback) => {
     return () => window.removeEventListener('academicDataUpdated', handler);
 };
 
-// ==================== STATISTICS ====================
+
 
 export const getAcademicStatistics = () => {
     const data = getAllAcademicData();
@@ -652,7 +652,7 @@ export const getAcademicStatistics = () => {
 };
 
 export default {
-    // Courses
+    
     createCourse,
     getCoursesByTeacher,
     getCoursesByClass,
@@ -660,30 +660,30 @@ export default {
     updateCourse,
     deleteCourse,
 
-    // Assignments
+    
     createAssignment,
     getAssignmentsByCourse,
     updateAssignment,
     deleteAssignment,
 
-    // Submissions
+    
     submitAssignment,
     getSubmissionsByAssignment,
     getSubmissionsByStudent,
     getSubmission,
     gradeSubmission,
 
-    // Exam Marks
+    
     enterExamMarks,
     getExamMarksByCourse,
     getExamMarksByStudent,
     getStudentCourseMarks,
 
-    // Final Marks
+    
     calculateFinalMarks,
     getStudentFinalMarks,
 
-    // Exam Schedules
+    
     createExamSchedule,
     createBulkExamSchedules,
     getExamSchedulesByClass,
@@ -691,12 +691,12 @@ export default {
     updateExamSchedule,
     deleteExamSchedule,
 
-    // Course Materials
+    
     uploadCourseMaterial,
     getCourseMaterials,
     deleteCourseMaterial,
 
-    // Utils
+    
     subscribeToAcademicUpdates,
     getAcademicStatistics,
     getAllAcademicData

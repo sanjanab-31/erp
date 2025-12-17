@@ -69,7 +69,7 @@ const SettingsPage = ({ darkMode }) => {
     });
 
     const handleLogout = () => {
-        localStorage.removeItem('authToken'); // JWT token
+        localStorage.removeItem('authToken'); 
         localStorage.removeItem('isAuthenticated');
         localStorage.removeItem('userRole');
         localStorage.removeItem('userEmail');
@@ -78,12 +78,12 @@ const SettingsPage = ({ darkMode }) => {
         navigate('/login');
     };
 
-    // Load teacher data from teacherStore and settings from settingsStore
+    
     useEffect(() => {
         const teacherEmail = localStorage.getItem('userEmail');
 
         if (teacherEmail) {
-            // Fetch teacher data from teacherStore
+            
             const teachers = getAllTeachers();
             const teacher = teachers.find(t => t.email === teacherEmail);
 
@@ -108,7 +108,7 @@ const SettingsPage = ({ darkMode }) => {
             }
         }
 
-        // Load settings from settingsStore
+        
         const settings = getSettings('teacher');
         if (settings.notifications) setNotificationSettings(settings.notifications);
         if (settings.preferences) setPreferenceSettings(settings.preferences);
@@ -116,7 +116,7 @@ const SettingsPage = ({ darkMode }) => {
 
         setLoading(false);
 
-        // Subscribe to real-time updates
+        
         const unsubscribe = subscribeToSettingsUpdates('teacher', (updatedSettings) => {
             if (updatedSettings.notifications) setNotificationSettings(updatedSettings.notifications);
             if (updatedSettings.preferences) setPreferenceSettings(updatedSettings.preferences);
@@ -303,7 +303,7 @@ const SettingsPage = ({ darkMode }) => {
                                 />
                             </div>
 
-                            {/* Subject */}
+                            {}
                             <div>
                                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                                     Subject
@@ -319,7 +319,7 @@ const SettingsPage = ({ darkMode }) => {
                                 />
                             </div>
 
-                            {/* Experience */}
+                            {}
                             <div>
                                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                                     Experience
@@ -339,7 +339,7 @@ const SettingsPage = ({ darkMode }) => {
                                 />
                             </div>
 
-                            {/* Employee ID */}
+                            {}
                             <div>
                                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                                     Employee ID
@@ -355,7 +355,7 @@ const SettingsPage = ({ darkMode }) => {
                                 />
                             </div>
 
-                            {/* Joining Date */}
+                            {}
                             <div>
                                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                                     Joining Date
@@ -371,7 +371,7 @@ const SettingsPage = ({ darkMode }) => {
                                 />
                             </div>
 
-                            {/* Gender */}
+                            {}
                             <div>
                                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                                     Gender
@@ -387,7 +387,7 @@ const SettingsPage = ({ darkMode }) => {
                                 />
                             </div>
 
-                            {/* Blood Group */}
+                            {}
                             <div>
                                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                                     Blood Group
@@ -657,7 +657,7 @@ const SettingsPage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {/* Header */}
+            {}
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Settings
@@ -666,7 +666,7 @@ const SettingsPage = ({ darkMode }) => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                {/* Sidebar */}
+                {}
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} h-fit`}>
                     <nav className="space-y-2">
                         {sections.map((section) => (
@@ -683,7 +683,7 @@ const SettingsPage = ({ darkMode }) => {
                             </button>
                         ))}
 
-                        {/* Logout Button */}
+                        {}
                         <div className="pt-4 mt-4 border-t border-gray-200">
                             <button
                                 onClick={handleLogout}
@@ -696,12 +696,12 @@ const SettingsPage = ({ darkMode }) => {
                     </nav>
                 </div>
 
-                {/* Content */}
+                {}
                 <div className="lg:col-span-3">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-8 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                         {renderContent()}
 
-                        {/* Save Button */}
+                        {}
                         <div className="flex items-center justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
                             {(saved || saveMessage) && (
                                 <span className={`text-sm font-medium ${saveMessage.includes('success') || saveMessage.includes('updated') || saved ? 'text-green-600' : 'text-red-600'}`}>

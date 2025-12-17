@@ -15,7 +15,7 @@ const TimetablePage = ({ darkMode }) => {
     const [loading, setLoading] = useState(true);
     const [studentClass, setStudentClass] = useState('');
 
-    // Get logged-in student info
+    
     const studentEmail = localStorage.getItem('userEmail');
 
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -29,7 +29,7 @@ const TimetablePage = ({ darkMode }) => {
         '15:00-16:00'
     ];
 
-    // Load student's class and timetable
+    
     useEffect(() => {
         loadStudentClass();
     }, []);
@@ -44,7 +44,7 @@ const TimetablePage = ({ darkMode }) => {
 
     const loadStudentClass = useCallback(() => {
         console.log('Loading student class for email:', studentEmail);
-        // Find student by email to get their class
+        
         const students = getAllStudents();
         console.log('All students:', students);
 
@@ -69,7 +69,7 @@ const TimetablePage = ({ darkMode }) => {
         }
     }, [studentClass]);
 
-    // Organize schedule by day
+    
     const scheduleByDay = {};
     days.forEach(day => {
         scheduleByDay[day] = [];
@@ -83,12 +83,12 @@ const TimetablePage = ({ darkMode }) => {
         });
     }
 
-    // Calculate stats
+    
     const totalClasses = timetable?.schedule?.length || 0;
-    const todayIndex = new Date().getDay() - 1; // 0 = Monday
+    const todayIndex = new Date().getDay() - 1; 
     const todayClasses = todayIndex >= 0 && todayIndex < 5 ? scheduleByDay[days[todayIndex]]?.length || 0 : 0;
 
-    // Get unique subjects
+    
     const uniqueSubjects = timetable?.schedule
         ? [...new Set(timetable.schedule.map(entry => entry.subject).filter(s => s))]
         : [];
@@ -134,7 +134,7 @@ const TimetablePage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {/* Header */}
+            {}
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     My Timetable
@@ -186,7 +186,7 @@ const TimetablePage = ({ darkMode }) => {
                         </div>
                     </div>
 
-                    {/* Timetable Grid */}
+                    {}
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden mb-6`}>
                         <div className="p-6 border-b border-gray-200">
                             <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -248,7 +248,7 @@ const TimetablePage = ({ darkMode }) => {
                         </div>
                     </div>
 
-                    {/* Subject Legend */}
+                    {}
                     {uniqueSubjects.length > 0 && (
                         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6`}>
                             <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>

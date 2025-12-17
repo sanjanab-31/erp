@@ -12,20 +12,17 @@ import { ToastProvider } from './context/ToastContext';
 import ToastContainer from './components/common/ToastContainer';
 import './App.css';
 
-// Protected Route Component - Uses JWT token verification
 const ProtectedRoute = ({ children }) => {
   const authenticated = isAuthenticated();
   return authenticated ? children : <Navigate to="/login" replace />;
 };
 
-// Public Route Component (redirect to dashboard if already logged in)
 const PublicRoute = ({ children }) => {
   const authenticated = isAuthenticated();
   const userRole = getUserRole() || 'student';
   return authenticated ? <Navigate to={`/dashboard/${userRole.toLowerCase()}`} replace /> : children;
 };
 
-// Dashboard Router Component
 const DashboardRouter = () => {
   const userRole = localStorage.getItem('userRole') || 'student';
 
@@ -49,7 +46,6 @@ function App() {
       <Router>
         <ToastContainer />
         <Routes>
-          {/* Public Routes */}
           <Route
             path="/login"
             element={
@@ -75,7 +71,6 @@ function App() {
             }
           />
 
-          {/* Protected Routes */}
           <Route
             path="/dashboard/:role"
             element={
@@ -85,10 +80,6 @@ function App() {
             }
           />
 
-          {/* Default Route */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
-
-          {/* Catch all - redirect to login */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>

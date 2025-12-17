@@ -42,7 +42,7 @@ const getSubjectColor = (subject) => {
 };
 
 const TimetableTableView = ({ schedule, darkMode }) => {
-    // Organize schedule for quick lookup
+    
     const scheduleMap = {};
     if (schedule) {
         schedule.forEach(entry => {
@@ -155,14 +155,14 @@ const TimetableItem = ({ item, type, darkMode, onEdit, onDelete }) => {
     );
 };
 
-// Move modal component outside to prevent re-creation
+
 const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onClose, onSave }) => {
     const { showSuccess, showError, showWarning, showInfo } = useToast();
     const [selectedEntity, setSelectedEntity] = useState('');
     const [timetableGrid, setTimetableGrid] = useState({});
 
     useEffect(() => {
-        // Initialize grid
+        
         const grid = {};
         days.forEach(day => {
             timeSlots.forEach(slot => {
@@ -253,7 +253,7 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                    {/* Select Entity */}
+                    {}
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Select {activeView === 'teacher' ? 'Teacher' : 'Class'} *
@@ -282,7 +282,7 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
                         </select>
                     </div>
 
-                    {/* Timetable Grid */}
+                    {}
                     <div className="overflow-x-auto">
                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                             Weekly Schedule
@@ -337,7 +337,7 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
                         </table>
                     </div>
 
-                    {/* Action Buttons */}
+                    {}
                     <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <button
                             type="button"
@@ -362,7 +362,7 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
 
 const TimetablePage = ({ darkMode }) => {
     const { showSuccess, showError, showWarning } = useToast();
-    const [activeView, setActiveView] = useState('teacher'); // 'teacher' or 'student'
+    const [activeView, setActiveView] = useState('teacher'); 
     const [teachers, setTeachers] = useState([]);
     const [teacherTimetables, setTeacherTimetables] = useState([]);
     const [classTimetables, setClassTimetables] = useState([]);
@@ -370,7 +370,7 @@ const TimetablePage = ({ darkMode }) => {
     const [editingTimetable, setEditingTimetable] = useState(null);
     const [stats, setStats] = useState({ totalTeachers: 0, totalClasses: 0 });
 
-    // Load data
+    
     useEffect(() => {
         loadTeachers();
         loadTimetables();
@@ -448,7 +448,7 @@ const TimetablePage = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
+            {}
             <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Timetable Management
@@ -456,7 +456,7 @@ const TimetablePage = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">Create and manage timetables for teachers and students (Real-time sync)</p>
             </div>
 
-            {/* Stats */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
@@ -475,7 +475,7 @@ const TimetablePage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* View Toggle, Search & Add Button */}
+            {}
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
                     <div className={`inline-flex rounded-lg border ${darkMode ? 'border-gray-600' : 'border-gray-300'} p-1`}>
@@ -499,7 +499,7 @@ const TimetablePage = ({ darkMode }) => {
                         </button>
                     </div>
 
-                    {/* Search Bar */}
+                    {}
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                         <input
@@ -521,7 +521,7 @@ const TimetablePage = ({ darkMode }) => {
                 </button>
             </div>
 
-            {/* Timetables List */}
+            {}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
                 {filteredTimetables.length === 0 ? (
                     <div className="p-12 text-center">
@@ -551,7 +551,7 @@ const TimetablePage = ({ darkMode }) => {
                 )}
             </div>
 
-            {/* Modal */}
+            {}
             {showAddModal && (
                 <TimetableModal
                     key={editingTimetable ? editingTimetable.id : 'new'}

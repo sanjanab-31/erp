@@ -22,7 +22,7 @@ const ReportsPage = ({ darkMode }) => {
         'Progress Summary': { summary: '', data: [] }
     });
 
-    // Get actual logged-in student's email and find their ID
+    
     const studentEmail = localStorage.getItem('userEmail') || '';
     const studentName = localStorage.getItem('userName') || 'Student';
     const [studentId, setStudentId] = useState('');
@@ -34,7 +34,7 @@ const ReportsPage = ({ darkMode }) => {
         { name: 'Progress Summary', icon: TrendingUp, color: 'bg-orange-500' }
     ];
 
-    // Get student ID from email
+    
     useEffect(() => {
         if (studentEmail) {
             const students = getAllStudents();
@@ -54,7 +54,7 @@ const ReportsPage = ({ darkMode }) => {
     }, [studentId]);
 
     const loadReportData = () => {
-        // Load Academic Performance
+        
         const finalMarks = getStudentFinalMarks(studentId);
         const academicData = finalMarks.map((mark, index) => {
             const percentage = mark.finalTotal;
@@ -64,11 +64,11 @@ const ReportsPage = ({ darkMode }) => {
                 subject: mark.courseName || `Subject ${index + 1}`,
                 grade,
                 percentage: Math.round(percentage),
-                rank: Math.floor(Math.random() * 10) + 1 // In real app, this would come from rankings
+                rank: Math.floor(Math.random() * 10) + 1 
             };
         });
 
-        // Load Attendance Report
+        
         const attendanceRecords = getAttendanceByStudent(studentId);
         const monthlyAttendance = {};
 
@@ -102,7 +102,7 @@ const ReportsPage = ({ darkMode }) => {
             };
         });
 
-        // Load Assignments Report
+        
         const submissions = getSubmissionsByStudent(studentId);
         console.log('Student ID:', studentId);
         console.log('Submissions found:', submissions);
@@ -110,7 +110,7 @@ const ReportsPage = ({ darkMode }) => {
         const allAcademicData = getAllAcademicData();
 
         const assignmentsData = submissions.map(sub => {
-            // Find the assignment details
+            
             const assignment = allAcademicData.assignments.find(a => a.id === sub.assignmentId);
             const course = allAcademicData.courses.find(c => c.id === sub.courseId);
 
@@ -131,7 +131,7 @@ const ReportsPage = ({ darkMode }) => {
             };
         });
 
-        // Load Progress Summary
+        
         const progressData = [];
         if (finalMarks.length > 0) {
             const avgMarks = finalMarks.reduce((sum, m) => sum + m.finalTotal, 0) / finalMarks.length;
@@ -193,7 +193,7 @@ const ReportsPage = ({ darkMode }) => {
                 </button>
             </div>
 
-            {/* Report Type Selector */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {reportTypes.map((type) => (
                     <button
@@ -216,7 +216,7 @@ const ReportsPage = ({ darkMode }) => {
                 ))}
             </div>
 
-            {/* Report Content */}
+            {}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-8 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="mb-6">
                     <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>

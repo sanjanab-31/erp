@@ -9,7 +9,7 @@ const ForgotPassword = () => {
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // Auto-dismiss error or success message after 5 seconds or on any click
+    
     useEffect(() => {
         if (!error && !message) return;
         const timer = setTimeout(() => {
@@ -35,7 +35,7 @@ const ForgotPassword = () => {
             setError('');
             setLoading(true);
 
-            // Simulate password reset
+            
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             setMessage('Check your inbox for further instructions');

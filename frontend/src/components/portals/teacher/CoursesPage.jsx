@@ -37,7 +37,7 @@ const CourseModal = ({ darkMode, onClose, onSave, teacherId, teacherName }) => {
             return;
         }
 
-        // Get students enrolled in this class
+        
         const enrolledStudents = students
             .filter(s => s.class === formData.class)
             .map(s => s.id);
@@ -418,7 +418,7 @@ const CoursesPage = ({ darkMode }) => {
             console.log('Teacher courses found:', teacherCourses);
             setCourses(teacherCourses);
 
-            // Update selected course if it exists
+            
             if (selectedCourse) {
                 const updated = teacherCourses.find(c => c.id === selectedCourse.id);
                 if (updated) {
@@ -496,7 +496,7 @@ const CoursesPage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {/* Header */}
+            {}
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     My Courses
@@ -504,7 +504,7 @@ const CoursesPage = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">Manage your courses, materials, and assignments (Real-time sync with Students)</p>
             </div>
 
-            {/* Add Course Button */}
+            {}
             <div className="mb-6">
                 <button
                     onClick={() => setShowCourseModal(true)}
@@ -515,7 +515,7 @@ const CoursesPage = ({ darkMode }) => {
                 </button>
             </div>
 
-            {/* Courses List */}
+            {}
             {courses.length === 0 ? (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-center`}>
                     <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -534,7 +534,7 @@ const CoursesPage = ({ darkMode }) => {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Courses Sidebar */}
+                    {}
                     <div className="lg:col-span-1 space-y-4">
                         {courses.map(course => (
                             <div
@@ -559,11 +559,11 @@ const CoursesPage = ({ darkMode }) => {
                         ))}
                     </div>
 
-                    {/* Course Details */}
+                    {}
                     <div className="lg:col-span-2">
                         {selectedCourse ? (
                             <div className="space-y-6">
-                                {/* Course Header */}
+                                {}
                                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                     <div className="flex items-start justify-between mb-4">
                                         <div>
@@ -600,7 +600,7 @@ const CoursesPage = ({ darkMode }) => {
                                     </div>
                                 </div>
 
-                                {/* Course Materials */}
+                                {}
                                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                     <div className="flex items-center justify-between mb-4">
                                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -652,7 +652,7 @@ const CoursesPage = ({ darkMode }) => {
                                     )}
                                 </div>
 
-                                {/* Assignments */}
+                                {}
                                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                     <div className="flex items-center justify-between mb-4">
                                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -700,7 +700,7 @@ const CoursesPage = ({ darkMode }) => {
                                                         </button>
                                                     </div>
 
-                                                    {/* Submissions */}
+                                                    {}
                                                     {assignment.submissions.length > 0 && (
                                                         <div className="mt-3 pt-3 border-t border-gray-200">
                                                             <p className="text-sm font-medium text-gray-500 mb-2">Submissions:</p>
@@ -740,7 +740,7 @@ const CoursesPage = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Modals */}
+            {}
             {showCourseModal && (
                 <CourseModal
                     darkMode={darkMode}

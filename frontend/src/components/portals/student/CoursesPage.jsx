@@ -128,12 +128,12 @@ const CoursesPage = ({ darkMode }) => {
     const loadCourses = useCallback(() => {
         if (studentClass) {
             console.log('Loading courses for class:', studentClass);
-            // Get courses for student's class
+            
             const classCourses = getCoursesByClass(studentClass);
             console.log('Class courses found:', classCourses);
             setCourses(classCourses);
 
-            // Update selected course if it exists
+            
             if (selectedCourse) {
                 const updated = classCourses.find(c => c.id === selectedCourse.id);
                 if (updated) {
@@ -170,7 +170,7 @@ const CoursesPage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {/* Header */}
+            {}
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     My Courses
@@ -180,7 +180,7 @@ const CoursesPage = ({ darkMode }) => {
                 </p>
             </div>
 
-            {/* Courses List */}
+            {}
             {courses.length === 0 ? (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-center`}>
                     <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -374,7 +374,7 @@ const CoursesPage = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Submission Modal */}
+            {}
             {showSubmissionModal && selectedAssignment && (
                 <SubmissionModal
                     darkMode={darkMode}

@@ -25,14 +25,14 @@ const AcademicProgressPage = ({ darkMode }) => {
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Get child info from parent email
+    
     const parentEmail = localStorage.getItem('userEmail');
     const [childId, setChildId] = useState('');
     const [childName, setChildName] = useState('');
     const [childClass, setChildClass] = useState('');
 
     useEffect(() => {
-        // Find child by parent email
+        
         if (parentEmail) {
             const children = getChildrenByParentEmail(parentEmail);
             console.log('Parent children:', children);
@@ -73,7 +73,7 @@ const AcademicProgressPage = ({ darkMode }) => {
         const classSchedules = getExamSchedulesByClass(childClass);
         setExamSchedules(classSchedules);
 
-        // Calculate all marks for all courses
+        
         const marksData = classCourses.map(course => {
             const finalMarks = calculateFinalMarks(childId, course.id);
             const examMarks = getStudentCourseMarks(childId, course.id);
@@ -118,7 +118,7 @@ const AcademicProgressPage = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
+            {}
             <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     {childName}'s Academic Progress

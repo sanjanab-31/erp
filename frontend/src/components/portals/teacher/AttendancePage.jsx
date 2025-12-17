@@ -27,26 +27,26 @@ import { getAllTeachers } from '../../../utils/teacherStore';
 import { getAttendanceByTeacher } from '../../../utils/teacherAttendanceStore';
 
 const AttendancePage = ({ darkMode }) => {
-    // Global
-    const [activeTab, setActiveTab] = useState('student_attendance'); // 'my_attendance' | 'student_attendance'
+    
+    const [activeTab, setActiveTab] = useState('student_attendance'); 
     const [currentUser, setCurrentUser] = useState(null);
 
-    // Student Attendance State
+    
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [selectedClass, setSelectedClass] = useState('All Classes');
     const [searchQuery, setSearchQuery] = useState('');
-    const [saveStatus, setSaveStatus] = useState(null); // 'saving' | 'saved' | 'error' | null
+    const [saveStatus, setSaveStatus] = useState(null); 
     const [allStudents, setAllStudents] = useState([]);
 
-    // Local staging for student attendance
+    
     const [localAttendanceData, setLocalAttendanceData] = useState({});
 
-    // My Attendance State
+    
     const [myAttendanceHistory, setMyAttendanceHistory] = useState([]);
 
     const classes = ['All Classes', 'Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
 
-    // Initial Load
+    
     useEffect(() => {
         const userEmail = localStorage.getItem('userEmail');
         if (userEmail) {
@@ -70,7 +70,7 @@ const AttendancePage = ({ darkMode }) => {
         };
     }, []);
 
-    // Reload when date/class changes
+    
     useEffect(() => {
         if (activeTab === 'student_attendance') {
             loadStudentAttendance();
@@ -95,12 +95,12 @@ const AttendancePage = ({ darkMode }) => {
 
     const loadMyAttendance = (teacherId) => {
         const records = getAttendanceByTeacher(teacherId);
-        // Sort by date desc
+        
         records.sort((a, b) => new Date(b.date) - new Date(a.date));
         setMyAttendanceHistory(records);
     };
 
-    // --- Student Attendance Logic ---
+    
     const toggleAttendance = (studentId, newStatus) => {
         setLocalAttendanceData(prev => ({
             ...prev,
@@ -132,34 +132,34 @@ const AttendancePage = ({ darkMode }) => {
         try {
             const teacherName = currentUser ? currentUser.name : 'Teacher';
 
-            // Only save for filtered students to avoid accidental overwrites of other classes?
-            // Usually we save what we see. 
-            // Better: We construct records for everyone in the localAttendanceData that is CURRENTLY VISIBLE or JUST ALL?
-            // Requirement: "Teachers can mark attendance for students of their assigned class".
-            // Since we have a "All Classes" filter, safety is to save for the visible students, 
-            // OR save all changes in localAttendanceData.
-            // Let's save all changes in localAttendanceData that match filtered students to be safe, 
-            // but actually standard is saving the whole batch of changes. 
-            // Let's iterate over filteredStudents to ensure we only save what the teacher is working on.
+            
+            
+            
+            
+            
+            
+            
+            
+            
 
             const attendanceList = filteredStudents.map(student => ({
                 date: selectedDate,
                 studentId: student.id,
-                status: localAttendanceData[student.id] || 'Absent', // Default to Absent if not marked? Or skip? Usually explicit mark is better. Let's assume 'Absent' if undef or just skip? 
-                // The UI defaults to 'Absent' visually in some logical flows, but here if it's undefined it means "Not Marked". 
-                // However, bulkMarkAttendance usually expects a status. 
-                // Let's Only save if it is in localAttendanceData (i.e. was loaded or touched).
-                // If it was loaded, it has a status. If not, it's undefined.
-                // If undefined, maybe don't submit? 
-                // BUT "attendance options: Present, Absent, Late".
-                // If I click "Save", I expect "Not Marked" to stay "Not Marked" or error? 
-                // Let's default to 'Present' if not marked? No, unsafe.
-                // Let's skip undefined ones.
-            })).filter(r => localAttendanceData[r.studentId]); // Only save explicitly marked/loaded ones
+                status: localAttendanceData[student.id] || 'Absent', 
+                
+                
+                
+                
+                
+                
+                
+                
+                
+            })).filter(r => localAttendanceData[r.studentId]); 
 
-            // Wait, if I changed 5 students, I want those 5 saved. 
-            // If I just loaded the page, `localAttendanceData` has DB values.
-            // So this re-saves existing values + new values. That is fine (idempotent).
+            
+            
+            
 
             bulkMarkAttendance(attendanceList);
             setSaveStatus('saved');
@@ -177,7 +177,7 @@ const AttendancePage = ({ darkMode }) => {
         return matchesSearch && matchesClass;
     });
 
-    // Stats for UI
+    
     const currentPresentCount = filteredStudents.filter(s => localAttendanceData[s.id] === 'Present').length;
     const currentAbsentCount = filteredStudents.filter(s => localAttendanceData[s.id] === 'Absent').length;
     const currentAttendancePercentage = filteredStudents.length > 0
@@ -281,7 +281,7 @@ const AttendancePage = ({ darkMode }) => {
 
             {activeTab === 'student_attendance' && (
                 <>
-                    {/* Stats Cards */}
+                    {}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                             <div className="flex items-center justify-between mb-4">
@@ -316,7 +316,7 @@ const AttendancePage = ({ darkMode }) => {
                         </div>
                     </div>
 
-                    {/* Filters & Tools */}
+                    {}
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6`}>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                             <div>
@@ -414,7 +414,7 @@ const AttendancePage = ({ darkMode }) => {
                         </div>
                     </div>
 
-                    {/* Attendance Table */}
+                    {}
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
                         <div className="overflow-x-auto">
                             {filteredStudents.length === 0 ? (

@@ -1,4 +1,4 @@
-// Authentication utility functions
+
 
 export const isAuthenticated = () => {
     return localStorage.getItem('isAuthenticated') === 'true';

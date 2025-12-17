@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import AttendancePage from './AttendancePage';
 import FeePage from './FeePage';
 import ExamsAndGrades from './ExamsAndGrades';
-// import StudentCoursesPage from './StudentCoursesPage';
+
 import CoursesPage from './CoursesPage';
 import TimetablePage from './TimetablePage';
 import LibraryPage from './LibraryPage';
@@ -41,13 +41,13 @@ const StudentPortal = () => {
     const userEmail = localStorage.getItem('userEmail') || '';
     const userId = localStorage.getItem('userId') || '';
 
-    // State management
+    
     const [activeTab, setActiveTab] = useState('Dashboard');
     const [darkMode, setDarkMode] = useState(false);
     const [notifications, setNotifications] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Real-time dashboard data
+    
     const [dashboardData, setDashboardData] = useState({
         attendance: 0,
         currentGrade: '-',
@@ -64,7 +64,7 @@ const StudentPortal = () => {
         recentGrades: []
     });
 
-    // Sidebar menu items
+    
     const menuItems = [
         { icon: Home, label: 'Dashboard', active: true },
         { icon: Calendar, label: 'Attendance' },
@@ -76,7 +76,7 @@ const StudentPortal = () => {
         { icon: Megaphone, label: 'Announcements' },
         { icon: FileText, label: 'Reports' },
         { icon: Settings, label: 'Settings' },
-        // { icon: BookOpen, label: 'My Courses' }
+        
 
     ];
 
@@ -89,10 +89,10 @@ const StudentPortal = () => {
         navigate('/login');
     };
 
-    // Fetch and subscribe to real-time updates
+    
     useEffect(() => {
         const fetchDashboardData = () => {
-            // Get student by email first
+            
             const students = getAllStudents();
             const student = students.find(s => s.email === userEmail);
 
@@ -104,10 +104,10 @@ const StudentPortal = () => {
             const studentId = student.id;
             console.log('Dashboard loading for student:', student.name, 'ID:', studentId);
 
-            // Get attendance percentage
+            
             const attendancePercentage = calculateAttendancePercentage(studentId);
 
-            // Get student's submissions and grades
+            
             const submissions = getSubmissionsByStudent(studentId);
             const finalMarks = getStudentFinalMarks(studentId);
 
@@ -115,10 +115,10 @@ const StudentPortal = () => {
             console.log('Submissions:', submissions.length);
             console.log('Final Marks:', finalMarks.length);
 
-            // Calculate pending assignments (only graded ones count as complete)
+            
             const pendingSubmissions = submissions.filter(s => s.status !== 'graded');
 
-            // Get recent grades
+            
             const recentGrades = finalMarks.slice(0, 2).map((mark, idx) => ({
                 id: idx + 1,
                 subject: mark.courseName,
@@ -127,7 +127,7 @@ const StudentPortal = () => {
                 color: mark.finalTotal >= 90 ? 'green' : 'blue'
             }));
 
-            // Calculate overall grade
+            
             const avgGrade = finalMarks.length > 0
                 ? finalMarks.reduce((sum, m) => sum + m.finalTotal, 0) / finalMarks.length
                 : 0;
@@ -142,20 +142,20 @@ const StudentPortal = () => {
                     total: submissions.length
                 },
                 libraryBooks: {
-                    issued: 0, // This would come from library store
+                    issued: 0, 
                     total: 0
                 },
-                upcomingAssignments: [], // This would need assignment due dates
+                upcomingAssignments: [], 
                 recentGrades: recentGrades
             });
         };
 
-        // Initial fetch
+        
         if (userEmail) {
             fetchDashboardData();
         }
 
-        // Subscribe to updates
+        
         const unsubscribeAttendance = subscribeToAttendance(fetchDashboardData);
         const unsubscribeAcademic = subscribeToAcademicUpdates(fetchDashboardData);
 
@@ -172,7 +172,7 @@ const StudentPortal = () => {
         return 'Good evening';
     };
 
-    // Render content based on active tab
+    
     const renderContent = () => {
         if (activeTab === 'Attendance') {
             return <AttendancePage />;
@@ -209,13 +209,13 @@ const StudentPortal = () => {
         if (activeTab === 'Settings') {
             return <SettingsPage darkMode={darkMode} />;
         }
-        // if (activeTab === 'My Courses') {
-        //     return <StudentCoursesPage darkMode={darkMode} />;
-        // }
-        // Default Dashboard Content
+        
+        
+        
+        
         return (
             <div className="flex-1 overflow-y-auto p-8">
-                {/* Greeting */}
+                {}
                 <div className="mb-8">
                     <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                         {getGreeting()}, {userName.split(' ')[0]}!
@@ -223,9 +223,9 @@ const StudentPortal = () => {
                     <p className="text-sm text-gray-500">Student Dashboard</p>
                 </div>
 
-                {/* Stats Cards */}
+                {}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    {/* Attendance Card */}
+                    {}
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                         <div className="flex items-center justify-between mb-4">
                             <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Attendance</h3>
@@ -242,7 +242,7 @@ const StudentPortal = () => {
                         </div>
                     </div>
 
-                    {/* Current Grade Card */}
+                    {}
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                         <div className="flex items-center justify-between mb-4">
                             <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Current Grade</h3>
@@ -254,7 +254,7 @@ const StudentPortal = () => {
                         <p className="text-sm text-gray-500">{dashboardData.gradePerformance}</p>
                     </div>
 
-                    {/* Assignments Card */}
+                    {}
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                         <div className="flex items-center justify-between mb-4">
                             <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Assignments</h3>
@@ -266,7 +266,7 @@ const StudentPortal = () => {
                         <p className="text-sm text-gray-500">Pending submissions</p>
                     </div>
 
-                    {/* Library Books Card */}
+                    {}
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                         <div className="flex items-center justify-between mb-4">
                             <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Library Books</h3>
@@ -279,9 +279,9 @@ const StudentPortal = () => {
                     </div>
                 </div>
 
-                {/* Two Column Layout */}
+                {}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Upcoming Assignments */}
+                    {}
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Upcoming Assignments</h3>
                         <div className="space-y-4">
@@ -309,7 +309,7 @@ const StudentPortal = () => {
                         </div>
                     </div>
 
-                    {/* Recent Grades */}
+                    {}
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Recent Grades</h3>
                         <div className="space-y-4">
@@ -343,9 +343,9 @@ const StudentPortal = () => {
 
     return (
         <div className={`flex h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-            {/* Sidebar */}
+            {}
             <aside className={`w-64 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r flex flex-col`}>
-                {/* Logo */}
+                {}
                 <div className="px-6 py-3 border-b border-gray-200">
                     <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
@@ -358,7 +358,7 @@ const StudentPortal = () => {
                     </div>
                 </div>
 
-                {/* Navigation */}
+                {}
                 <nav className="flex-1 p-4 overflow-y-auto">
                     <ul className="space-y-1">
                         {menuItems.map((item, index) => (
@@ -379,9 +379,9 @@ const StudentPortal = () => {
                 </nav>
             </aside>
 
-            {/* Main Content */}
+            {}
             <main className="flex-1 flex flex-col overflow-hidden">
-                {/* Header */}
+                {}
                 <header className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b px-8 py-4`}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
@@ -393,7 +393,7 @@ const StudentPortal = () => {
                         </div>
 
                         <div className="flex items-center space-x-4">
-                            {/* Search */}
+                            {}
                             <div className="relative">
                                 <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                                 <input
@@ -408,7 +408,7 @@ const StudentPortal = () => {
                                 />
                             </div>
 
-                            {/* Notifications */}
+                            {}
                             <button className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
                                 <Bell className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`} />
                                 {notifications > 0 && (
@@ -418,7 +418,7 @@ const StudentPortal = () => {
                                 )}
                             </button>
 
-                            {/* Dark Mode Toggle */}
+                            {}
                             <button
                                 onClick={() => setDarkMode(!darkMode)}
                                 className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}
@@ -430,7 +430,7 @@ const StudentPortal = () => {
                                 )}
                             </button>
 
-                            {/* Settings */}
+                            {}
                             <button className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}>
                                 <Settings className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`} />
                             </button>
@@ -438,7 +438,7 @@ const StudentPortal = () => {
                     </div>
                 </header>
 
-                {/* Dynamic Content */}
+                {}
                 {renderContent()}
             </main>
         </div>

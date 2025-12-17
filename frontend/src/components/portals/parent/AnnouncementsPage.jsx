@@ -13,16 +13,16 @@ const AnnouncementsPage = ({ darkMode }) => {
     const [announcements, setAnnouncements] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // In a real app, this would come from the parent's child profile
-    const childClass = 'Grade 10-A'; // Example: child's class
+    
+    const childClass = 'Grade 10-A'; 
 
     useEffect(() => {
         const loadData = () => {
-            // Get announcements for Parents and their child's class
+            
             const parentAnnouncements = announcementStore.getAnnouncementsForAudience('Parents', childClass);
             const allAnnouncements = announcementStore.getAnnouncementsForAudience('All', childClass);
 
-            // Combine and remove duplicates
+            
             const combined = [...parentAnnouncements, ...allAnnouncements];
             const unique = combined.filter((item, index, self) =>
                 index === self.findIndex((t) => t.id === item.id)
@@ -43,7 +43,7 @@ const AnnouncementsPage = ({ darkMode }) => {
 
     return (
         <div className={`space-y-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            {/* Header */}
+            {}
             <div className="flex justify-between items-center bg-orange-50 p-4 rounded-xl border border-orange-100">
                 <div>
                     <h2 className="text-xl font-bold text-orange-900">Announcements</h2>

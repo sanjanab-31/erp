@@ -32,7 +32,7 @@ const CourseDetailsModal = ({ course, onClose, darkMode }) => {
                 </div>
 
                 <div className="p-6 space-y-6">
-                    {/* Course Info */}
+                    {}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                             <p className="text-sm text-gray-500">Teacher</p>
@@ -48,7 +48,7 @@ const CourseDetailsModal = ({ course, onClose, darkMode }) => {
                         </div>
                     </div>
 
-                    {/* Description */}
+                    {}
                     <div>
                         <h3 className="font-semibold mb-2">Description</h3>
                         <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -56,7 +56,7 @@ const CourseDetailsModal = ({ course, onClose, darkMode }) => {
                         </p>
                     </div>
 
-                    {/* Stats */}
+                    {}
                     <div className="grid grid-cols-3 gap-4">
                         <div className={`p-3 rounded-lg text-center ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                             <p className="text-lg font-bold">{course.materials?.length || 0}</p>
@@ -72,7 +72,7 @@ const CourseDetailsModal = ({ course, onClose, darkMode }) => {
                         </div>
                     </div>
 
-                    {/* Materials List */}
+                    {}
                     <div>
                         <h3 className="font-semibold mb-2 flex items-center gap-2">
                             <BookOpen className="w-4 h-4" /> Course Materials
@@ -108,22 +108,22 @@ const CoursesPage = ({ darkMode }) => {
     const [classes, setClasses] = useState(['All']);
     const [selectedCourse, setSelectedCourse] = useState(null);
 
-    // Fetch courses in real-time
+    
     useEffect(() => {
         const fetchCourses = () => {
             const allCourses = getAllCourses();
 
-            // Extract unique classes
+            
             const uniqueClasses = ['All', ...new Set(allCourses.map(c => c.class).filter(Boolean))];
             setClasses(uniqueClasses);
 
             setCourses(allCourses);
         };
 
-        // Initial fetch
+        
         fetchCourses();
 
-        // Subscribe to real-time updates
+        
         const unsubscribe = subscribeToUpdates(fetchCourses);
 
         return () => unsubscribe();
@@ -137,14 +137,14 @@ const CoursesPage = ({ darkMode }) => {
         return matchesSearch && matchesClass;
     });
 
-    const activeCourses = courses; // Assuming all courses in store are active
+    const activeCourses = courses; 
 
-    // Calculate total students across all courses (sum of enrolledStudents)
+    
     const totalStudents = courses.reduce((sum, course) => sum + (course.enrolledStudents?.length || 0), 0);
 
     return (
         <div className="space-y-6">
-            {/* Header */}
+            {}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
@@ -154,7 +154,7 @@ const CoursesPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Stats Cards */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
@@ -193,13 +193,13 @@ const CoursesPage = ({ darkMode }) => {
                         <BookOpen className="w-5 h-5 text-yellow-500" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {classes.length - 1} {/* Subtract 'All' */}
+                        {classes.length - 1} {}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">Active classes</p>
                 </div>
             </div>
 
-            {/* Filters */}
+            {}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="flex flex-col md:flex-row gap-4">
                     <div className="flex-1 relative">
@@ -231,7 +231,7 @@ const CoursesPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Courses Grid */}
+            {}
             {filteredCourses.length === 0 ? (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-center`}>
                     <BookOpen className={`w-16 h-16 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
@@ -306,7 +306,7 @@ const CoursesPage = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Course Details Modal */}
+            {}
             {selectedCourse && (
                 <CourseDetailsModal
                     course={selectedCourse}

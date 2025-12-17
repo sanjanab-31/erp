@@ -19,6 +19,8 @@ import {
     MoreVertical
 } from 'lucide-react';
 import { getAllStudents, subscribeToUpdates, getStudentStats } from '../../../utils/studentStore';
+import { getCoursesByTeacher } from '../../../utils/courseStore';
+import { getAllTeachers } from '../../../utils/teacherStore';
 
 const StudentsPage = ({ darkMode }) => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -29,20 +31,51 @@ const StudentsPage = ({ darkMode }) => {
     const [students, setStudents] = useState([]);
     const [stats, setStats] = useState({ total: 0, active: 0, warning: 0, avgAttendance: 0 });
 
-    // Load students on mount and subscribe to real-time updates
     useEffect(() => {
         loadStudents();
         const unsubscribe = subscribeToUpdates(loadStudents);
         return unsubscribe;
     }, []);
 
+    const [availableClasses, setAvailableClasses] = useState(['All Classes']);
+
     const loadStudents = () => {
-        const data = getAllStudents();
-        setStudents(data);
-        setStats(getStudentStats());
+        const allStudents = getAllStudents();
+        const allTeachers = getAllTeachers();
+        const userEmail = localStorage.getItem('userEmail');
+
+        const teacherObj = allTeachers.find(t => t.email === userEmail);
+        let teacherId = userEmail;
+        if (teacherObj) {
+            teacherId = teacherObj.id;
+        }
+
+        const teacherCourses = getCoursesByTeacher(teacherId);
+
+        const teacherClasses = [...new Set(teacherCourses.map(c => c.class))].filter(Boolean);
+
+        setAvailableClasses(['All Classes', ...teacherClasses.sort()]);
+
+        let validStudents = allStudents;
+        if (teacherClasses.length > 0) {
+            validStudents = allStudents.filter(s => teacherClasses.includes(s.class));
+        } else {
+            validStudents = [];
+        }
+
+        setStudents(validStudents);
+
+        setStats({
+            total: validStudents.length,
+            active: validStudents.filter(s => s.status === 'Active').length,
+            warning: validStudents.filter(s => s.status === 'Warning').length,
+            avgAttendance: validStudents.length > 0
+                ? Math.round(validStudents.reduce((acc, s) => acc + (s.attendance || 0), 0) / validStudents.length)
+                : 0
+        });
     };
 
-    const classes = ['All Classes', 'Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
+    const classes = availableClasses;
     const statuses = ['All', 'Active', 'Warning', 'Inactive'];
 
     const filteredStudents = students.filter(student => {
@@ -95,7 +128,7 @@ const StudentsPage = ({ darkMode }) => {
                     </div>
 
                     <div className="p-6 space-y-6">
-                        {/* Basic Info */}
+                        {}
                         <div className="flex items-start space-x-4">
                             <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-purple-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
                                 {selectedStudent.name.split(' ').map(n => n[0]).join('')}
@@ -111,7 +144,7 @@ const StudentsPage = ({ darkMode }) => {
                             </div>
                         </div>
 
-                        {/* Contact Info */}
+                        {}
                         <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-4 space-y-3`}>
                             <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-3`}>
                                 Contact Information
@@ -138,7 +171,7 @@ const StudentsPage = ({ darkMode }) => {
                             </div>
                         </div>
 
-                        {/* Performance Stats */}
+                        {}
                         <div className="grid grid-cols-2 gap-4">
                             <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-4`}>
                                 <div className="flex items-center justify-between mb-2">
@@ -160,7 +193,7 @@ const StudentsPage = ({ darkMode }) => {
                             </div>
                         </div>
 
-                        {/* Parent Information */}
+                        {}
                         {selectedStudent.parent && (
                             <div className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-4`}>
                                 <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-3`}>
@@ -193,7 +226,7 @@ const StudentsPage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {/* Header */}
+            {}
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Students
@@ -201,7 +234,7 @@ const StudentsPage = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">View and manage student information (Real-time sync with Admin)</p>
             </div>
 
-            {/* Stats Cards */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
@@ -242,7 +275,7 @@ const StudentsPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Filters and Search */}
+            {}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6`}>
                 <div className="flex flex-col md:flex-row gap-4">
                     <div className="flex-1 relative">
@@ -292,7 +325,7 @@ const StudentsPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Students Table */}
+            {}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
                 <div className="overflow-x-auto">
                     <table className="w-full">

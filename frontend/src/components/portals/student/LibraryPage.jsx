@@ -51,7 +51,7 @@ const StudentLibraryPage = ({ darkMode }) => {
     }, [user.email]);
 
     const handleRequestBook = (book) => {
-        // Check if already requested or issued
+        
         const alreadyHas = myIssues.some(i => i.bookId === book.id && (i.status === 'Issued' || i.status === 'Requested'));
         if (alreadyHas) {
             showWarning('You have already requested or issued this book.');
@@ -88,7 +88,7 @@ const StudentLibraryPage = ({ darkMode }) => {
                 <Book className="w-8 h-8 text-blue-600" />
             </div>
 
-            {/* Tabs */}
+            {}
             <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
                 <button
                     onClick={() => setActiveTab('browse')}
@@ -104,7 +104,7 @@ const StudentLibraryPage = ({ darkMode }) => {
                 </button>
             </div>
 
-            {/* Content */}
+            {}
             {activeTab === 'browse' && (
                 <div className="space-y-4">
                     <div className="relative">

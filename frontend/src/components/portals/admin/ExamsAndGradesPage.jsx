@@ -50,7 +50,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
+            {}
             <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Exams & Grades
@@ -58,7 +58,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">Monitor exam performance and grade distribution</p>
             </div>
 
-            {/* Stats Cards */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
@@ -101,7 +101,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Filters */}
+            {}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="flex flex-col md:flex-row gap-4">
                     <select
@@ -137,7 +137,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Class Performance */}
+            {}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
                 <div className="p-6 border-b border-gray-200">
                     <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -190,7 +190,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Grade Distribution */}
+            {}
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-6`}>
                     Grade Distribution
