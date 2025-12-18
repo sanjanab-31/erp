@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from './AuthLayout';
-import { Mail, Lock, AlertCircle, User, BookOpen, Shield, Users } from 'lucide-react';
+import { Mail, Lock, AlertCircle, User, BookOpen, Shield, Users, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
     const navigate = useNavigate();
 
-    const [activeRole, setActiveRole] = useState('Student');
+    const [activeRole, setActiveRole] = useState('Admin');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
     const roles = [
-        { name: 'Student', icon: User },
-        { name: 'Teacher', icon: BookOpen },
         { name: 'Admin', icon: Shield },
+        { name: 'Teacher', icon: BookOpen },
         { name: 'Parent', icon: Users },
+        { name: 'Student', icon: User },
     ];
 
     useEffect(() => {
@@ -98,7 +99,7 @@ const Login = () => {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="you@example.com"
-                            className="w-full pl-10 py-2.5 border rounded-md focus:ring-2 focus:ring-blue-500"
+                            className="w-full pl-10 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                         />
                     </div>
                 </div>
@@ -108,13 +109,20 @@ const Login = () => {
                     <div className="relative">
                         <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                         <input
-                            type="password"
+                            type={showPassword ? "text" : "password"}
                             required
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="••••••••"
-                            className="w-full pl-10 py-2.5 border rounded-md focus:ring-2 focus:ring-blue-500"
+                            className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                         />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
                     </div>
                 </div>
 
@@ -135,17 +143,6 @@ const Login = () => {
                     {loading ? 'Signing in...' : 'Sign in'}
                 </button>
             </form>
-
-            <div className="mt-6 text-center text-sm text-gray-600">
-                Don&apos;t have an account?
-            </div>
-
-            <Link
-                to="/signup"
-                className="mt-3 block text-center border border-blue-600 text-blue-600 py-2.5 rounded-md hover:bg-blue-50"
-            >
-                Create an account
-            </Link>
 
         </AuthLayout>
     );

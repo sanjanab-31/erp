@@ -64,21 +64,7 @@ body {
     font-family: 'Mazzard', system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
-*,
-*:focus,
-*:focus-visible {
-    outline: none !important;
-    box-shadow: none !important;
-}
-
-button:focus,
-input:focus,
-textarea:focus,
-select:focus,
-a:focus {
-    outline: none !important;
-    box-shadow: none !important;
-}
+button:focus, a:focus { outline: none !important; }
 
 nav::-webkit-scrollbar,
 aside::-webkit-scrollbar {

@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/auth/Login';
-import Signup from './components/auth/Signup';
 import ForgotPassword from './components/auth/ForgotPassword';
 import StudentDashboard from './components/portals/student/StudentDashboard';
 import TeacherDashboard from './components/portals/teacher/TeacherDashboard';
@@ -55,14 +54,6 @@ function App() {
             element={
               <PublicRoute>
                 <Login />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/signup"
-            element={
-              <PublicRoute>
-                <Signup />
               </PublicRoute>
             }
           />

@@ -26,6 +26,7 @@ const announcementSchema = new mongoose.Schema({
     recipients: { type: mongoose.Schema.Types.Mixed, required: true }, // 'all', 'parents', or array of IDs
     priority: { type: String, default: 'medium' },
     category: { type: String, default: 'General' },
+    attachment: String,
     timestamp: { type: Date, default: Date.now },
     read: [{ type: Number }] // Array of user IDs who read it
 });

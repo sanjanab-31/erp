@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import User from '../models/userModel.js';
+import { sendPasswordResetEmail } from '../services/emailService.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d';
@@ -65,66 +66,6 @@ export const login = async (req, res) => {
     }
 };
 
-export const register = async (req, res) => {
-    try {
-        const { email, password, role, name } = req.body;
-
-        if (!email || !password || !role) {
-            return res.status(400).json({
-                success: false,
-                message: 'Please provide all required fields'
-            });
-        }
-
-        // 2. Check if user already exists
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(400).json({
-                success: false,
-                message: 'User already exists'
-            });
-        }
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        const newUser = await User.create({
-            email,
-            password: hashedPassword,
-            role,
-            name: name || ''
-        });
-
-        const token = jwt.sign(
-            { id: newUser.id, email, role },
-            JWT_SECRET,
-            { expiresIn: JWT_EXPIRES_IN }
-        );
-
-        const userWithoutPassword = {
-            id: newUser._id,
-            name: newUser.name,
-            email: newUser.email,
-            role: newUser.role
-        };
-
-        res.status(201).json({
-            success: true,
-            message: 'Registration successful',
-            data: {
-                user: userWithoutPassword,
-                token
-            }
-        });
-
-    } catch (error) {
-        console.error('Registration error:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
-};
 
 export const logout = async (req, res) => {
     try {
@@ -176,17 +117,42 @@ export const forgotPassword = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Please provide email' });
         }
 
-        const user = User.findOne({ email });
+        // Find user with await
+        const user = await User.findOne({ email });
+        
+        // Always return success message for security (don't reveal if email exists)
         if (!user) {
+            return res.json({ 
+                success: true, 
+                message: 'If an account exists with that email, a reset link has been sent' 
+            });
+        }
 
-            return res.json({ success: true, message: 'If an account exists with that email, a reset link has been sent' });
+        // Generate password reset token
+        const resetToken = jwt.sign(
+            { id: user._id, email: user.email },
+            JWT_SECRET,
+            { expiresIn: '1h' } // Token expires in 1 hour
+        );
+
+        // Send password reset email
+        const emailSent = await sendPasswordResetEmail(user.email, user.name, resetToken);
+        
+        if (emailSent) {
+            console.log(`Password reset email sent to ${email}`);
+        } else {
+            console.log(`Failed to send email, but logging reset link for ${email}`);
+            console.log(`Reset link: ${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`);
         }
 
         res.json({
             success: true,
-            message: 'Check your inbox for further instructions'
+            message: 'If an account exists with that email, a reset link has been sent',
+            // Include token in development mode for testing
+            ...(process.env.NODE_ENV === 'development' && { resetToken })
         });
     } catch (error) {
+        console.error('Forgot password error:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
