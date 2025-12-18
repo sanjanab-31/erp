@@ -12,6 +12,8 @@ const router = express.Router();
 
 router.use(authenticateToken);
 
+// Handle generic query (e.g. ?date=...)
+router.get('/', getAttendanceByDate);
 router.get('/stats', getAttendanceStats);
 router.get('/date/:date', getAttendanceByDate);
 router.get('/student/:studentId', getAttendanceByStudent);

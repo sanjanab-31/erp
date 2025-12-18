@@ -51,6 +51,17 @@ const SettingsPage = ({ darkMode }) => {
         navigate('/login');
     };
 
+    const updateSettingsSection = async (role, section, data) => {
+        try {
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            if (user && user.id) {
+                await settingsApi.update(user.id, section, data);
+            }
+        } catch (error) {
+            console.error('Error updating settings section:', error);
+        }
+    };
+
     useEffect(() => {
         const loadInitData = async () => {
             const parentEmail = localStorage.getItem('userEmail');
@@ -80,9 +91,12 @@ const SettingsPage = ({ darkMode }) => {
                         });
                     }
 
-                    const settingsRes = await settingsApi.get('parent');
-                    if (settingsRes.data && settingsRes.data.notifications) {
-                        setNotificationSettings(settingsRes.data.notifications);
+                    const user = JSON.parse(localStorage.getItem('currentUser'));
+                    if (user && user.id) {
+                        const settingsRes = await settingsApi.get(user.id);
+                        if (settingsRes.data && settingsRes.data.notifications) {
+                            setNotificationSettings(settingsRes.data.notifications);
+                        }
                     }
                 } catch (error) {
                     console.error('Error loading settings data:', error);
@@ -96,10 +110,13 @@ const SettingsPage = ({ darkMode }) => {
 
     const handleSave = async () => {
         try {
-            await Promise.all([
-                settingsApi.update('parent', 'profile', profileData),
-                settingsApi.update('parent', 'notifications', notificationSettings)
-            ]);
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            if (user && user.id) {
+                await Promise.all([
+                    settingsApi.update(user.id, 'profile', profileData),
+                    settingsApi.update(user.id, 'notifications', notificationSettings)
+                ]);
+            }
 
             setSaved(true);
             setSaveMessage('Settings saved successfully!');

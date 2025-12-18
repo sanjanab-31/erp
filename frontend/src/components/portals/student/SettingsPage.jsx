@@ -61,6 +61,17 @@ const SettingsPage = () => {
         navigate('/login');
     };
 
+    const updateSettingsSection = async (role, section, data) => {
+        try {
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            if (user && user.id) {
+                await settingsApi.update(user.id, section, data);
+            }
+        } catch (error) {
+            console.error('Error updating settings section:', error);
+        }
+    };
+
     useEffect(() => {
         const loadStudentData = async () => {
             const studentEmail = localStorage.getItem('userEmail');
@@ -96,11 +107,14 @@ const SettingsPage = () => {
             }
 
             try {
-                const settings = await settingsApi.get('student');
-                if (settings.data) {
-                    if (settings.data.notifications) setNotificationSettings(settings.data.notifications);
-                    if (settings.data.appearance) setAppearanceSettings(settings.data.appearance);
-                    if (settings.data.preferences) setPreferences(settings.data.preferences);
+                const user = JSON.parse(localStorage.getItem('currentUser'));
+                if (user && user.id) {
+                    const settings = await settingsApi.get(user.id);
+                    if (settings.data) {
+                        if (settings.data.notifications) setNotificationSettings(settings.data.notifications);
+                        if (settings.data.appearance) setAppearanceSettings(settings.data.appearance);
+                        if (settings.data.preferences) setPreferences(settings.data.preferences);
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching settings:', error);
@@ -120,7 +134,10 @@ const SettingsPage = () => {
         setProfileData(updatedProfile);
 
         try {
-            await settingsApi.update('student', 'profile', updatedProfile);
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            if (user && user.id) {
+                await settingsApi.update(user.id, 'profile', updatedProfile);
+            }
         } catch (error) {
             console.error('Error updating profile field:', error);
         }
@@ -134,7 +151,10 @@ const SettingsPage = () => {
         setNotificationSettings(updatedNotifications);
 
         try {
-            await settingsApi.update('student', 'notifications', updatedNotifications);
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            if (user && user.id) {
+                await settingsApi.update(user.id, 'notifications', updatedNotifications);
+            }
         } catch (error) {
             console.error('Error updating notification setting:', error);
         }
@@ -143,12 +163,15 @@ const SettingsPage = () => {
     const handleSaveChanges = async () => {
         setLoading(true);
         try {
-            await Promise.all([
-                settingsApi.update('student', 'profile', profileData),
-                settingsApi.update('student', 'notifications', notificationSettings),
-                settingsApi.update('student', 'appearance', appearanceSettings),
-                settingsApi.update('student', 'preferences', preferences)
-            ]);
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            if (user && user.id) {
+                await Promise.all([
+                    settingsApi.update(user.id, 'profile', profileData),
+                    settingsApi.update(user.id, 'notifications', notificationSettings),
+                    settingsApi.update(user.id, 'appearance', appearanceSettings),
+                    settingsApi.update(user.id, 'preferences', preferences)
+                ]);
+            }
             setSaveMessage('All changes saved successfully!');
         } catch (error) {
             setSaveMessage('Error saving changes');

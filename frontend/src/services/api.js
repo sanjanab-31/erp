@@ -71,7 +71,7 @@ export const announcementApi = {
     update: (id, data) => api.put(`/communication/announcements/${id}`, data),
     delete: (id) => api.delete(`/communication/announcements/${id}`),
     archive: (id) => api.put(`/communication/announcements/${id}/archive`),
-    sendNotification: (data) => api.post('/communication/email/send-announcement', data),
+    sendNotification: (data) => api.post('/email/send-announcement', data),
 };
 
 export const emailApi = {
@@ -155,15 +155,15 @@ export const timetableApi = {
 };
 
 export const communicationApi = {
-    getConversations: (params) => api.get('/communications/conversations', { params }),
-    getMessages: (conversationId) => api.get(`/communications/conversations/${conversationId}/messages`),
-    sendMessage: (data) => api.post('/communications/messages', data),
-    markAsRead: (conversationId) => api.post(`/communications/conversations/${conversationId}/read`),
-    getAnnouncements: (params) => api.get('/communications/announcements', { params }),
-    createAnnouncement: (data) => api.post('/communications/announcements', data),
-    getNotifications: (params) => api.get('/communications/notifications', { params }),
-    markNotificationRead: (id) => api.post(`/communications/notifications/${id}/read`),
-    getUnreadCounts: (params) => api.get('/communications/unread-counts', { params }),
+    getConversations: (params) => api.get('/communication/conversations', { params }),
+    getMessages: (conversationId) => api.get(`/communication/conversations/${conversationId}/messages`),
+    sendMessage: (data) => api.post('/communication/messages', data),
+    markAsRead: (conversationId) => api.post(`/communication/conversations/${conversationId}/read`),
+    getAnnouncements: (params) => api.get('/communication/announcements', { params }),
+    createAnnouncement: (data) => api.post('/communication/announcements', data),
+    getNotifications: (params) => api.get('/communication/notifications', { params }),
+    markNotificationRead: (id) => api.post(`/communication/notifications/${id}/read`),
+    getUnreadCounts: (params) => api.get('/communication/unread-counts', { params }),
 };
 
 export const paymentApi = {

@@ -124,12 +124,9 @@ export const getStudentFinalMarks = async (req, res) => {
     }
 };
 
-// --- Exam Stats ---
-
 export const getExamStats = async (req, res) => {
     try {
-        // Return dummy data for now to match frontend expectations
-        // In a real app, this would aggregate from ExamMarks
+        // Mock stats for now to prevent 404 and UI errors
         const stats = {
             overview: {
                 totalStudents: 450,
@@ -152,7 +149,6 @@ export const getExamStats = async (req, res) => {
                 { grade: 'F', count: 23, percentage: 5 }
             ]
         };
-
         res.json({ success: true, data: stats });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

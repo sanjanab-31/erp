@@ -30,7 +30,7 @@ const AnnouncementsPage = ({ darkMode }) => {
     const loadAnnouncements = useCallback(async () => {
         try {
             const response = await announcementApi.getAll();
-            setAnnouncements(response.data || []);
+            setAnnouncements(response.data?.data || []);
         } catch (error) {
             console.error('Failed to load announcements:', error);
 

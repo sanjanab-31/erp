@@ -123,7 +123,6 @@ export const getConversations = async (req, res) => {
 
 export const getAnnouncements = async (req, res) => {
     try {
-        // In real app, filter based on user role/ID from req.user
         const announcements = await Announcement.find().sort({ timestamp: -1 });
         res.json({ success: true, data: announcements });
     } catch (error) {
@@ -144,15 +143,31 @@ export const createAnnouncement = async (req, res) => {
     }
 };
 
-// Archive an announcement (soft delete)
+export const updateAnnouncement = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updatedAnnouncement = await Announcement.findOneAndUpdate({ id }, req.body, { new: true });
+        res.json({ success: true, data: updatedAnnouncement });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const deleteAnnouncement = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await Announcement.findOneAndDelete({ id });
+        res.json({ success: true, message: 'Announcement deleted' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 export const archiveAnnouncement = async (req, res) => {
     try {
         const { id } = req.params;
-        const updated = await Announcement.findOneAndUpdate({ id }, { archived: true }, { new: true });
-        if (!updated) {
-            return res.status(404).json({ success: false, message: 'Announcement not found' });
-        }
-        res.json({ success: true, data: updated });
+        const archived = await Announcement.findOneAndUpdate({ id }, { status: 'Archived' }, { new: true });
+        res.json({ success: true, data: archived });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

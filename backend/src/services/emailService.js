@@ -34,19 +34,29 @@ const sendSMS = async (phone, message) => {
 };
 
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // true for 465, false for other ports
     auth: {
         user: process.env.SMTP_EMAIL,
-        pass: process.env.SMTP_PASSWORD?.replace(/\s+/g, '') 
-    }
+        pass: process.env.SMTP_PASSWORD?.replace(/\s+/g, '')
+    },
+    tls: {
+        rejectUnauthorized: false
+    },
+    family: 4, // Force IPv4 to avoid IPv6 connection issues
+    logger: true, // Log to console
+    debug: true, // Include SMTP traffic in logs
+    connectionTimeout: 10000, // 10 seconds timeout
+    greetingTimeout: 10000
 });
 
 export const sendStudentCredentials = async (studentEmail, password, studentName, parentEmail = null) => {
-    
+
     const fromAddress = `"Sri Eshwar College Of Engineering" <${process.env.SMTP_EMAIL}>`;
 
     try {
-        
+
         await transporter.sendMail({
             from: fromAddress,
             to: studentEmail,
@@ -95,8 +105,9 @@ export const sendStudentCredentials = async (studentEmail, password, studentName
         }
         return true;
     } catch (error) {
-        console.error('Email Service Error:', error);
-        throw error;
+        console.error('Email Service Error (Student):', error.message);
+        // Do not throw error to prevent controller from failing response
+        return false;
     }
 };
 
@@ -124,8 +135,8 @@ export const sendTeacherCredentials = async (teacherEmail, password, teacherName
         });
         return true;
     } catch (error) {
-        console.error('Email Service Error:', error);
-        throw error;
+        console.error('Email Service Error (Teacher):', error.message);
+        return false;
     }
 };
 
@@ -155,7 +166,7 @@ export const sendAnnouncementEmail = async (recipientEmail, recipientName, title
         });
         return true;
     } catch (error) {
-        console.error('Email Service Error (Announcement):', error);
+        console.error('Email Service Error (Announcement):', error.message);
 
         return false;
     }

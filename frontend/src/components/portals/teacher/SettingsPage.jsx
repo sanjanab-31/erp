@@ -65,6 +65,17 @@ const SettingsPage = ({ darkMode }) => {
         navigate('/login');
     };
 
+    const updateSettingsSection = async (role, section, data) => {
+        try {
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            if (user && user.id) {
+                await settingsApi.update(user.id, section, data);
+            }
+        } catch (error) {
+            console.error('Error updating settings section:', error);
+        }
+    };
+
     const [preferenceSettings, setPreferenceSettings] = useState({
         language: 'English',
         timezone: 'UTC-5 (EST)',
@@ -105,11 +116,14 @@ const SettingsPage = ({ darkMode }) => {
         }
 
         try {
-            const settings = await settingsApi.get('teacher');
-            if (settings.data) {
-                if (settings.data.notifications) setNotificationSettings(settings.data.notifications);
-                if (settings.data.preferences) setPreferenceSettings(settings.data.preferences);
-                if (settings.data.security) setSecuritySettings(prev => ({ ...prev, twoFactorAuth: settings.data.security.twoFactorAuth || false }));
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            if (user && user.id) {
+                const settings = await settingsApi.get(user.id);
+                if (settings.data) {
+                    if (settings.data.notifications) setNotificationSettings(settings.data.notifications);
+                    if (settings.data.preferences) setPreferenceSettings(settings.data.preferences);
+                    if (settings.data.security) setSecuritySettings(prev => ({ ...prev, twoFactorAuth: settings.data.security.twoFactorAuth || false }));
+                }
             }
         } catch (error) {
             console.error('Error loading settings from API:', error);
@@ -128,10 +142,13 @@ const SettingsPage = ({ darkMode }) => {
                 await teacherApi.update(profileData.id, profileData);
             }
 
-            await Promise.all([
-                settingsApi.update('teacher', 'notifications', notificationSettings),
-                settingsApi.update('teacher', 'preferences', preferenceSettings)
-            ]);
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            if (user && user.id) {
+                await Promise.all([
+                    settingsApi.update(user.id, 'notifications', notificationSettings),
+                    settingsApi.update(user.id, 'preferences', preferenceSettings)
+                ]);
+            }
 
             setSaved(true);
             setSaveMessage('Settings saved successfully!');

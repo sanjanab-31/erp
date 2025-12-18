@@ -16,8 +16,8 @@ const router = express.Router();
 router.use(authenticateToken);
 
 // Schedule Routes
-// Schedule Routes (api.js uses /exams request to these)
-router.get('/', getExamSchedules); // Alias /schedules to /
+router.get('/stats', getExamStats);
+router.get('/', getExamSchedules); // Alias for /schedules as generic getter
 router.get('/schedules', getExamSchedules);
 
 router.post('/', createExamSchedule); // Alias /schedules POST to /

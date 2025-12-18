@@ -5,6 +5,8 @@ import {
     markMessageRead,
     getAnnouncements,
     createAnnouncement,
+    updateAnnouncement,
+    deleteAnnouncement,
     archiveAnnouncement,
     getUserNotifications,
     createNotification,
@@ -26,6 +28,8 @@ router.put('/messages/:id/read', markMessageRead);
 // Announcements
 router.get('/announcements', getAnnouncements);
 router.post('/announcements', createAnnouncement);
+router.put('/announcements/:id', updateAnnouncement);
+router.delete('/announcements/:id', deleteAnnouncement);
 router.put('/announcements/:id/archive', archiveAnnouncement);
 
 // Notifications

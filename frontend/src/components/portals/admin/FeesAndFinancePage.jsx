@@ -190,7 +190,7 @@ const FeesAndFinancePage = ({ darkMode }) => {
 
             try {
                 const statsRes = await feeApi.getStats();
-                setStats(statsRes.data || {});
+                setStats(statsRes.data?.data || {});
             } catch {
 
                 const totalAmount = allFees.reduce((sum, f) => sum + Number(f.amount || 0), 0);
