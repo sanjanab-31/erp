@@ -183,14 +183,14 @@ const FeesAndFinancePage = ({ darkMode }) => {
                 studentApi.getAll()
             ]);
 
-            const allFees = feesRes.data || [];
-            const allStudents = studentsRes.data || [];
+            const allFees = feesRes.data?.data || [];
+            const allStudents = studentsRes.data?.data || [];
             setFees(allFees);
             setStudents(allStudents);
 
             try {
                 const statsRes = await feeApi.getStats();
-                setStats(statsRes.data || {});
+                setStats(statsRes.data?.data || {});
             } catch {
 
                 const totalAmount = allFees.reduce((sum, f) => sum + Number(f.amount || 0), 0);

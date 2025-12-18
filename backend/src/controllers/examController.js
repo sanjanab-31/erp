@@ -128,3 +128,34 @@ export const getStudentFinalMarks = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+export const getExamStats = async (req, res) => {
+    try {
+        // Mock stats for now to prevent 404 and UI errors
+        const stats = {
+            overview: {
+                totalStudents: 450,
+                averageScore: 78.5,
+                passRate: 92,
+                topScore: 98
+            },
+            classPerformance: [
+                { class: 'Grade 10-A', students: 30, average: 82.5, passRate: 95, topScore: 98 },
+                { class: 'Grade 10-B', students: 28, average: 79.3, passRate: 93, topScore: 95 },
+                { class: 'Grade 11-A', students: 32, average: 76.8, passRate: 90, topScore: 94 },
+                { class: 'Grade 11-B', students: 25, average: 75.2, passRate: 88, topScore: 92 }
+            ],
+            gradeDistribution: [
+                { grade: 'A+', count: 45, percentage: 10 },
+                { grade: 'A', count: 90, percentage: 20 },
+                { grade: 'B+', count: 135, percentage: 30 },
+                { grade: 'B', count: 90, percentage: 20 },
+                { grade: 'C', count: 67, percentage: 15 },
+                { grade: 'F', count: 23, percentage: 5 }
+            ]
+        };
+        res.json({ success: true, data: stats });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

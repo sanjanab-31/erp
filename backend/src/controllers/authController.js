@@ -41,7 +41,13 @@ export const login = async (req, res) => {
             { expiresIn: JWT_EXPIRES_IN }
         );
 
-        const { password: _, ...userWithoutPassword } = user;
+        const userWithoutPassword = {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+        };
+
         res.json({
             success: true,
             message: 'Login successful',
@@ -95,7 +101,12 @@ export const register = async (req, res) => {
             { expiresIn: JWT_EXPIRES_IN }
         );
 
-        const { password: _, ...userWithoutPassword } = newUser;
+        const userWithoutPassword = {
+            id: newUser._id,
+            name: newUser.name,
+            email: newUser.email,
+            role: newUser.role
+        };
 
         res.status(201).json({
             success: true,

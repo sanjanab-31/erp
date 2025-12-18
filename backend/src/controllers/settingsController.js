@@ -3,12 +3,12 @@ import Settings from '../models/settingsModel.js';
 export const getSettings = async (req, res) => {
     try {
         const { userId } = req.params;
-        let settings = await Settings.findOne({ userId: Number(userId) });
+        let settings = await Settings.findOne({ userId });
 
         if (!settings) {
             // Return default settings if not found
             settings = {
-                userId: Number(userId),
+                userId,
                 role: 'user', // Defaults
                 theme: 'light',
                 notifications: { email: true, push: true, sms: false },
@@ -28,7 +28,7 @@ export const updateSettings = async (req, res) => {
         const updates = req.body;
 
         const settings = await Settings.findOneAndUpdate(
-            { userId: Number(userId) },
+            { userId },
             { ...updates, updatedAt: new Date() },
             { new: true, upsert: true, setDefaultsOnInsert: true }
         );
@@ -42,7 +42,7 @@ export const updateSettings = async (req, res) => {
 export const resetSettings = async (req, res) => {
     try {
         const { userId } = req.params;
-        await Settings.findOneAndDelete({ userId: Number(userId) });
+        await Settings.findOneAndDelete({ userId });
         res.json({ success: true, message: 'Settings reset to default' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

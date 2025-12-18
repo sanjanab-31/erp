@@ -2,7 +2,8 @@ import mongoose from "mongoose";
 
 const settingsSchema = new mongoose.Schema({
     userId: {
-        type: Number,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
         required: true,
         unique: true
     },

@@ -203,12 +203,12 @@ const Students = ({ darkMode }) => {
     const loadStudents = useCallback(async () => {
         try {
             const response = await studentApi.getAll();
-            const data = response.data || [];
+            const data = response.data?.data || [];
             setStudents(Array.isArray(data) ? data : []);
 
             try {
                 const statsRes = await studentApi.getStats();
-                setStats(statsRes.data || { total: 0, active: 0, inactive: 0, warning: 0 });
+                setStats(statsRes.data?.data || { total: 0, active: 0, inactive: 0, warning: 0 });
             } catch (e) {
                 const s = Array.isArray(data) ? data : [];
                 setStats({
@@ -287,18 +287,7 @@ const Students = ({ darkMode }) => {
             };
             await studentApi.create(payload);
 
-            try {
-                await emailApi.sendStudentCredentials({
-                    email: formData.email,
-                    password: 'password',
-                    name: formData.name,
-                    parentEmail: formData.parentEmail
-                });
-                showSuccess('Credentials emailed successfully!');
-            } catch (emailError) {
-                console.warn('Email sending failed:', emailError);
-            }
-
+            // UI cleanup first
             setShowAddModal(false);
             resetForm();
             loadStudents();
@@ -313,8 +302,19 @@ const Students = ({ darkMode }) => {
                 message += 'Email: ' + formData.parentEmail + '\n';
                 message += 'Password: password';
             }
-
             showSuccess(message);
+
+            // Send email in background
+            emailApi.sendStudentCredentials({
+                email: formData.email,
+                password: 'password',
+                name: formData.name,
+                parentEmail: formData.parentEmail
+            }).then(() => {
+                showSuccess('📧 Credentials emailed successfully!');
+            }).catch((emailError) => {
+                console.warn('Email sending failed:', emailError);
+            });
         } catch (error) {
             showError('Error adding student: ' + (error.response?.data?.message || error.message));
         }

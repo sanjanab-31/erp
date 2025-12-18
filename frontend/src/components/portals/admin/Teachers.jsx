@@ -222,7 +222,7 @@ const Teachers = ({ darkMode }) => {
 
             try {
                 const statsResponse = await teacherApi.getStats();
-                setStats(statsResponse.data || { total: 0, active: 0, inactive: 0, onLeave: 0 });
+                setStats(statsResponse.data?.data || { total: 0, active: 0, inactive: 0, onLeave: 0 });
             } catch (statsError) {
 
                 setStats({
@@ -288,23 +288,23 @@ const Teachers = ({ darkMode }) => {
 
             await teacherApi.create(teacherPayload);
 
-            // Send credentials email using the generated password
-            try {
-                await emailApi.sendTeacherCredentials({
-                    email: formData.email,
-                    password: teacherPayload.password,
-                    name: formData.name
-                });
-                showSuccess('📧 Credentials emailed successfully to Faculty!');
-            } catch (emailError) {
-                console.warn('Email sending failed:', emailError);
-            }
-
-            // UI cleanup
+            // UI cleanup first for better UX
             setShowAddModal(false);
             resetForm();
             loadTeachers();
-            showSuccess('Teacher added successfully!');
+            showSuccess('Teacher added successfully! Sending credentials...');
+
+            // Send credentials email in background
+            emailApi.sendTeacherCredentials({
+                email: formData.email,
+                password: teacherPayload.password,
+                name: formData.name
+            }).then(() => {
+                showSuccess('📧 Credentials emailed successfully to Faculty!');
+            }).catch((emailError) => {
+                console.warn('Email sending failed:', emailError);
+                // Optional: showError('Failed to send credentials email');
+            });
         } catch (error) {
             showError('Error adding teacher: ' + (error.response?.data?.message || error.message));
         }

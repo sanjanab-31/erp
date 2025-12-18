@@ -48,13 +48,16 @@ const SettingsPage = ({ darkMode }) => {
         const loadSettings = async () => {
             setLoading(true);
             try {
-                const res = await settingsApi.get('admin');
-                if (res.data) {
-                    setSettings(prev => ({
-                        ...prev,
-                        ...(res.data.general || {}),
-                        ...(res.data.notifications || {})
-                    }));
+                const user = JSON.parse(localStorage.getItem('currentUser'));
+                if (user && user.id) {
+                    const res = await settingsApi.get(user.id);
+                    if (res.data) {
+                        setSettings(prev => ({
+                            ...prev,
+                            ...(res.data.general || {}),
+                            ...(res.data.notifications || {})
+                        }));
+                    }
                 }
             } catch (error) {
                 console.error('Error loading admin settings:', error);
@@ -89,10 +92,13 @@ const SettingsPage = ({ darkMode }) => {
                 systemUpdates: settings.systemUpdates
             };
 
-            await Promise.all([
-                settingsApi.update('admin', 'general', generalData),
-                settingsApi.update('admin', 'notifications', notifData)
-            ]);
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            if (user && user.id) {
+                await Promise.all([
+                    settingsApi.update(user.id, 'general', generalData),
+                    settingsApi.update(user.id, 'notifications', notifData)
+                ]);
+            }
 
             setSaved(true);
             setSaveMessage('Settings saved successfully!');

@@ -383,7 +383,7 @@ const TimetablePage = ({ darkMode }) => {
     const loadTeachers = useCallback(async () => {
         try {
             const response = await teacherApi.getAll();
-            setTeachers(response.data || []);
+            setTeachers(response.data?.data || []);
         } catch (error) {
             console.error(error);
         }
@@ -397,8 +397,8 @@ const TimetablePage = ({ darkMode }) => {
                 timetableApi.getClassTimetables()
             ]);
 
-            const tTimetables = tResult.data || [];
-            const cTimetables = cResult.data || [];
+            const tTimetables = tResult.data?.data || [];
+            const cTimetables = cResult.data?.data || [];
 
             setTeacherTimetables(tTimetables);
             setClassTimetables(cTimetables);

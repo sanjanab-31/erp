@@ -6,7 +6,8 @@ import {
     getExamMarksByStudent,
     enterExamMarks,
     getStudentFinalMarks,
-    getExamMarksByCourse
+    getExamMarksByCourse,
+    getExamStats
 } from '../controllers/examController.js';
 import { authenticateToken } from '../middleware/auth.js';
 
@@ -15,6 +16,8 @@ const router = express.Router();
 router.use(authenticateToken);
 
 // Schedule Routes
+router.get('/stats', getExamStats);
+router.get('/', getExamSchedules); // Alias for /schedules as generic getter
 router.get('/schedules', getExamSchedules);
 router.post('/schedules', createExamSchedule);
 router.delete('/schedules/:id', deleteExamSchedule);

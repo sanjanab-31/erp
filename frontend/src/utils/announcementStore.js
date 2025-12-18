@@ -1,12 +1,3 @@
-<<<<<<< HEAD
-
-import { getAllStudents } from './studentStore';
-import { getAllTeachers } from './teacherStore';
-
-const API_URL = 'http://localhost:5000/api/email';
-=======
-
->>>>>>> ca4d5f083cccc81b5d341dfda6e13663770f9d72
 
 const STORAGE_KEY = 'erp_announcements';
 
@@ -93,95 +84,6 @@ export const addAnnouncement = (announcementData) => {
     }
 };
 
-<<<<<<< HEAD
-
-const triggerNotifications = async (announcement) => {
-    try {
-        const recipients = [];
-        const { targetAudience, classes } = announcement;
-
-        console.log(`Preparing notifications for: ${targetAudience} (Classes: ${classes.join(', ') || 'All'})`);
-
-        if (targetAudience === 'Teachers' || targetAudience === 'All') {
-            const teachers = getAllTeachers();
-            teachers.forEach(t => {
-
-                if (t.status !== 'Updates' && t.email) {
-                    recipients.push({
-                        name: t.name,
-                        email: t.email,
-                        phone: t.phone || t.mobile
-                    });
-                }
-            });
-        }
-
-        if (targetAudience === 'Students' || targetAudience === 'Parents' || targetAudience === 'All') {
-            let students = getAllStudents();
-
-            if (classes && classes.length > 0) {
-                students = students.filter(s => classes.includes(s.class));
-            }
-
-            students.forEach(s => {
-
-                if (targetAudience === 'Students' || targetAudience === 'All') {
-                    if (s.email) {
-                        recipients.push({
-                            name: s.name,
-                            email: s.email,
-                            phone: s.phone || s.mobile
-                        });
-                    }
-                }
-
-                if (targetAudience === 'Parents' || targetAudience === 'All') {
-                    if (s.parentEmail) {
-                        recipients.push({
-                            name: `Parent of ${s.name}`,
-                            email: s.parentEmail,
-                            phone: s.parentPhone || s.parentMobile
-                        });
-                    }
-                }
-            });
-        }
-
-        if (recipients.length === 0) {
-            console.log('No recipients found for notification.');
-            return;
-        }
-
-        console.log(`Sending notifications to ${recipients.length} recipients via Backend...`);
-
-        const response = await fetch(`${API_URL}/send-announcement`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                recipients,
-                title: announcement.title,
-                description: announcement.description,
-                attachment: announcement.attachment
-            })
-        });
-
-        if (response.ok) {
-            console.log('Notifications sent successfully.');
-        } else {
-            console.error('Failed to send notifications via Backend:', await response.text());
-        }
-
-    } catch (error) {
-        console.error('Error triggering notifications:', error);
-
-    }
-};
-
-=======
-
->>>>>>> ca4d5f083cccc81b5d341dfda6e13663770f9d72
 export const updateAnnouncement = (id, updates) => {
     try {
         const announcements = getAllAnnouncements();

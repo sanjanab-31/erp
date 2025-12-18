@@ -112,7 +112,7 @@ const CoursesPage = ({ darkMode }) => {
         const fetchCourses = async () => {
             try {
                 const response = await courseApi.getAll();
-                const allCourses = response.data || [];
+                const allCourses = response.data?.data || [];
 
                 const uniqueClasses = ['All', ...new Set(allCourses.map(c => c.class).filter(Boolean))];
                 setClasses(uniqueClasses);

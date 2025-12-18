@@ -40,8 +40,8 @@ const AdminExamSchedules = ({ darkMode }) => {
                 courseApi.getAll()
             ]);
 
-            const allExams = examRes.data || [];
-            const allCourses = courseRes.data || [];
+            const allExams = examRes.data?.data || [];
+            const allCourses = courseRes.data?.data || [];
 
             const classSchedules = allExams.filter(e => e.class === selectedClass);
             setSchedules(classSchedules);

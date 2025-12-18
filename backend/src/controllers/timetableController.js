@@ -76,3 +76,20 @@ export const saveClassTimetable = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+export const getAllTeacherTimetables = async (req, res) => {
+    try {
+        const timetables = await TeacherTimetable.find();
+        res.json({ success: true, data: timetables });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const getAllClassTimetables = async (req, res) => {
+    try {
+        const timetables = await ClassTimetable.find();
+        res.json({ success: true, data: timetables });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

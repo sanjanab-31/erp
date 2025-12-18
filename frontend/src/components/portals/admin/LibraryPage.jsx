@@ -40,16 +40,16 @@ const LibraryPage = ({ darkMode }) => {
 
             ]);
 
-            setBooks(booksRes.data || []);
-            setIssues(issuesRes.data || []);
+            setBooks(booksRes.data?.data || []);
+            setIssues(issuesRes.data?.data || []);
 
             try {
                 const statsRes = await libraryApi.getStats();
-                setStats(statsRes.data || { totalBooks: 0, availableBooks: 0, issuedBooks: 0, pendingFines: 0 });
+                setStats(statsRes.data?.data || { totalBooks: 0, availableBooks: 0, issuedBooks: 0, pendingFines: 0 });
             } catch (e) {
 
-                const b = booksRes.data || [];
-                const i = issuesRes.data || [];
+                const b = booksRes.data?.data || [];
+                const i = issuesRes.data?.data || [];
                 setStats({
                     totalBooks: b.reduce((acc, book) => acc + (book.quantity || 1), 0),
                     availableBooks: b.reduce((acc, book) => acc + (book.available || 0), 0),
@@ -60,7 +60,7 @@ const LibraryPage = ({ darkMode }) => {
 
             try {
                 const rulesRes = await libraryApi.getSettings();
-                setRules(rulesRes.data || rules);
+                setRules(rulesRes.data?.data || rules);
             } catch (e) {
 
             }

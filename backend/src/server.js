@@ -27,6 +27,8 @@ import communicationRoutes from './routes/communication.js';
 import timetableRoutes from './routes/timetable.js';
 import settingsRoutes from './routes/settings.js';
 import emailRoutes from './routes/emailRoutes.js';
+import teacherAttendanceRoutes from './routes/teacherAttendance.js';
+import libraryRoutes from './routes/library.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -62,6 +64,8 @@ app.use('/api/communication', communicationRoutes);
 app.use('/api/timetable', timetableRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/email', emailRoutes);
+app.use('/api/teacher-attendance', teacherAttendanceRoutes);
+app.use('/api/library', libraryRoutes);
 
 app.use((err, req, res, next) => {
     console.error(err.stack);
