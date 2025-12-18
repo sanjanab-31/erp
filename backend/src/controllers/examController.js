@@ -105,11 +105,6 @@ export const getStudentFinalMarks = async (req, res) => {
             let assignmentTotal = 0;
             if (courseSubmissions.length > 0) {
                 const sum = courseSubmissions.reduce((acc, s) => acc + (Number(s.marks) || 0), 0);
-                // Assuming average of assignments scaled to 25, or logic from frontend:
-                // Frontend: (sum / count) * 0.25 ?? No, Frontend: (avg) * 0.25 was weird.
-                // Frontend logic: (assignmentTotal / assignmentCount) * 0.25? No, logic was:
-                // const assignmentMarks = assignmentCount > 0 ? (assignmentTotal / assignmentCount) * 0.25 : 0; -> This means 0.25 marks total?
-                // Wait, frontend logic: `(assignmentTotal / assignmentCount) * 0.25`. If avg is 100, result is 25. Correct.
                 const avg = sum / courseSubmissions.length; // e.g., 90
                 assignmentTotal = (avg / 100) * 25; // Scale to 25. Assuming max marks is 100.
             }

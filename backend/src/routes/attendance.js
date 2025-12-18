@@ -18,6 +18,7 @@ router.get('/stats', getAttendanceStats);
 router.get('/date/:date', getAttendanceByDate);
 router.get('/student/:studentId', getAttendanceByStudent);
 router.post('/', markAttendance); // Handles bulk or single
+router.post('/bulk', markAttendance); // Alias for frontend compatibility
 router.delete('/:id', deleteAttendance);
 
 export default router;

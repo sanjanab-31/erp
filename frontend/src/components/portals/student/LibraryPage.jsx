@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
     Book,
     BookOpen,
@@ -12,46 +13,58 @@ import {
 import { libraryApi } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 
-const StudentLibraryPage = ({ darkMode }) => {
+const StudentLibraryPage = () => {
+    const { darkMode, student } = useOutletContext();
     const { showSuccess, showError, showWarning } = useToast();
     const [activeTab, setActiveTab] = useState('browse');
     const [books, setBooks] = useState([]);
     const [myIssues, setMyIssues] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
-    const [user] = useState({
-        email: localStorage.getItem('userEmail') || 'student@eshwar.com',
-        name: localStorage.getItem('userName') || 'Student',
-        role: 'Student'
-    });
     const [rules] = useState({ currency: '₹' });
 
     useEffect(() => {
         const loadData = async () => {
+            if (!student) return;
             try {
                 const [booksRes, issuesRes] = await Promise.all([
                     libraryApi.getAllBooks(),
-                    libraryApi.getAllIssues({ userEmail: user.email })
+                    libraryApi.getAllIssues({ studentId: student.id })
                 ]);
 
-                setBooks(booksRes.data || []);
-                setMyIssues(issuesRes.data || []);
+                if (booksRes.data && Array.isArray(booksRes.data.data)) {
+                    setBooks(booksRes.data.data);
+                } else {
+                    console.error('Unexpected books response:', booksRes);
+                    setBooks([]);
+                }
+
+                if (issuesRes.data && Array.isArray(issuesRes.data.data)) {
+                    setMyIssues(issuesRes.data.data);
+                } else {
+                    setMyIssues([]);
+                }
             } catch (error) {
                 console.error('Failed to load library data:', error);
+                setBooks([]);
+                setMyIssues([]);
             }
         };
 
         loadData();
-    }, [user.email]);
+    }, [student]);
 
     const refreshData = async () => {
+        if (!student) return;
         try {
             const [booksRes, issuesRes] = await Promise.all([
                 libraryApi.getAllBooks(),
-                libraryApi.getAllIssues({ userEmail: user.email })
+                libraryApi.getAllIssues({ studentId: student.id })
             ]);
-            setBooks(booksRes.data || []);
-            setMyIssues(issuesRes.data || []);
-        } catch (e) { }
+            setBooks(Array.isArray(booksRes.data?.data) ? booksRes.data.data : []);
+            setMyIssues(Array.isArray(issuesRes.data?.data) ? issuesRes.data.data : []);
+        } catch (e) {
+            console.error(e);
+        }
     };
 
     const handleRequestBook = async (book) => {
@@ -67,10 +80,10 @@ const StudentLibraryPage = ({ darkMode }) => {
                 await libraryApi.issueBook({
                     bookId: book.id,
                     bookTitle: book.title,
-                    userId: user.email,
-                    userName: user.name,
-                    userRole: user.role,
+                    studentId: student.id,
+                    studentName: student.name,
                     status: 'Requested',
+                    dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // Default 14 days
                     requestDate: new Date().toISOString()
                 });
                 showSuccess('Book requested successfully! Please collect it from the library once approved.');
@@ -81,11 +94,11 @@ const StudentLibraryPage = ({ darkMode }) => {
         }
     };
 
-    const filteredBooks = books.filter(b =>
+    const filteredBooks = Array.isArray(books) ? books.filter(b =>
         b.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         b.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
         b.subject.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    ) : [];
 
     return (
         <div className={`space-y-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>

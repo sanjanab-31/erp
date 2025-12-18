@@ -1,8 +1,15 @@
 import { loadStripe } from '@stripe/stripe-js';
 
-const stripePromise = loadStripe('pk_test_51SeqXZGwQi5RLnDThhAPcctzcxHTZdUtrGSSTYt48vr2I6rOZJc98b3fV9WJwlWpw4QD8IfwkQjXbht3Uf5uHVtQ00sKykAhzR');
+// Load Stripe publishable key from environment variables
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 
-export const PAYMENT_SERVER_URL = 'http://localhost:4242';
+if (!stripePublishableKey) {
+    console.error('VITE_STRIPE_PUBLISHABLE_KEY is not defined in environment variables');
+}
+
+const stripePromise = loadStripe(stripePublishableKey);
+
+export const PAYMENT_SERVER_URL = import.meta.env.VITE_PAYMENT_SERVER_URL || 'http://localhost:4242';
 
 export const getStripe = () => stripePromise;
 

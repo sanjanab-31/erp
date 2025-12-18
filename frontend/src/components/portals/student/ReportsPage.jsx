@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
     Download,
     FileText,
@@ -17,7 +18,8 @@ import {
     courseApi
 } from '../../../services/api';
 
-const ReportsPage = ({ darkMode }) => {
+const ReportsPage = () => {
+    const { darkMode, student } = useOutletContext();
     const [selectedReport, setSelectedReport] = useState('Academic Performance');
     const [reportData, setReportData] = useState({
         'Academic Performance': { summary: '', data: [] },
@@ -25,10 +27,6 @@ const ReportsPage = ({ darkMode }) => {
         'Assignments Report': { summary: '', data: [] },
         'Progress Summary': { summary: '', data: [] }
     });
-
-    const studentEmail = localStorage.getItem('userEmail') || '';
-    const studentName = localStorage.getItem('userName') || 'Student';
-    const [studentId, setStudentId] = useState('');
 
     const reportTypes = [
         { name: 'Academic Performance', icon: Award, color: 'bg-blue-500' },
@@ -38,36 +36,22 @@ const ReportsPage = ({ darkMode }) => {
     ];
 
     useEffect(() => {
-        const init = async () => {
-            if (studentEmail) {
-                try {
-                    const studentRes = await studentApi.getAll();
-                    const students = studentRes.data || [];
-                    const student = students.find(s => s.email === studentEmail);
-                    if (student) {
-                        setStudentId(student.id);
-                        loadReportData(student.id);
-                    }
-                } catch (e) {
-                    console.error(e);
-                }
-            }
-        };
-        init();
-    }, [studentEmail]);
+        if (student) {
+            loadReportData(student.id);
+        }
+    }, [student]);
 
     const loadReportData = async (sId) => {
         try {
-            const [resultsRes, attendanceRes, assignmentsRes, coursesRes] = await Promise.all([
+            const [resultsRes, attendanceRes, coursesRes] = await Promise.all([
                 resultApi.getAll({ studentId: sId }),
                 attendanceApi.getByStudent(sId),
-                assignmentApi.getAll(),
-                courseApi.getAll()
+                courseApi.getAll({ class: student.class })
             ]);
 
-            const allResults = resultsRes.data || [];
-            const allAttendance = attendanceRes.data || [];
-            const allCourses = coursesRes.data || [];
+            const allResults = resultsRes.data?.data || [];
+            const allAttendance = attendanceRes.data?.data || [];
+            const allCourses = coursesRes.data?.data || [];
 
             const academicData = allResults.map(result => {
                 const course = allCourses.find(c => c.id === result.courseId);

@@ -22,16 +22,12 @@ const assignmentSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
-    maxMarks: {
-        type: Number,
-        required: true
-    },
+    // maxMarks: {
+    //     type: Number,
+    //     required: true
+    // },
     createdAt: {
         type: Date,
-        required: true
-    },
-    createdBy: {
-        type: String,
         required: true
     }
 });

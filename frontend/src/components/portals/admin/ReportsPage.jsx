@@ -37,7 +37,7 @@ const ReportsPage = ({ darkMode }) => {
     ];
 
     const loadReportData = useCallback(async () => {
-        setLoading(true);
+        setLoading(false);
         try {
 
             const [

@@ -36,11 +36,11 @@ const submissionSchema = new mongoose.Schema({
     },
     marks: {
         type: Number,
-        required: true
+        required: false
     },
     feedback: {
         type: String,
-        required: true
+        required: false
     }
 });
 

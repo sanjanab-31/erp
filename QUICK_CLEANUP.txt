@@ -1,0 +1,35 @@
+═══════════════════════════════════════════════════════════════
+  ERP SYSTEM - QUICK DATA CLEANUP GUIDE
+═══════════════════════════════════════════════════════════════
+
+🗄️  CLEAR DATABASE (All Mock Data)
+───────────────────────────────────────────────────────────────
+1. Open terminal in backend folder
+2. Run: npm run clear-db
+3. Confirm when prompted
+
+🌐  CLEAR LOCAL STORAGE (Browser Data)
+───────────────────────────────────────────────────────────────
+Option A - Using Cleanup Page:
+   1. Start frontend: npm run dev
+   2. Visit: http://localhost:5173/clear-storage.html
+   3. Click "Clear All Data"
+
+Option B - Using Browser Console:
+   1. Press F12
+   2. Go to Console tab
+   3. Type: localStorage.clear(); sessionStorage.clear();
+   4. Press Enter
+   5. Reload page
+
+🔄  COMPLETE RESET (Both Database + Storage)
+───────────────────────────────────────────────────────────────
+1. cd backend && npm run clear-db
+2. Visit http://localhost:5173/clear-storage.html
+3. Click "Clear All Data"
+4. Restart servers
+5. Hard refresh browser (Ctrl+Shift+R)
+
+═══════════════════════════════════════════════════════════════
+✅ Done! Your system is now clean and ready for fresh data.
+═══════════════════════════════════════════════════════════════

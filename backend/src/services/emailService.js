@@ -16,7 +16,11 @@ try {
 
 const sendSMS = async (phone, message) => {
     if (!twilioClient) {
-        console.log(`[SMS MOCK] (Twilio not configured) Sending to ${phone}: ${message}`);
+        console.log(`----------------------------------------------------------------`);
+        console.log(`📱 [SMS MOCK] To: ${phone}`);
+        console.log(`📝 Message: ${message}`);
+        console.log(`⚠️  Status: SKIPPED (Twilio credentials missing in .env)`);
+        console.log(`----------------------------------------------------------------`);
         return false;
     }
 
@@ -26,9 +30,10 @@ const sendSMS = async (phone, message) => {
             from: process.env.TWILIO_PHONE_NUMBER,
             to: phone
         });
+        console.log(`✅ [SMS SENT] To: ${phone} | Message: ${message.substring(0, 20)}...`);
         return true;
     } catch (error) {
-        console.error(`Twilio SMS Failed to ${phone}:`, error.message);
+        console.error(`❌ [SMS FAILED] To: ${phone} | Error: ${error.message}`);
         return false;
     }
 };

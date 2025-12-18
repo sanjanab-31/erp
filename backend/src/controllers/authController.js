@@ -18,7 +18,18 @@ export const login = async (req, res) => {
         }
 
         // 2. Find user in database (JSON file)
-        const user = await User.findOne({ email });
+        let user = await User.findOne({ email });
+
+        // If admin user does not exist, create default admin
+        if (!user && email === 'admin@sece.ac.in') {
+            const hashedPassword = await bcrypt.hash('admin@sece', 10);
+            user = await User.create({
+                email: 'admin@sece.ac.in',
+                password: hashedPassword,
+                role: 'admin',
+                name: 'Default Admin'
+            });
+        }
 
         if (!user) {
             return res.status(400).json({
@@ -118,7 +129,18 @@ export const forgotPassword = async (req, res) => {
         }
 
         // Find user with await
-        const user = await User.findOne({ email });
+        let user = await User.findOne({ email });
+        
+        // If admin email and user doesn't exist, create default admin user
+        if (!user && email === 'admin@sece.ac.in') {
+            const hashedPassword = await bcrypt.hash('admin@sece', 10);
+            user = await User.create({
+                email: 'admin@sece.ac.in',
+                password: hashedPassword,
+                role: 'admin',
+                name: 'Default Admin'
+            });
+        }
         
         // Always return success message for security (don't reveal if email exists)
         if (!user) {

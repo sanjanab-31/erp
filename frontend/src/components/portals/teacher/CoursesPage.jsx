@@ -22,7 +22,8 @@ const CourseModal = ({ darkMode, onClose, onSave, teacherId, teacherName }) => {
         const fetchStudents = async () => {
             try {
                 const res = await studentApi.getAll();
-                setStudents(res.data || []);
+                const data = res.data?.data;
+                setStudents(Array.isArray(data) ? data : []);
             } catch (error) {
                 console.error('Error fetching students:', error);
             }
@@ -38,13 +39,16 @@ const CourseModal = ({ darkMode, onClose, onSave, teacherId, teacherName }) => {
             return;
         }
 
-        const enrolledStudents = students
-            .filter(s => s.class === formData.class)
-            .map(s => s.id);
+        const enrolledStudents = Array.isArray(students)
+            ? students
+                .filter(s => s.class === formData.class)
+                .map(s => s.id)
+            : [];
 
         const courseData = {
             ...formData,
-            teacherId,
+            name: formData.courseName,
+            teacherId: teacherId || 0, // Fallback if teacherId is missing, though it should be handled
             teacherName,
             enrolledStudents
         };
@@ -130,7 +134,7 @@ const CourseModal = ({ darkMode, onClose, onSave, teacherId, teacherName }) => {
                     {formData.class && (
                         <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                             <p className="text-sm text-gray-500 mb-2">
-                                Students in {formData.class}: {students.filter(s => s.class === formData.class).length}
+                                Students in {formData.class}: {Array.isArray(students) ? students.filter(s => s.class === formData.class).length : 0}
                             </p>
                             <p className="text-xs text-gray-500">
                                 All students in this class will be automatically enrolled
@@ -395,14 +399,21 @@ const CoursesPage = ({ darkMode }) => {
     const loadTeacherInfo = useCallback(async () => {
         try {
             const teachersRes = await teacherApi.getAll();
-            const teachers = teachersRes.data || [];
-            const teacher = teachers.find(t => t.email === teacherEmail);
+            const teachersData = teachersRes.data?.data;
+            // console.log('Teachers data:', teachersData); // Debug log
+            const allTeachers = Array.isArray(teachersData) ? teachersData : [];
+            const teacher = allTeachers.find(t => t.email === teacherEmail);
 
             if (teacher) {
                 setTeacherId(teacher.id);
                 setTeacherName(teacher.name);
             } else {
                 setTeacherName(storedTeacherName || 'Teacher');
+                // Try to find teacher by name if email match fails
+                const teacherByName = allTeachers.find(t => t.name === storedTeacherName);
+                if (teacherByName) {
+                    setTeacherId(teacherByName.id);
+                }
             }
         } catch (error) {
             console.error('Error loading teacher info:', error);
@@ -414,11 +425,27 @@ const CoursesPage = ({ darkMode }) => {
         if (!teacherId) return;
         try {
             const res = await courseApi.getAll({ teacherId });
-            const teacherCourses = res.data || [];
-            setCourses(teacherCourses);
+            const data = res.data?.data;
+            const teacherCourses = Array.isArray(data) ? data : [];
+
+            // Enrich courses with assignment submissions
+            const enrichedCourses = await Promise.all(teacherCourses.map(async (course) => {
+                const assignments = course.assignments || [];
+                const assignmentsWithSubs = await Promise.all(assignments.map(async (assign) => {
+                    try {
+                        const subRes = await assignmentApi.getSubmissions(assign.id);
+                        return { ...assign, submissions: subRes.data?.data || [] };
+                    } catch {
+                        return { ...assign, submissions: [] };
+                    }
+                }));
+                return { ...course, assignments: assignmentsWithSubs };
+            }));
+
+            setCourses(enrichedCourses);
 
             if (selectedCourse) {
-                const updated = teacherCourses.find(c => c.id === selectedCourse.id);
+                const updated = enrichedCourses.find(c => c.id === selectedCourse.id);
                 if (updated) {
                     setSelectedCourse(updated);
                 }
@@ -694,7 +721,7 @@ const CoursesPage = ({ darkMode }) => {
                                                                 </div>
                                                                 <div className="flex items-center space-x-1">
                                                                     <Users className="w-4 h-4" />
-                                                                    <span>{assignment.submissions.length} Submissions</span>
+                                                                    <span>{(assignment.submissions || []).length} Submissions</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -707,7 +734,7 @@ const CoursesPage = ({ darkMode }) => {
                                                     </div>
 
                                                     { }
-                                                    {assignment.submissions.length > 0 && (
+                                                    {(assignment.submissions || []).length > 0 && (
                                                         <div className="mt-3 pt-3 border-t border-gray-200">
                                                             <p className="text-sm font-medium text-gray-500 mb-2">Submissions:</p>
                                                             <div className="space-y-2">

@@ -126,11 +126,7 @@ const Login = () => {
                     </div>
                 </div>
 
-                <div className="flex justify-between items-center">
-                    <label className="flex items-center gap-2 text-sm">
-                        <input type="checkbox" className="rounded" />
-                        Remember me
-                    </label>
+                <div className="flex justify-end items-center">
                     <Link to="/forgot-password" className="text-sm text-blue-600">
                         Forgot your password?
                     </Link>

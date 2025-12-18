@@ -114,17 +114,31 @@ const AnnouncementsPage = ({ darkMode }) => {
                     showSuccess('Announcement deleted successfully!');
                 } else if (modalType === 'add') {
 
-                    const res = await announcementApi.create(formData);
+                    // Map frontend form data to backend schema
+                    const payload = {
+                        title: formData.title,
+                        content: formData.description, // Backend expects 'content'
+                        authorId: 1, // Hardcoded for now, should be from auth
+                        authorName: localStorage.getItem('userName') || 'Admin',
+                        authorRole: 'Admin',
+                        recipients: formData.targetAudience === 'All' ? 'all' : formData.targetAudience.toLowerCase(),
+                        category: 'General',
+                        priority: 'medium',
+                        classes: formData.classes, // Extra field, might be ignored or handled by controller
+                        attachment: formData.attachment,
+                        publishDate: formData.publishDate
+                    };
+
+                    const res = await announcementApi.create(payload);
 
                     try {
-                        let announcementData = res.data || formData;
+                        // Use formData for notification source of truth
                         await announcementApi.sendNotification({
-
-                            title: announcementData.title,
-                            description: announcementData.description,
-                            attachment: announcementData.attachment,
-                            targetAudience: announcementData.targetAudience,
-                            classes: announcementData.classes
+                            title: formData.title,
+                            description: formData.description,
+                            attachment: formData.attachment,
+                            targetAudience: formData.targetAudience, // Correctly pass 'Students', 'Teachers' etc. from form
+                            classes: formData.classes
                         });
 
                     } catch (notifyErr) {

@@ -2,7 +2,11 @@ import Fee from '../models/feeModel.js';
 
 export const getAllFees = async (req, res) => {
     try {
-        const fees = await Fee.find().sort({ createdAt: -1 });
+        const { studentId } = req.query;
+        const filter = {};
+        if (studentId) filter.studentId = studentId;
+
+        const fees = await Fee.find(filter).sort({ createdAt: -1 });
         res.json({ success: true, data: fees });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

@@ -30,8 +30,8 @@ const ExamsAndGradesPage = ({ darkMode }) => {
             try {
 
                 const statsResponse = await examApi.getStats();
-                if (statsResponse.data) {
-                    setExamData(statsResponse.data);
+                if (statsResponse.data?.data) {
+                    setExamData(statsResponse.data.data);
                 } else {
 
                     setExamData({

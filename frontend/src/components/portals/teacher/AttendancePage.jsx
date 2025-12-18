@@ -46,7 +46,8 @@ const AttendancePage = ({ darkMode }) => {
             if (userEmail) {
                 try {
                     const teachersRes = await teacherApi.getAll();
-                    const teachers = teachersRes.data || [];
+                    const teachersData = teachersRes.data?.data;
+                    const teachers = Array.isArray(teachersData) ? teachersData : [];
                     const teacher = teachers.find(t => t.email === userEmail);
                     if (teacher) {
                         setCurrentUser(teacher);
@@ -73,7 +74,8 @@ const AttendancePage = ({ darkMode }) => {
     const loadStudents = async () => {
         try {
             const res = await studentApi.getAll();
-            setAllStudents(res.data || []);
+            const data = res.data?.data;
+            setAllStudents(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Error loading students:', error);
         }
@@ -82,7 +84,8 @@ const AttendancePage = ({ darkMode }) => {
     const loadStudentAttendance = async () => {
         try {
             const res = await attendanceApi.getAll();
-            const records = res.data || [];
+            const recordsData = res.data?.data;
+            const records = Array.isArray(recordsData) ? recordsData : [];
             setAllAttendance(records);
 
             const todayRecords = records.filter(r => r.date === selectedDate);
@@ -99,7 +102,8 @@ const AttendancePage = ({ darkMode }) => {
     const loadMyAttendance = async (teacherId) => {
         try {
             const res = await attendanceApi.getAll();
-            const allRecords = res.data || [];
+            const allRecordsData = res.data?.data;
+            const allRecords = Array.isArray(allRecordsData) ? allRecordsData : [];
             const myRecords = allRecords.filter(r => r.teacherId === teacherId);
             myRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
             setMyAttendanceHistory(myRecords);

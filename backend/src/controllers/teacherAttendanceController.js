@@ -7,7 +7,6 @@ import mongoose from 'mongoose';
 const teacherAttendanceSchema = new mongoose.Schema({
     id: { type: Number, required: true }, // Using numeric ID to match other models
     teacherId: { type: Number, required: true },
-    teacherName: { type: String, required: true },
     date: { type: String, required: true }, // YYYY-MM-DD
     status: { type: String, enum: ['Present', 'Absent', 'Leave', 'Late'], default: 'Present' },
     markedAt: { type: Date, default: Date.now }
