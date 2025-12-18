@@ -10,6 +10,6 @@ router.post('/logout', logout);
 router.post('/forgot-password', forgotPassword);
 
 router.get('/verify', authenticateToken, verifyToken);
-router.post('/change-password', authenticateToken, changePassword);
+router.post('/change-password', authenticateToken, forgotPassword);
 
 export default router;

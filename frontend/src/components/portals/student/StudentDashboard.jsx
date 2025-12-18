@@ -92,7 +92,7 @@ const StudentPortal = () => {
             try {
 
                 const studentsRes = await studentApi.getAll();
-                const student = (studentsRes.data || []).find(s => s.email === userEmail);
+                const student = (studentsRes.data?.data || []).find(s => s.email === userEmail);
 
                 if (!student) {
                     console.log('Student not found for email:', userEmail);

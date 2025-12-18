@@ -23,10 +23,14 @@ const PublicRoute = ({ children }) => {
   return authenticated ? <Navigate to={`/dashboard/${userRole.toLowerCase()}`} replace /> : children;
 };
 
-const DashboardRouter = () => {
-  const userRole = localStorage.getItem('userRole') || 'student';
+import { useParams } from 'react-router-dom';
 
-  switch (userRole.toLowerCase()) {
+const DashboardRouter = () => {
+  const { role } = useParams();
+  const storedRole = localStorage.getItem('userRole') || 'student';
+  const userRole = (role || storedRole).toLowerCase();
+
+  switch (userRole) {
     case 'student':
       return <StudentDashboard />;
     case 'teacher':

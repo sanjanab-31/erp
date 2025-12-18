@@ -8,7 +8,7 @@ const Signup = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [role, setRole] = useState('Student');
+    const [role, setRole] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -32,7 +32,7 @@ const Signup = () => {
 
             const response = await authApi.register({ name, email, password, role });
 
-            const { token, user } = response.data;
+            const { token, user } = response.data.data;
             localStorage.setItem('token', token);
             localStorage.setItem('isAuthenticated', 'true');
             localStorage.setItem('userRole', user.role);
@@ -125,10 +125,10 @@ const Signup = () => {
                             onChange={(e) => setRole(e.target.value)}
                             className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 cursor-pointer"
                         >
-                            <option value="Student">Student</option>
-                            <option value="Teacher">Teacher</option>
-                            <option value="Admin">Admin</option>
-                            <option value="Parent">Parent</option>
+                            <option value="student">Student</option>
+                            <option value="teacher">Teacher</option>
+                            <option value="admin">Admin</option>
+                            <option value="parent">Parent</option>
                         </select>
                     </div>
                 </div>

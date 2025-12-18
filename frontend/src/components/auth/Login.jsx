@@ -32,9 +32,9 @@ const Login = () => {
 
         try {
             const { authApi } = await import('../../services/api');
-            const response = await authApi.login({ email, password, role: activeRole });
+            const response = await authApi.login({ email, password, role: activeRole.toLowerCase() });
 
-            const { token, user } = response.data;
+            const { token, user } = response.data.data;
 
             localStorage.setItem('token', token);
             localStorage.setItem('isAuthenticated', 'true');

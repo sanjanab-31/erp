@@ -18,5 +18,8 @@
         "frontend",
         "backend",
         "payment-server"
-    ]
+    ],
+    "dependencies": {
+        "@mongodb-js/saslprep": "^1.4.4"
+    }
 }

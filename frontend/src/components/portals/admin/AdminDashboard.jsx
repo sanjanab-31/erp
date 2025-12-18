@@ -198,8 +198,9 @@ const AdminDashboard = () => {
     useEffect(() => {
         const fetchAnnouncements = async () => {
             try {
+                // Fetch announcements correctly
                 const response = await announcementApi.getAll();
-                const announcements = response.data || [];
+                const announcements = response.data?.data || [];
 
                 setRecentAnnouncements(announcements.slice(0, 3));
             } catch (error) {

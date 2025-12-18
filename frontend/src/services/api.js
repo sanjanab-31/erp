@@ -43,7 +43,7 @@ export const authApi = {
 export const settingsApi = {
     get: (role) => api.get(`/settings/${role}`),
     update: (role, section, data) => api.put(`/settings/${role}/${section}`, data),
-    changePassword: (data) => api.post('/auth/change-password', data),
+    forgotPassword: (data) => api.post('/auth/change-password', data),
 };
 
 export const studentApi = {
@@ -65,12 +65,12 @@ export const teacherApi = {
 };
 
 export const announcementApi = {
-    getAll: (params) => api.get('/announcements', { params }),
-    create: (data) => api.post('/announcements', data),
-    update: (id, data) => api.put(`/announcements/${id}`, data),
-    delete: (id) => api.delete(`/announcements/${id}`),
-    archive: (id) => api.put(`/announcements/${id}/archive`),
-    sendNotification: (data) => api.post('/email/send-announcement', data),
+    getAll: (params) => api.get('/communication/announcements', { params }),
+    create: (data) => api.post('/communication/announcements', data),
+    update: (id, data) => api.put(`/communication/announcements/${id}`, data),
+    delete: (id) => api.delete(`/communication/announcements/${id}`),
+    archive: (id) => api.put(`/communication/announcements/${id}/archive`),
+    sendNotification: (data) => api.post('/communication/email/send-announcement', data),
 };
 
 export const emailApi = {

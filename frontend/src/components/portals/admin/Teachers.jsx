@@ -217,8 +217,8 @@ const Teachers = ({ darkMode }) => {
     const loadTeachers = useCallback(async () => {
         try {
             const response = await teacherApi.getAll();
-            const data = response.data || [];
-            setTeachers(data);
+            const data = response.data?.data || [];
+            setTeachers(Array.isArray(data) ? data : []);
 
             try {
                 const statsResponse = await teacherApi.getStats();
@@ -275,12 +275,24 @@ const Teachers = ({ darkMode }) => {
                 }
             }
 
-            await teacherApi.create(formData);
+            // Build payload with required fields
+            const teacherPayload = {
+                ...formData,
+                id: Date.now(),
+                password: 'password123',
+                role: 'teacher',
+                createdAt: new Date().toISOString(),
+                createdBy: localStorage.getItem('userEmail') || 'admin@example.com',
+                active: true
+            };
 
+            await teacherApi.create(teacherPayload);
+
+            // Send credentials email using the generated password
             try {
                 await emailApi.sendTeacherCredentials({
                     email: formData.email,
-                    password: 'password',
+                    password: teacherPayload.password,
                     name: formData.name
                 });
                 showSuccess('📧 Credentials emailed successfully to Faculty!');
@@ -288,6 +300,7 @@ const Teachers = ({ darkMode }) => {
                 console.warn('Email sending failed:', emailError);
             }
 
+            // UI cleanup
             setShowAddModal(false);
             resetForm();
             loadTeachers();

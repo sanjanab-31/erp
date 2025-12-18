@@ -200,7 +200,7 @@ export const updateSettingsSection = (portal, section, data) => {
     }
 };
 
-export const changePassword = (portal, currentPassword, newPassword) => {
+export const forgotPassword = (portal, currentPassword, newPassword) => {
     try {
 
         const currentSettings = getSettings(portal);
@@ -259,7 +259,7 @@ export default {
     getSettings,
     updateSettings,
     updateSettingsSection,
-    changePassword,
+    forgotPassword,
     resetSettings,
     subscribeToSettingsUpdates
 };

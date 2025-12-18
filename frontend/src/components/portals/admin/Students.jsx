@@ -267,7 +267,25 @@ const Students = ({ darkMode }) => {
                 }
             }
 
-            await studentApi.create(formData);
+            // Ensure required fields for backend and map to schema
+            const payload = {
+                ...formData,
+                // map frontend field names to backend schema
+                rollNumber: formData.rollNo,
+                // role is fixed for students
+                role: 'student',
+                // createdBy could be the admin email from localStorage or a placeholder
+                createdBy: localStorage.getItem('userEmail') || 'admin@example.com',
+                active: true,
+                createdAt: new Date().toISOString(),
+                // generate a numeric id if needed
+                id: Date.now(),
+                // ensure password is set
+                password: 'password123',
+                // remove the unused rollNo field
+                // (spread already includes it, but we overwrite with correct name)
+            };
+            await studentApi.create(payload);
 
             try {
                 await emailApi.sendStudentCredentials({
@@ -276,7 +294,7 @@ const Students = ({ darkMode }) => {
                     name: formData.name,
                     parentEmail: formData.parentEmail
                 });
-                showSuccess('📧 Credentials emailed successfully!');
+                showSuccess('Credentials emailed successfully!');
             } catch (emailError) {
                 console.warn('Email sending failed:', emailError);
             }

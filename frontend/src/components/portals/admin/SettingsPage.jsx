@@ -325,7 +325,7 @@ const SettingsPage = ({ darkMode }) => {
                                         return;
                                     }
                                     try {
-                                        await settingsApi.changePassword({
+                                        await settingsApi.forgotPassword({
                                             role: 'admin',
                                             currentPassword: securitySettings.currentPassword,
                                             newPassword: securitySettings.newPassword
