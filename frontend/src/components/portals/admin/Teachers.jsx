@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, Plus, MoreVertical, Mail, Phone, Edit, Trash2, X, Save, UserPlus, BookOpen, Calendar, Award } from 'lucide-react';
+import { Search, Filter, Plus, MoreVertical, Mail, Phone, Edit, Trash2, X, Save, UserPlus, BookOpen, Calendar, Award, GraduationCap, UserCheck, Clock, UserX } from 'lucide-react';
 import { teacherApi, emailApi } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 
@@ -20,7 +20,7 @@ const TeacherFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
                     <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                         {isEdit ? 'Edit Teacher Details' : 'Add New Teacher'}
                     </h2>
-                    <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
                         <X className="w-5 h-5 text-gray-500" />
                     </button>
                 </div>
@@ -389,23 +389,35 @@ const Teachers = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            { }
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <p className="text-sm text-gray-500">Total Teachers</p>
-                    <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.total}</p>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Teachers</h3>
+                        <GraduationCap className="w-5 h-5 text-purple-500 group-hover:scale-110 transition-transform" />
+                    </div>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>{stats.total}</p>
                 </div>
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <p className="text-sm text-gray-500">Active</p>
-                    <p className="text-2xl font-bold text-green-600">{stats.active}</p>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Active</h3>
+                        <UserCheck className="w-5 h-5 text-green-500 group-hover:scale-110 transition-transform" />
+                    </div>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>{stats.active}</p>
                 </div>
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <p className="text-sm text-gray-500">On Leave</p>
-                    <p className="text-2xl font-bold text-yellow-600">{stats.onLeave}</p>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>On Leave</h3>
+                        <Clock className="w-5 h-5 text-yellow-500 group-hover:scale-110 transition-transform" />
+                    </div>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>{stats.onLeave}</p>
                 </div>
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <p className="text-sm text-gray-500">Inactive</p>
-                    <p className="text-2xl font-bold text-red-600">{stats.inactive}</p>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Inactive</h3>
+                        <UserX className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform" />
+                    </div>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>{stats.inactive}</p>
                 </div>
             </div>
 
@@ -416,22 +428,22 @@ const Teachers = ({ darkMode }) => {
                 </h2>
                 <div className="flex items-center gap-4 w-full sm:w-auto">
                     <div className="relative flex-1 sm:flex-none">
-                        <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                         <input
                             type="text"
                             placeholder="Search teachers..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className={`pl-10 pr-4 py-2 w-full sm:w-64 rounded-lg border ${darkMode
+                            className={`pl-9 pr-4 py-2 w-full md:w-64 rounded-lg border text-sm ${darkMode
                                 ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                                : 'bg-white border-gray-300 text-gray-900'
+                                : 'bg-gray-50 border-gray-300 text-gray-900'
                                 } focus:outline-none`}
                         />
                     </div>
                     <select
                         value={filterDepartment}
                         onChange={(e) => setFilterDepartment(e.target.value)}
-                        className={`px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
+                        className={`px-4 py-2 rounded-lg border text-sm md:w-40 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-300'} focus:outline-none`}
                     >
                         {departments.map(dept => (
                             <option key={dept} value={dept}>{dept}</option>
@@ -440,7 +452,7 @@ const Teachers = ({ darkMode }) => {
                     <select
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
-                        className={`px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
+                        className={`px-4 py-2 rounded-lg border text-sm md:w-32 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-300'} focus:outline-none`}
                     >
                         {statuses.map(status => (
                             <option key={status} value={status}>{status}</option>
@@ -451,9 +463,9 @@ const Teachers = ({ darkMode }) => {
                             resetForm();
                             setShowAddModal(true);
                         }}
-                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap"
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 hover:shadow-lg transition-all duration-200 whitespace-nowrap group"
                     >
-                        <Plus className="w-5 h-5" />
+                        <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
                         <span className="hidden sm:inline">Add Teacher</span>
                     </button>
                 </div>

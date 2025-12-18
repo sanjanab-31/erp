@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, Plus, MoreVertical, Mail, Phone, Edit, Trash2, X, Save, UserPlus } from 'lucide-react';
+import { Search, Filter, Plus, MoreVertical, Mail, Phone, Edit, Trash2, X, Save, UserPlus, Users, UserCheck, AlertTriangle, UserX } from 'lucide-react';
 import { studentApi, emailApi } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 
@@ -19,7 +19,7 @@ const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
                     <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                         {isEdit ? 'Edit Student Details' : 'Add New Student'}
                     </h2>
-                    <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
                         <X className="w-5 h-5 text-gray-500" />
                     </button>
                 </div>
@@ -204,7 +204,12 @@ const Students = ({ darkMode }) => {
         try {
             const response = await studentApi.getAll();
             const data = response.data?.data || [];
-            setStudents(Array.isArray(data) ? data : []);
+            // Map backend fields to frontend format
+            const mappedData = (Array.isArray(data) ? data : []).map(student => ({
+                ...student,
+                rollNo: student.rollNumber || student.rollNo || ''
+            }));
+            setStudents(mappedData);
 
             try {
                 const statsRes = await studentApi.getStats();
@@ -340,7 +345,13 @@ const Students = ({ darkMode }) => {
                 }
             }
 
-            await studentApi.update(selectedStudent.id, formData);
+            // Map frontend fields to backend schema
+            const payload = {
+                ...formData,
+                rollNumber: formData.rollNo,
+            };
+
+            await studentApi.update(selectedStudent.id, payload);
             setShowEditModal(false);
             setSelectedStudent(null);
             resetForm();
@@ -366,14 +377,22 @@ const Students = ({ darkMode }) => {
     }, [selectedStudent, showSuccess, showError, loadStudents]);
 
     const openEditModal = useCallback((student) => {
+        console.log('Opening edit modal for student:', student); // Debug log
         setSelectedStudent(student);
+        
+        // Clean up auto-generated parent name if it matches the pattern "Parent of {name}"
+        let parentName = student.parent || '';
+        if (parentName && student.name && parentName === `Parent of ${student.name}`) {
+            parentName = ''; // Clear it so user can enter actual name
+        }
+        
         setFormData({
             name: student.name || '',
-            rollNo: student.rollNo || '',
+            rollNo: student.rollNumber || student.rollNo || '',
             class: student.class || '',
             email: student.email || '',
             phone: student.phone || '',
-            parent: student.parent || '',
+            parent: parentName,
             parentEmail: student.parentEmail || '',
             parentPhone: student.parentPhone || '',
             address: student.address || '',
@@ -405,23 +424,35 @@ const Students = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            { }
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <p className="text-sm text-gray-500">Total Students</p>
-                    <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.total}</p>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Students</h3>
+                        <Users className="w-5 h-5 text-purple-500 group-hover:scale-110 transition-transform" />
+                    </div>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>{stats.total}</p>
                 </div>
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <p className="text-sm text-gray-500">Active</p>
-                    <p className="text-2xl font-bold text-green-600">{stats.active}</p>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Active</h3>
+                        <UserCheck className="w-5 h-5 text-green-500 group-hover:scale-110 transition-transform" />
+                    </div>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>{stats.active}</p>
                 </div>
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <p className="text-sm text-gray-500">Warning</p>
-                    <p className="text-2xl font-bold text-yellow-600">{stats.warning}</p>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Warning</h3>
+                        <AlertTriangle className="w-5 h-5 text-yellow-500 group-hover:scale-110 transition-transform" />
+                    </div>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>{stats.warning}</p>
                 </div>
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <p className="text-sm text-gray-500">Inactive</p>
-                    <p className="text-2xl font-bold text-red-600">{stats.inactive}</p>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Inactive</h3>
+                        <UserX className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform" />
+                    </div>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>{stats.inactive}</p>
                 </div>
             </div>
 
@@ -456,7 +487,7 @@ const Students = ({ darkMode }) => {
                     <select
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
-                        className={`px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
+                        className={`px-3 py-2 text-sm rounded-lg border md:w-32 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-300'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
                     >
                         {statuses.map(status => (
                             <option key={status} value={status}>{status}</option>
@@ -467,10 +498,10 @@ const Students = ({ darkMode }) => {
                             resetForm();
                             setShowAddModal(true);
                         }}
-                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap"
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 hover:shadow-lg transition-all duration-200 whitespace-nowrap group"
                     >
-                        <Plus className="w-5 h-5" />
-                        <span className="hidden sm:inline">Add Student</span>
+                        <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        <span>Add Student</span>
                     </button>
                 </div>
             </div>
@@ -522,36 +553,53 @@ const Students = ({ darkMode }) => {
                                             <p className="text-sm text-gray-500">Class {student.class}</p>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{student.parent}</p>
-                                            <div className="flex gap-2 mt-1">
-                                                {student.parentEmail && (
-                                                    <a
-                                                        href={`mailto:${student.parentEmail}`}
-                                                        className="text-gray-400 hover:text-blue-500 transition-colors"
-                                                        title={`Email: ${student.parentEmail}`}
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            navigator.clipboard.writeText(student.parentEmail);
-                                                            showSuccess(`Email copied: ${student.parentEmail}`);
-                                                        }}
-                                                    >
-                                                        <Mail className="w-4 h-4" />
-                                                    </a>
+                                            <div className="space-y-1">
+                                                {student.parent && !student.parent.startsWith('Parent of ') && (
+                                                    <p className={`font-medium text-sm ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>{student.parent}</p>
                                                 )}
-                                                {student.parentPhone && (
-                                                    <a
-                                                        href={`tel:${student.parentPhone}`}
-                                                        className="text-gray-400 hover:text-green-500 transition-colors"
-                                                        title={`Phone: ${student.parentPhone}`}
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            navigator.clipboard.writeText(student.parentPhone);
-                                                            showSuccess(`Phone copied: ${student.parentPhone}`);
-                                                        }}
-                                                    >
-                                                        <Phone className="w-4 h-4" />
-                                                    </a>
-                                                )}
+                                                <div className="flex gap-2">
+                                                    {student.parentEmail ? (
+                                                        <div className="relative group">
+                                                            <button
+                                                                className="p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    navigator.clipboard.writeText(student.parentEmail);
+                                                                    showSuccess(`Email copied: ${student.parentEmail}`);
+                                                                }}
+                                                            >
+                                                                <Mail className="w-4 h-4" />
+                                                            </button>
+                                                            <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-10 w-max max-w-xs">
+                                                                <div className={`px-3 py-2 text-xs rounded-lg shadow-lg ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-900 text-white'}`}>
+                                                                    {student.parentEmail}
+                                                                    <div className="text-[10px] text-gray-400 mt-0.5">Click to copy</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ) : null}
+                                                    {(student.parentPhone || student.phone) ? (
+                                                        <div className="relative group">
+                                                            <button
+                                                                className="p-2 rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    const phoneNum = student.parentPhone || student.phone;
+                                                                    navigator.clipboard.writeText(phoneNum);
+                                                                    showSuccess(`Phone copied: ${phoneNum}`);
+                                                                }}
+                                                            >
+                                                                <Phone className="w-4 h-4" />
+                                                            </button>
+                                                            <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-10 w-max max-w-xs">
+                                                                <div className={`px-3 py-2 text-xs rounded-lg shadow-lg ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-900 text-white'}`}>
+                                                                    {student.parentPhone || student.phone}
+                                                                    <div className="text-[10px] text-gray-400 mt-0.5">Click to copy</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ) : null}
+                                                </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">

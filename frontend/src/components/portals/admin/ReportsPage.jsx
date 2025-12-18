@@ -93,55 +93,55 @@ const ReportsPage = ({ darkMode }) => {
                 return (
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-purple-50'} rounded-lg p-6`}>
+                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-purple-50'} rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-sm text-gray-500">Total Students</span>
-                                    <Users className="w-5 h-5 text-purple-500" />
+                                    <Users className="w-5 h-5 text-purple-500 group-hover:scale-110 transition-transform" />
                                 </div>
                                 <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                     {overviewData.totalStudents}
                                 </p>
                             </div>
-                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-blue-50'} rounded-lg p-6`}>
+                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-blue-50'} rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-sm text-gray-500">Total Teachers</span>
-                                    <Users className="w-5 h-5 text-blue-500" />
+                                    <Users className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform" />
                                 </div>
                                 <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                     {overviewData.totalTeachers}
                                 </p>
                             </div>
-                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-green-50'} rounded-lg p-6`}>
+                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-green-50'} rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-sm text-gray-500">Active Classes</span>
-                                    <BookOpen className="w-5 h-5 text-green-500" />
+                                    <BookOpen className="w-5 h-5 text-green-500 group-hover:scale-110 transition-transform" />
                                 </div>
                                 <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                     {overviewData.activeClasses}
                                 </p>
                             </div>
-                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-yellow-50'} rounded-lg p-6`}>
+                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-yellow-50'} rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-sm text-gray-500">Avg. Attendance</span>
-                                    <TrendingUp className="w-5 h-5 text-yellow-500" />
+                                    <TrendingUp className="w-5 h-5 text-yellow-500 group-hover:scale-110 transition-transform" />
                                 </div>
                                 <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                     {overviewData.averageAttendance}%
                                 </p>
                             </div>
-                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-green-50'} rounded-lg p-6`}>
+                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-green-50'} rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-sm text-gray-500">Total Revenue</span>
-                                    <IndianRupee className="w-5 h-5 text-green-500" />
+                                    <IndianRupee className="w-5 h-5 text-green-500 group-hover:scale-110 transition-transform" />
                                 </div>
                                 <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                     ₹{overviewData.totalRevenue.toLocaleString()}
                                 </p>
                             </div>
-                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-red-50'} rounded-lg p-6`}>
+                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-red-50'} rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-sm text-gray-500">Pending Fees</span>
-                                    <Clock className="w-5 h-5 text-red-500" />
+                                    <Clock className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform" />
                                 </div>
                                 <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                     ₹{overviewData.pendingFees.toLocaleString()}

@@ -57,45 +57,51 @@ const TimetableTableView = ({ schedule, darkMode }) => {
     }
 
     return (
-        <div className="overflow-x-auto">
-            <table className={`w-full border-collapse ${darkMode ? 'border-gray-600' : 'border-gray-300'}`}>
+        <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+            <table className={`w-full border-collapse`}>
                 <thead>
-                    <tr>
-                        <th className={`border ${darkMode ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-300 bg-gray-100 text-gray-700'} p-3 text-left font-semibold sticky left-0 z-10 w-32`}>
-                            Time
+                    <tr className={darkMode ? 'bg-gray-800' : 'bg-gradient-to-r from-purple-50 to-blue-50'}>
+                        <th className={`border-r ${darkMode ? 'border-gray-700 bg-gray-800 text-gray-300' : 'border-gray-200 bg-white text-gray-700'} p-4 text-left font-semibold sticky left-0 z-10 w-36 shadow-sm`}>
+                            <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-purple-500" />
+                                <span>Time</span>
+                            </div>
                         </th>
                         {days.map(day => (
-                            <th key={day} className={`border ${darkMode ? 'border-gray-600 text-gray-300' : 'border-gray-300 text-gray-700'} p-3 text-center font-semibold ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                            <th key={day} className={`border-r last:border-r-0 ${darkMode ? 'border-gray-700 text-gray-200' : 'border-gray-200 text-gray-800'} p-4 text-center font-semibold text-sm min-w-[140px]`}>
                                 {day}
                             </th>
                         ))}
                     </tr>
                 </thead>
                 <tbody>
-                    {timeSlots.map(slot => (
-                        <tr key={slot.value}>
-                            <td className={`border ${darkMode ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-300 bg-gray-50 text-gray-700'} p-3 font-medium whitespace-nowrap sticky left-0 z-10`}>
-                                {slot.label}
+                    {timeSlots.map((slot, idx) => (
+                        <tr key={slot.value} className={idx % 2 === 0 ? (darkMode ? 'bg-gray-800/50' : 'bg-gray-50/50') : ''}>
+                            <td className={`border-r border-t ${darkMode ? 'border-gray-700 bg-gray-800 text-gray-300' : 'border-gray-200 bg-white text-gray-700'} p-4 font-medium whitespace-nowrap sticky left-0 z-10 shadow-sm`}>
+                                <div className="flex items-center gap-2">
+                                    <div className={`w-1 h-8 rounded ${idx % 2 === 0 ? 'bg-purple-500' : 'bg-blue-500'}`}></div>
+                                    <span className="text-sm">{slot.label}</span>
+                                </div>
                             </td>
                             {days.map(day => {
                                 const entry = scheduleMap[`${day}-${slot.value}`];
                                 return (
-                                    <td key={day} className={`border ${darkMode ? 'border-gray-600' : 'border-gray-300'} p-2 h-24 align-top`}>
+                                    <td key={day} className={`border-r border-t last:border-r-0 ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-3 h-28 align-top`}>
                                         {entry ? (
-                                            <div className={`p-2 rounded-lg border h-full ${getSubjectColor(entry.subject)}`}>
-                                                <h4 className="font-semibold text-sm mb-1 line-clamp-2">
+                                            <div className={`p-3 rounded-xl border-l-4 h-full shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group ${getSubjectColor(entry.subject)}`}>
+                                                <h4 className="font-bold text-sm mb-2 line-clamp-2 group-hover:scale-105 transition-transform">
                                                     {entry.subject}
                                                 </h4>
                                                 {entry.room && (
-                                                    <div className="flex items-center space-x-1 text-xs opacity-80">
-                                                        <MapPin className="w-3 h-3" />
+                                                    <div className="flex items-center space-x-1.5 text-xs font-medium opacity-75">
+                                                        <MapPin className="w-3.5 h-3.5" />
                                                         <span>{entry.room}</span>
                                                     </div>
                                                 )}
                                             </div>
                                         ) : (
                                             <div className="h-full flex items-center justify-center">
-                                                <span className={`text-xs ${darkMode ? 'text-gray-600' : 'text-gray-300'}`}>-</span>
+                                                <span className={`text-xs font-medium ${darkMode ? 'text-gray-700' : 'text-gray-300'}`}>—</span>
                                             </div>
                                         )}
                                     </td>
@@ -365,9 +371,9 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
                         </button>
                         <button
                             type="submit"
-                            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2"
+                            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 hover:shadow-lg transition-all duration-200 flex items-center space-x-2 group"
                         >
-                            <Save className="w-5 h-5" />
+                            <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
                             <span>Save Timetable</span>
                         </button>
                     </div>
@@ -494,41 +500,41 @@ const TimetablePage = ({ darkMode }) => {
 
             { }
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Teacher Timetables</h3>
-                        <GraduationCap className="w-5 h-5 text-purple-500" />
+                        <GraduationCap className="w-5 h-5 text-purple-500 group-hover:scale-110 transition-transform" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.totalTeachers}</p>
                 </div>
 
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Class Timetables</h3>
-                        <Users className="w-5 h-5 text-green-500" />
+                        <Users className="w-5 h-5 text-green-500 group-hover:scale-110 transition-transform" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.totalClasses}</p>
                 </div>
             </div>
 
             { }
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                    <div className={`inline-flex rounded-lg border ${darkMode ? 'border-gray-600' : 'border-gray-300'} p-1`}>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto items-start">
+                    <div className={`inline-flex rounded-lg border ${darkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-100'} p-1`}>
                         <button
                             onClick={() => { setActiveView('teacher'); setSearchTerm(''); }}
-                            className={`px-4 py-2 rounded-lg transition-colors ${activeView === 'teacher'
-                                ? 'bg-purple-600 text-white'
-                                : darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
+                            className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeView === 'teacher'
+                                ? 'bg-purple-600 text-white shadow-sm'
+                                : darkMode ? 'text-gray-300 hover:bg-gray-600' : 'text-gray-700 hover:bg-gray-50'
                                 }`}
                         >
                             Teacher
                         </button>
                         <button
                             onClick={() => { setActiveView('student'); setSearchTerm(''); }}
-                            className={`px-4 py-2 rounded-lg transition-colors ${activeView === 'student'
-                                ? 'bg-purple-600 text-white'
-                                : darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
+                            className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeView === 'student'
+                                ? 'bg-purple-600 text-white shadow-sm'
+                                : darkMode ? 'text-gray-300 hover:bg-gray-600' : 'text-gray-700 hover:bg-gray-50'
                                 }`}
                         >
                             Class
@@ -536,23 +542,23 @@ const TimetablePage = ({ darkMode }) => {
                     </div>
 
                     { }
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <div className="relative md:w-80">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
                             placeholder={`Search ${activeView === 'teacher' ? 'teachers' : 'classes'}...`}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className={`pl-10 pr-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-purple-500 w-full sm:w-64`}
+                            className={`w-full pl-9 pr-3 py-2 rounded-lg border text-sm ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
                         />
                     </div>
                 </div>
 
                 <button
                     onClick={handleCreate}
-                    className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 w-full md:w-auto justify-center"
+                    className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 hover:shadow-lg transition-all duration-200 w-full md:w-auto justify-center group"
                 >
-                    <Plus className="w-5 h-5" />
+                    <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
                     <span>Create Timetable</span>
                 </button>
             </div>
