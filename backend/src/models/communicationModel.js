@@ -30,6 +30,7 @@ const announcementSchema = new mongoose.Schema({
     authorRole: { type: String, required: true },
     priority: { type: String, default: 'medium' },
     category: { type: String, default: 'General' },
+    attachment: String,
     timestamp: { type: Date, default: Date.now },
     read: [{ type: Number }]
 });

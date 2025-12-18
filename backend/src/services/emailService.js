@@ -182,3 +182,48 @@ export const sendAnnouncementSMS = async (phone, title) => {
     const message = `ERP Alert: ${title.substring(0, 30)}${title.length > 30 ? '...' : ''}. Check portal for details.`;
     return sendSMS(phone, message);
 };
+
+export const sendPasswordResetEmail = async (userEmail, userName, resetToken) => {
+    try {
+        const fromAddress = `"Sri Eshwar College Of Engineering" <${process.env.SMTP_EMAIL}>`;
+        const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+
+        await transporter.sendMail({
+            from: fromAddress,
+            to: userEmail,
+            subject: 'Password Reset Request - Sri Eshwar College Of Engineering',
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                    <h2 style="color: #6d28d9;">Password Reset Request</h2>
+                    <p>Hello ${userName || 'User'},</p>
+                    <p>We received a request to reset your password. Click the button below to reset it:</p>
+                    
+                    <div style="margin: 30px 0; text-align: center;">
+                        <a href="${resetLink}" 
+                           style="background-color: #6d28d9; color: white; padding: 12px 30px; 
+                                  text-decoration: none; border-radius: 5px; display: inline-block;">
+                            Reset Password
+                        </a>
+                    </div>
+
+                    <p>Or copy and paste this link into your browser:</p>
+                    <p style="background: #f3f4f6; padding: 10px; border-radius: 5px; word-break: break-all;">
+                        ${resetLink}
+                    </p>
+
+                    <p style="color: #ef4444; margin-top: 20px;">
+                        <strong>⚠️ This link will expire in 1 hour.</strong>
+                    </p>
+
+                    <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                        If you didn't request a password reset, please ignore this email or contact support if you have concerns.
+                    </p>
+                </div>
+            `
+        });
+        return true;
+    } catch (error) {
+        console.error('Email Service Error (Password Reset):', error.message);
+        return false;
+    }
+};

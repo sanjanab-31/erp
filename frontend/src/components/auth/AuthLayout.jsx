@@ -12,10 +12,10 @@ const AuthLayout = ({ children, title, subtitle }) => {
                         <img src="https://res.cloudinary.com/dfflvhcbx/image/upload/v1764820736/download-removebg-preview_i5gn9t.png" alt="" /> 
                     </div>
                     <h1 className="text-4xl font-bold text-white mt-8 mb-4 tracking-tight leading-tight text-center">
-                        Sri Eshwar <br /> Course Management
+                        Sri Eshwar <br /> Entrprise Resource Planning
                     </h1>
                     <p className="text-blue-100 text-lg max-w-md leading-relaxed text-center">
-                        Your gateway to seamless learning and academic excellence.
+                        Your gateway to seamless learning and academic excellence
                     </p>
                 </div>
 

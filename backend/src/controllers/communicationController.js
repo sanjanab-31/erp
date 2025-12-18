@@ -132,13 +132,22 @@ export const getAnnouncements = async (req, res) => {
 
 export const createAnnouncement = async (req, res) => {
     try {
+        const { title, description, targetAudience, classes, attachment } = req.body;
+
         const newAnnouncement = await Announcement.create({
             id: Date.now(),
-            ...req.body,
+            title,
+            content: description,
+            authorId: req.user?.userId || req.user?.id || 1, // Fallback
+            authorName: req.user?.name || req.body.createdByName || 'Admin',
+            authorRole: req.user?.role || 'admin',
+            recipients: { audience: targetAudience, classes: classes || [] },
+            attachment,
             timestamp: new Date()
         });
         res.status(201).json({ success: true, data: newAnnouncement });
     } catch (error) {
+        console.error('Announcement Create Error:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
@@ -146,7 +155,16 @@ export const createAnnouncement = async (req, res) => {
 export const updateAnnouncement = async (req, res) => {
     try {
         const { id } = req.params;
-        const updatedAnnouncement = await Announcement.findOneAndUpdate({ id }, req.body, { new: true });
+        const { title, description, targetAudience, classes, attachment, status } = req.body;
+
+        const updateData = {};
+        if (title) updateData.title = title;
+        if (description) updateData.content = description;
+        if (targetAudience) updateData.recipients = { audience: targetAudience, classes: classes || [] };
+        if (attachment) updateData.attachment = attachment;
+        if (status) updateData.status = status;
+
+        const updatedAnnouncement = await Announcement.findOneAndUpdate({ id }, updateData, { new: true });
         res.json({ success: true, data: updatedAnnouncement });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

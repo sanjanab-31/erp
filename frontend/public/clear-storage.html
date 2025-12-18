@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Local Storage - ERP System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .info-box {
+            background: #f3f4f6;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 25px;
+            text-align: left;
+            border-radius: 4px;
+        }
+
+        .info-box h3 {
+            color: #667eea;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .info-box ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .info-box li {
+            color: #555;
+            padding: 5px 0;
+            font-size: 14px;
+        }
+
+        .info-box li::before {
+            content: "✓ ";
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background: #6b7280;
+        }
+
+        button.secondary:hover {
+            box-shadow: 0 10px 20px rgba(107, 114, 128, 0.4);
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+            display: block;
+        }
+
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+            display: block;
+        }
+
+        .storage-info {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            color: #92400e;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+
+        .icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🗑️</div>
+        <h1>Clear Local Storage</h1>
+        <p class="subtitle">ERP System - Data Cleanup Tool</p>
+
+        <div class="info-box">
+            <h3>This will clear:</h3>
+            <ul>
+                <li>Authentication tokens</li>
+                <li>User session data</li>
+                <li>Cached user information</li>
+                <li>All stored preferences</li>
+            </ul>
+        </div>
+
+        <div id="storageInfo" class="storage-info">
+            <strong>Current Storage:</strong> <span id="itemCount">0</span> items stored
+        </div>
+
+        <button onclick="clearStorage()">Clear All Data</button>
+        <button class="secondary" onclick="viewStorage()">View Storage</button>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        function updateStorageInfo() {
+            const itemCount = localStorage.length;
+            document.getElementById('itemCount').textContent = itemCount;
+        }
+
+        function clearStorage() {
+            const itemCount = localStorage.length;
+            
+            if (itemCount === 0) {
+                showStatus('Storage is already empty!', 'info');
+                return;
+            }
+
+            if (confirm(`Are you sure you want to clear ${itemCount} items from local storage?`)) {
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                showStatus(`✅ Successfully cleared ${itemCount} items from storage!`, 'success');
+                updateStorageInfo();
+                
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+            }
+        }
+
+        function viewStorage() {
+            const items = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                items.push(key);
+            }
+            
+            if (items.length === 0) {
+                alert('Local storage is empty!');
+            } else {
+                alert('Stored items:\n\n' + items.join('\n'));
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        // Update storage info on load
+        updateStorageInfo();
+    </script>
+</body>
+</html>
