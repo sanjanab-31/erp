@@ -26,22 +26,44 @@ export const markAttendance = async (req, res) => {
         const attendanceData = req.body;
 
         if (Array.isArray(attendanceData)) {
-            // Bulk insert
-            const records = attendanceData.map(record => ({
-                id: Date.now() + Math.random(),
-                ...record,
-                markedAt: new Date()
+            // Bulk upsert
+            const operations = attendanceData.map(record => ({
+                updateOne: {
+                    filter: { studentId: record.studentId, date: record.date },
+                    update: {
+                        $set: {
+                            status: record.status,
+                            markedAt: new Date(),
+                            ...record
+                        },
+                        $setOnInsert: { id: Date.now() + Math.random() }
+                    },
+                    upsert: true
+                }
             }));
-            const result = await Attendance.insertMany(records);
+            const result = await Attendance.bulkWrite(operations);
             return res.status(201).json({ success: true, data: result });
         }
 
-        // Single insert
-        const newRecord = await Attendance.create({
-            id: Date.now(),
-            ...attendanceData,
-            markedAt: new Date()
-        });
+        // Single upsert
+        const { studentId, date } = attendanceData;
+
+        // Ensure studentId and date are present for the filter
+        if (!studentId || !date) {
+            return res.status(400).json({ success: false, message: 'studentId and date are required' });
+        }
+
+        const newRecord = await Attendance.findOneAndUpdate(
+            { studentId, date },
+            {
+                $set: {
+                    ...attendanceData,
+                    markedAt: new Date()
+                },
+                $setOnInsert: { id: Date.now() }
+            },
+            { upsert: true, new: true }
+        );
         res.status(201).json({ success: true, data: newRecord });
 
     } catch (error) {
@@ -59,9 +81,17 @@ export const deleteAttendance = async (req, res) => {
     }
 };
 
+
 export const getAttendanceStats = async (req, res) => {
     try {
+        const { date } = req.query;
+        let matchStage = {};
+        if (date) {
+            matchStage.date = date;
+        }
+
         const stats = await Attendance.aggregate([
+            { $match: matchStage },
             {
                 $group: {
                     _id: "$status",
@@ -70,11 +100,16 @@ export const getAttendanceStats = async (req, res) => {
             }
         ]);
 
-        // Transform into a friendlier format { Present: 10, Absent: 2, ... }
+        const initialStats = { present: 0, absent: 0, late: 0, total: 0 };
+
         const formattedStats = stats.reduce((acc, curr) => {
-            acc[curr._id] = curr.count;
+            const key = curr._id.toLowerCase();
+            if (acc.hasOwnProperty(key)) {
+                acc[key] = curr.count;
+            }
+            acc.total += curr.count;
             return acc;
-        }, {});
+        }, initialStats);
 
         res.json({ success: true, data: formattedStats });
     } catch (error) {

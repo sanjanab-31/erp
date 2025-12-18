@@ -7,7 +7,7 @@ import Submission from '../models/submissionmodel.js';
 
 export const getExamSchedules = async (req, res) => {
     try {
-        const schedules = await ExamSchedule.find();
+        const schedules = await ExamSchedule.find().sort({ createdAt: -1 });
         res.json({ success: true, data: schedules });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -27,10 +27,31 @@ export const createExamSchedule = async (req, res) => {
     }
 };
 
+export const updateExamSchedule = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+        const schedule = await ExamSchedule.findOneAndUpdate({ id: Number(id) }, updates, { new: true });
+
+        if (!schedule) {
+            return res.status(404).json({ success: false, message: 'Exam Schedule not found' });
+        }
+
+        res.json({ success: true, data: schedule });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 export const deleteExamSchedule = async (req, res) => {
     try {
         const { id } = req.params;
-        await ExamSchedule.findOneAndDelete({ id });
+        const deleted = await ExamSchedule.findOneAndDelete({ id: Number(id) });
+
+        if (!deleted) {
+            return res.status(404).json({ success: false, message: 'Exam Schedule not found' });
+        }
+
         res.json({ success: true, message: 'Exam Schedule deleted' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

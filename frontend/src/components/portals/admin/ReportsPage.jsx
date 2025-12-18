@@ -12,7 +12,7 @@ import {
     IndianRupee,
     Loader
 } from 'lucide-react';
-import { studentApi, teacherApi, attendanceApi, feeApi, examApi } from '../../../services/api';
+import { studentApi, teacherApi, attendanceApi, feeApi, examApi, reportsApi } from '../../../services/api';
 
 const ReportsPage = ({ darkMode }) => {
     const [selectedReportType, setSelectedReportType] = useState('overview');
@@ -37,123 +37,37 @@ const ReportsPage = ({ darkMode }) => {
     ];
 
     const loadReportData = useCallback(async () => {
-        setLoading(false);
+        setLoading(true);
         try {
+            const params = { classFilter: selectedClass };
+            let response;
 
-            const [
-                studentsRes,
-                teachersRes,
-                feesRes,
-                feeStatsRes,
-                attendanceStatsRes,
-
-            ] = await Promise.all([
-                studentApi.getAll(),
-                teacherApi.getAll(),
-                feeApi.getAll(),
-                feeApi.getStats(),
-                attendanceApi.getStats()
-            ]);
-
-            const allStudents = studentsRes.data?.data || [];
-            const allTeachers = teachersRes.data?.data || [];
-            const allFees = feesRes.data?.data || [];
-            const feeStats = feeStatsRes.data?.data || {};
-            const attendanceStats = attendanceStatsRes.data?.data || {};
-
-            const filteredStudents = selectedClass === 'All Classes'
-                ? allStudents
-                : allStudents.filter(s => s.class === selectedClass);
-
-            const pendingFeesList = allFees.filter(f => f.status !== 'Paid');
-
-            const overviewData = {
-                totalStudents: allStudents.length,
-                totalTeachers: allTeachers.length,
-                averageAttendance: attendanceStats.averageAttendance || 0,
-                totalRevenue: feeStats.totalCollected || 0,
-                pendingFees: feeStats.totalPending || 0,
-                activeClasses: classes.length - 1,
-                detailedStudents: allStudents,
-                detailedTeachers: allTeachers,
-                detailedPendingFees: pendingFeesList
-            };
-
-            const attendanceStudents = filteredStudents.map(student => {
-
-                const percentage = student.attendancePercentage || 85;
-                const present = Math.floor(180 * (percentage / 100));
-                const absent = 180 - present;
-
-                return {
-                    name: student.name,
-                    class: student.class,
-                    attendance: percentage,
-                    present,
-                    absent
-                };
-            }).sort((a, b) => b.attendance - a.attendance);
-
-            const avgAttendance = attendanceStats.averageAttendance ||
-                (attendanceStudents.length > 0
-                    ? Math.round(attendanceStudents.reduce((sum, s) => sum + s.attendance, 0) / attendanceStudents.length)
-                    : 0);
-
-            const academicStudents = filteredStudents.map((student, index) => {
-
-                const marks = student.averageMarks || Math.floor(Math.random() * (100 - 60) + 60);
-                const grade = marks >= 90 ? 'A+' : marks >= 80 ? 'A' : marks >= 70 ? 'B+' : marks >= 60 ? 'B' : 'C';
-
-                return {
-                    name: student.name,
-                    class: student.class,
-                    grade,
-                    marks,
-                    rank: 0
-                };
-            }).sort((a, b) => b.marks - a.marks);
-
-            academicStudents.forEach((student, index) => {
-                student.rank = index + 1;
-            });
-
-            const avgGrade = academicStudents.length > 0 ? academicStudents[0].grade : 'N/A';
-            const passRate = academicStudents.length > 0
-                ? Math.round((academicStudents.filter(s => s.marks >= 40).length / academicStudents.length) * 100)
-                : 0;
-
-            const filteredFees = selectedClass === 'All Classes'
-                ? allFees
-                : allFees.filter(f => f.studentClass === selectedClass);
-
-            setReportData({
-                overview: overviewData,
-                attendance: {
-                    totalClasses: attendanceStats.totalClasses || 180,
-                    averageAttendance: avgAttendance,
-                    students: attendanceStudents
-                },
-                academic: {
-                    averageGrade: avgGrade,
-                    passRate,
-                    students: academicStudents
-                },
-                financial: {
-                    totalRevenue: feeStats.totalCollected || 0,
-                    pendingAmount: feeStats.totalPending || 0,
-                    collectionRate: feeStats.totalCollected > 0
-                        ? Math.round((feeStats.totalCollected / (feeStats.totalCollected + feeStats.totalPending)) * 100)
-                        : 0,
-                    detailedFees: filteredFees
-                }
-            });
-
+            switch (selectedReportType) {
+                case 'overview':
+                    response = await reportsApi.getOverview(params);
+                    setReportData(prev => ({ ...prev, overview: response.data.data }));
+                    break;
+                case 'attendance':
+                    response = await reportsApi.getAttendance(params);
+                    setReportData(prev => ({ ...prev, attendance: response.data.data }));
+                    break;
+                case 'academic':
+                    response = await reportsApi.getAcademic(params);
+                    setReportData(prev => ({ ...prev, academic: response.data.data }));
+                    break;
+                case 'financial':
+                    response = await reportsApi.getFinancial(params);
+                    setReportData(prev => ({ ...prev, financial: response.data.data }));
+                    break;
+                default:
+                    break;
+            }
         } catch (error) {
             console.error("Failed to load report data", error);
         } finally {
             setLoading(false);
         }
-    }, [selectedClass, classes.length]);
+    }, [selectedClass, selectedReportType]);
 
     useEffect(() => {
         loadReportData();

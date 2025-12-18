@@ -35,7 +35,7 @@ export const getAllStudents = async (req, res) => {
 export const getStudentStats = async (req, res) => {
     try {
         const total = await Student.countDocuments();
-        const active = await Student.countDocuments({ status: 'Active' });
+        const active = await Student.countDocuments({ $or: [{ status: 'Active' }, { status: { $exists: false } }] });
         const inactive = await Student.countDocuments({ status: 'Inactive' });
 
         // Mock warning metric or calculate based on attendance/grades if those models were fully linked

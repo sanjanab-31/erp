@@ -6,10 +6,6 @@ const examScheduleSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
-    courseId: {
-        type: Number,
-        required: true
-    },
     courseName: {
         type: String,
         required: true
@@ -35,14 +31,6 @@ const examScheduleSchema = new mongoose.Schema({
         required: true
     },
     venue: {
-        type: String,
-        required: true
-    },
-    instructions: {
-        type: String,
-        required: true
-    },
-    createdBy: {
         type: String,
         required: true
     },

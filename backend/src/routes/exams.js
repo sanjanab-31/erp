@@ -3,6 +3,7 @@ import {
     getExamSchedules,
     createExamSchedule,
     deleteExamSchedule,
+    updateExamSchedule, // Import the new controller
     getExamMarksByStudent,
     enterExamMarks,
     getStudentFinalMarks,
@@ -27,7 +28,9 @@ router.delete('/:id', deleteExamSchedule); // Alias /schedules/:id DELETE to /:i
 router.delete('/schedules/:id', deleteExamSchedule);
 
 // Stub for update if needed by api.js update
-router.put('/:id', (req, res) => res.json({ success: true, message: "Update not implemented yet" }));
+router.delete('/schedules/:id', deleteExamSchedule);
+
+router.put('/:id', updateExamSchedule);
 
 // Marks Routes
 router.get('/stats', getExamStats);

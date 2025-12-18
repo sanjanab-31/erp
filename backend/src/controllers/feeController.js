@@ -43,9 +43,31 @@ export const updateFee = async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
-        const fee = await Fee.findOneAndUpdate({ id }, updates, { new: true });
 
-        if (!fee) return res.status(404).json({ success: false, message: 'Fee not found' });
+        const existingFee = await Fee.findOne({ id: Number(id) });
+        if (!existingFee) {
+            return res.status(404).json({ success: false, message: 'Fee not found' });
+        }
+
+        // If amount is changing, we need to recalculate remainingAmount and status
+        if (updates.amount !== undefined) {
+            const newAmount = Number(updates.amount);
+            const currentPaid = existingFee.paidAmount || 0;
+            const newRemaining = newAmount - currentPaid;
+
+            updates.remainingAmount = newRemaining;
+
+            if (newRemaining <= 0) {
+                updates.status = 'Paid';
+            } else if (currentPaid > 0) {
+                updates.status = 'Partial';
+            } else {
+                updates.status = 'Pending';
+            }
+        }
+
+
+        const fee = await Fee.findOneAndUpdate({ id: Number(id) }, updates, { new: true });
 
         res.json({ success: true, data: fee });
     } catch (error) {
@@ -58,7 +80,7 @@ export const makePayment = async (req, res) => {
         const { id } = req.params;
         const { amount, paymentMethod, transactionId, paidBy } = req.body;
 
-        const fee = await Fee.findOne({ id });
+        const fee = await Fee.findOne({ id: Number(id) });
         if (!fee) return res.status(404).json({ success: false, message: 'Fee not found' });
 
         const newPaidAmount = fee.paidAmount + Number(amount);
@@ -126,7 +148,12 @@ export const getFeeStats = async (req, res) => {
 export const deleteFee = async (req, res) => {
     try {
         const { id } = req.params;
-        await Fee.findOneAndDelete({ id });
+        const deletedFee = await Fee.findOneAndDelete({ id: Number(id) });
+
+        if (!deletedFee) {
+            return res.status(404).json({ success: false, message: 'Fee not found' });
+        }
+
         res.json({ success: true, message: 'Fee deleted' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

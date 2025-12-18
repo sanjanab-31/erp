@@ -41,17 +41,24 @@ export const markTeacherAttendanceBulk = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Expected an array of attendance records' });
         }
 
-        const records = attendanceData.map(record => ({
-            id: Date.now() + Math.random(),
-            ...record,
-            markedAt: new Date()
+        const operations = attendanceData.map(record => ({
+            updateOne: {
+                filter: { teacherId: record.teacherId, date: record.date },
+                update: {
+                    $set: {
+                        status: record.status,
+                        markedAt: new Date(),
+                        name: record.name,
+                        teacherId: record.teacherId,
+                        date: record.date
+                    },
+                    $setOnInsert: { id: Date.now() + Math.random() }
+                },
+                upsert: true
+            }
         }));
 
-        // Option: Delete existing for that date first to avoid duplicates?
-        // keeping it simple for now, maybe client handles it.
-        // Or check if date matches.
-
-        const result = await TeacherAttendance.insertMany(records);
+        const result = await TeacherAttendance.bulkWrite(operations);
         res.status(201).json({ success: true, data: result });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -81,10 +88,22 @@ export const getTeacherAttendanceStats = async (req, res) => {
             }
         ]);
 
+        const initialStats = { present: 0, absent: 0, leave: 0, late: 0, total: 0 };
+
         const formattedStats = stats.reduce((acc, curr) => {
-            acc[curr._id] = curr.count;
+            const key = curr._id.toLowerCase();
+            // Map 'leave' to 'absent' effectively if frontend doesn't have a 'leave' card, 
+            // OR keep it if we want to show it. The Frontend has 'present', 'absent', 'late'.
+            // Actually the frontend expects 'present', 'absent', 'late'.
+            // 'Leave' might be considered Absent or we should just pass it.
+            // Let's coerce keys to lowercase.
+
+            if (acc.hasOwnProperty(key)) {
+                acc[key] = curr.count;
+            }
+            acc.total += curr.count;
             return acc;
-        }, { Present: 0, Absent: 0, Leave: 0, Late: 0 });
+        }, initialStats);
 
         res.json({ success: true, data: formattedStats });
     } catch (error) {
