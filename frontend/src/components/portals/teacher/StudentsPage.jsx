@@ -50,9 +50,13 @@ const StudentsPage = ({ darkMode }) => {
                 courseApi.getAll()
             ]);
 
-            const allStudents = allStudentsRes.data || [];
-            const allTeachers = allTeachersRes.data || [];
-            const allCourses = allCoursesRes.data || [];
+            const allStudentsData = allStudentsRes.data?.data;
+            const allTeachersData = allTeachersRes.data?.data;
+            const allCoursesData = allCoursesRes.data?.data;
+
+            const allStudents = Array.isArray(allStudentsData) ? allStudentsData : [];
+            const allTeachers = Array.isArray(allTeachersData) ? allTeachersData : [];
+            const allCourses = Array.isArray(allCoursesData) ? allCoursesData : [];
 
             const teacherObj = allTeachers.find(t => t.email === userEmail);
             let teacherId = userEmail;

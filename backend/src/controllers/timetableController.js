@@ -15,8 +15,15 @@ export const getTeacherTimetable = async (req, res) => {
 
 export const saveTeacherTimetable = async (req, res) => {
     try {
-        const { teacherId } = req.params;
         const { schedule, teacherName } = req.body;
+        const teacherId = req.params.teacherId || req.body.teacherId;
+
+        if (!teacherId || isNaN(Number(teacherId))) {
+            return res.status(400).json({ success: false, message: 'Invalid or missing teacherId' });
+        }
+
+        // Log for debugging
+        console.log('Saving Teacher Timetable:', { teacherId, teacherName, scheduleLength: schedule?.length });
 
         let timetable = await TeacherTimetable.findOne({ teacherId: Number(teacherId) });
 
@@ -35,6 +42,7 @@ export const saveTeacherTimetable = async (req, res) => {
 
         res.json({ success: true, data: timetable });
     } catch (error) {
+        console.error('Save Teacher Timetable Error:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
@@ -54,8 +62,12 @@ export const getClassTimetable = async (req, res) => {
 
 export const saveClassTimetable = async (req, res) => {
     try {
-        const { className } = req.params;
         const { schedule } = req.body;
+        const className = req.params.className || req.body.className;
+
+        if (!className) {
+            return res.status(400).json({ success: false, message: 'Invalid or missing className' });
+        }
 
         let timetable = await ClassTimetable.findOne({ className });
 
@@ -76,6 +88,7 @@ export const saveClassTimetable = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
 export const getAllTeacherTimetables = async (req, res) => {
     try {
         const timetables = await TeacherTimetable.find();

@@ -79,7 +79,9 @@ const SettingsPage = () => {
             if (studentEmail) {
                 try {
                     const studentRes = await studentApi.getAll();
-                    const student = (studentRes.data || []).find(s => s.email === studentEmail);
+                    const data = studentRes.data?.data;
+                    const studentList = Array.isArray(data) ? data : [];
+                    const student = studentList.find(s => s.email === studentEmail);
 
                     console.log('Loading settings for student:', student);
 

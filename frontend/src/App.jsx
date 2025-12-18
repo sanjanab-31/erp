@@ -6,6 +6,7 @@ import ForgotPassword from './components/auth/ForgotPassword';
 import StudentDashboard from './components/portals/student/StudentDashboard';
 import TeacherDashboard from './components/portals/teacher/TeacherDashboard';
 import AdminDashboard from './components/portals/admin/AdminDashboard';
+import AdminOverview from './components/portals/admin/AdminOverview';
 import ParentDashboard from './components/portals/parent/ParentDashboard';
 import { isAuthenticated, getUserRole } from './utils/jwt';
 import { ToastProvider } from './context/ToastContext';
@@ -23,6 +24,19 @@ import LibraryPage from './components/portals/student/LibraryPage';
 import SettingsPage from './components/portals/student/SettingsPage';
 import AnnouncementsPage from './components/portals/student/AnnouncementsPage';
 import ReportsPage from './components/portals/student/ReportsPage';
+
+// Admin Portal Pages
+import Students from './components/portals/admin/Students';
+import Teachers from './components/portals/admin/Teachers';
+import AdminExamSchedules from './components/portals/admin/AdminExamSchedules';
+import FeesAndFinancePage from './components/portals/admin/FeesAndFinancePage';
+import AdminAttendancePage from './components/portals/admin/AttendancePage';
+import AdminCoursesPage from './components/portals/admin/CoursesPage';
+import AdminTimetablePage from './components/portals/admin/TimetablePage';
+import AdminLibraryPage from './components/portals/admin/LibraryPage';
+import AdminAnnouncementsPage from './components/portals/admin/AnnouncementsPage';
+import AdminReportsPage from './components/portals/admin/ReportsPage';
+import AdminSettingsPage from './components/portals/admin/SettingsPage';
 
 const ProtectedRoute = ({ children }) => {
   const authenticated = isAuthenticated();
@@ -46,7 +60,7 @@ const DashboardRouter = () => {
     case 'teacher':
       return <TeacherDashboard />;
     case 'admin':
-      return <AdminDashboard />;
+      return <Navigate to="/admin/dashboard" replace />;
     case 'parent':
       return <ParentDashboard />;
     default:
@@ -106,7 +120,31 @@ function App() {
             <Route path="reports" element={<ReportsPage />} />
           </Route>
 
-          {/* Fallback/Legacy Wrapper for other roles */}
+          {/* Admin Routes */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AdminOverview />} />
+            <Route path="students" element={<Students />} />
+            <Route path="teachers" element={<Teachers />} />
+            <Route path="attendance" element={<AdminAttendancePage />} />
+            <Route path="courses" element={<AdminCoursesPage />} />
+            <Route path="fees" element={<FeesAndFinancePage />} />
+            <Route path="timetable" element={<AdminTimetablePage />} />
+            <Route path="exams" element={<AdminExamSchedules />} />
+            <Route path="library" element={<AdminLibraryPage />} />
+            <Route path="announcements" element={<AdminAnnouncementsPage />} />
+            <Route path="reports" element={<AdminReportsPage />} />
+            <Route path="settings" element={<AdminSettingsPage />} />
+          </Route>
+
+          {/* Fallback/Legacy Wrapper for other roles (Teacher, Parent, Student) */}
           <Route
             path="/dashboard/:role"
             element={

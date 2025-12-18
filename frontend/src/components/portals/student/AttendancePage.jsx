@@ -22,7 +22,8 @@ const AttendancePage = () => {
 
         try {
             const attendanceRes = await attendanceApi.getByStudent(student.id);
-            const studentRecords = attendanceRes.data?.data || [];
+            const data = attendanceRes.data?.data;
+            const studentRecords = Array.isArray(data) ? data : [];
             setAttendanceRecords(studentRecords);
         } catch (error) {
             console.error('Error loading attendance:', error);

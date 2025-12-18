@@ -153,7 +153,7 @@ const AttendancePage = ({ darkMode }) => {
                     markedBy: 'Admin'
                 }));
 
-            await teacherAttendanceApi.markBulk({ attendanceList });
+            await teacherAttendanceApi.markBulk(attendanceList);
 
             setSaveStatus('saved');
             showSuccess('Teacher attendance saved successfully!');
@@ -297,7 +297,7 @@ const AttendancePage = ({ darkMode }) => {
 
                                         return (
                                             <tr key={teacher.id} className={darkMode ? 'hover:bg-gray-750' : 'hover:bg-gray-50'}>
-                                                <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{teacher.employeeId}</td>
+                                                <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{teacher.id}</td>
                                                 <td className={`px-6 py-4 text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{teacher.name}</td>
                                                 <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{teacher.department || 'General'}</td>
                                                 <td className="px-6 py-4">

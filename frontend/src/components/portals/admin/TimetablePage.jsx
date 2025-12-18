@@ -49,7 +49,10 @@ const TimetableTableView = ({ schedule, darkMode }) => {
     const scheduleMap = {};
     if (schedule) {
         schedule.forEach(entry => {
-            scheduleMap[`${entry.day}-${entry.time}`] = entry;
+            const timeKey = entry.time || (entry.startTime && entry.endTime ? `${entry.startTime}-${entry.endTime}` : null);
+            if (timeKey) {
+                scheduleMap[`${entry.day}-${timeKey}`] = entry;
+            }
         });
     }
 
@@ -175,11 +178,14 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
 
         if (editingTimetable && editingTimetable.schedule) {
             editingTimetable.schedule.forEach(entry => {
-                const key = `${entry.day}-${entry.time}`;
-                grid[key] = {
-                    subject: entry.subject || '',
-                    room: entry.room || ''
-                };
+                const timeKey = entry.time || (entry.startTime && entry.endTime ? `${entry.startTime}-${entry.endTime}` : null);
+                if (timeKey) {
+                    const key = `${entry.day}-${timeKey}`;
+                    grid[key] = {
+                        subject: entry.subject || '',
+                        room: entry.room || ''
+                    };
+                }
             });
             setSelectedEntity(activeView === 'teacher' ? editingTimetable.teacherId?.toString() : editingTimetable.className);
         }
@@ -214,9 +220,12 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
                 const cell = timetableGrid[key];
 
                 if (cell.subject || cell.room) {
+                    const [startTime, endTime] = time.split('-');
                     schedule.push({
                         day,
                         time,
+                        startTime: startTime.trim(),
+                        endTime: endTime.trim(),
                         subject: cell.subject || '',
                         room: cell.room || ''
                     });
@@ -224,7 +233,7 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
             });
 
             if (activeView === 'teacher') {
-                const teacher = teachers.find(t => t.id.toString() === selectedEntity.toString());
+                const teacher = Array.isArray(teachers) ? teachers.find(t => t.id.toString() === selectedEntity.toString()) : null;
                 const teacherName = teacher?.name || 'Unknown';
 
                 await timetableApi.saveTeacherTimetable({
@@ -274,7 +283,7 @@ const TimetableModal = ({ darkMode, activeView, teachers, editingTimetable, onCl
                             disabled={!!editingTimetable}
                         >
                             <option value="">Select {activeView === 'teacher' ? 'Teacher' : 'Class'}</option>
-                            {activeView === 'teacher' ? (
+                            {activeView === 'teacher' && Array.isArray(teachers) ? (
                                 teachers.map(teacher => (
                                     <option key={teacher.id} value={teacher.id}>
                                         {teacher.name} - {teacher.subject}
@@ -383,7 +392,8 @@ const TimetablePage = ({ darkMode }) => {
     const loadTeachers = useCallback(async () => {
         try {
             const response = await teacherApi.getAll();
-            setTeachers(response.data?.data || []);
+            const data = response.data?.data;
+            setTeachers(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error(error);
         }

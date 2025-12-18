@@ -15,7 +15,18 @@ export const getAllCourses = async (req, res) => {
         }
 
         const courses = await Course.find(filter).sort({ createdAt: -1 });
-        res.json({ success: true, data: courses });
+
+        const coursesWithDetails = await Promise.all(courses.map(async (course) => {
+            const assignments = await Assignment.find({ courseId: course.id });
+            const materials = await Material.find({ courseId: course.id });
+            return {
+                ...course.toObject(),
+                assignments,
+                materials
+            };
+        }));
+
+        res.json({ success: true, data: coursesWithDetails });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

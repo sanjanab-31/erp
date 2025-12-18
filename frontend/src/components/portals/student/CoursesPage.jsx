@@ -86,6 +86,7 @@ const SubmissionModal = ({ darkMode, onClose, onSubmit, assignment, courseName }
 
 const CoursesPage = () => {
     const { darkMode, student } = useOutletContext();
+    const { showSuccess, showError, showWarning } = useToast();
     const [courses, setCourses] = useState([]);
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [showSubmissionModal, setShowSubmissionModal] = useState(false);
@@ -140,7 +141,7 @@ const CoursesPage = () => {
                 courseId: selectedCourse.id,
                 studentId: student.id,
                 studentName: student.name,
-                link: link,
+                driveLink: link,
                 status: 'submitted',
                 submittedAt: new Date().toISOString()
             });
@@ -153,7 +154,7 @@ const CoursesPage = () => {
             console.error(error);
             showError('Error submitting assignment: ' + (error.response?.data?.message || error.message));
         }
-    }, [selectedCourse, selectedAssignment, studentId, studentName, loadCourses]);
+    }, [selectedCourse, selectedAssignment, student, loadCourses]);
 
     const hasSubmitted = (assignment) => {
         if (!student) return false;

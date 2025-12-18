@@ -54,10 +54,15 @@ const ReportsPage = ({ darkMode }) => {
                 assignmentApi.getAll()
             ]);
 
-            const allStudents = studentsRes.data || [];
-            const allAttendance = attendanceRes.data || [];
-            const allResults = resultsRes.data || [];
-            const allAssignments = assignmentsRes.data || [];
+            const allStudentsData = studentsRes.data?.data;
+            const allAttendanceData = attendanceRes.data?.data;
+            const allResultsData = resultsRes.data?.data;
+            const allAssignmentsData = assignmentsRes.data?.data;
+
+            const allStudents = Array.isArray(allStudentsData) ? allStudentsData : [];
+            const allAttendance = Array.isArray(allAttendanceData) ? allAttendanceData : [];
+            const allResults = Array.isArray(allResultsData) ? allResultsData : [];
+            const allAssignments = Array.isArray(allAssignmentsData) ? allAssignmentsData : [];
 
             const filteredStudents = selectedClass === 'All Classes'
                 ? allStudents

@@ -10,10 +10,10 @@ const courseSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    code: {
-        type: String,
-        required: true
-    },
+    // code: {
+    //     type: String,
+    //     required: true
+    // },
     class: {
         type: String,
         required: true
@@ -34,13 +34,13 @@ const courseSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
-    createdBy: {
-        type: String,
-        required: true
-    },
     active: {
         type: Boolean,
         required: true
+    },
+    enrolledStudents: {
+        type: [Number],
+        default: []
     }
 });
 

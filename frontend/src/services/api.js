@@ -139,8 +139,8 @@ export const assignmentApi = {
     create: (data) => api.post('/assignments', data),
     update: (id, data) => api.put(`/assignments/${id}`, data),
     delete: (id) => api.delete(`/assignments/${id}`),
-    getSubmissions: (assignmentId) => api.get(`/assignments/${assignmentId}/submissions`),
-    gradeSubmission: (id, data) => api.post(`/submissions/${id}/grade`, data),
+    getSubmissions: (assignmentId) => api.get(`/submissions/assignment/${assignmentId}`),
+    gradeSubmission: (id, data) => api.put(`/submissions/${id}/grade`, data),
     createSubmission: (data) => api.post(`/submissions`, data)
 };
 

@@ -35,21 +35,21 @@ const TimetablePage = ({ darkMode }) => {
         setLoading(true);
         try {
             const teachersRes = await teacherApi.getAll();
-            const teachers = teachersRes.data || [];
+            const teachers = teachersRes.data?.data || [];
 
-            const currentTeacher = teachers.find(t =>
+            const currentTeacher = Array.isArray(teachers) ? teachers.find(t =>
                 t.email === teacherEmail || t.name === teacherName
-            );
+            ) : null;
 
             if (currentTeacher) {
                 const ttRes = await timetableApi.getTeacherTimetables();
-                const allTimetables = ttRes.data || [];
+                const allTimetables = ttRes.data?.data || [];
 
-                const teacherTT = allTimetables.find(tt =>
+                const teacherTT = Array.isArray(allTimetables) ? allTimetables.find(tt =>
                     tt.teacherId === currentTeacher.id.toString() ||
                     tt.teacherId === currentTeacher.id ||
                     tt.teacherName === currentTeacher.name
-                );
+                ) : null;
 
                 setTimetable(teacherTT);
             }
@@ -126,7 +126,7 @@ const TimetablePage = ({ darkMode }) => {
                 </div>
             ) : (
                 <>
-                    {}
+                    { }
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                             <div className="flex items-center justify-between mb-4">
@@ -185,7 +185,10 @@ const TimetablePage = ({ darkMode }) => {
                                             </td>
                                             {days.map(day => {
                                                 const daySchedule = scheduleByDay[day] || [];
-                                                const classAtTime = daySchedule.find(entry => entry.time === slot);
+                                                const classAtTime = daySchedule.find(entry =>
+                                                    entry.time === slot ||
+                                                    (entry.startTime && entry.endTime && `${entry.startTime}-${entry.endTime}` === slot)
+                                                );
 
                                                 return (
                                                     <td key={day} className={`border ${darkMode ? 'border-gray-600' : 'border-gray-300'} p-2`}>

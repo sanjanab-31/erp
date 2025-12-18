@@ -46,7 +46,8 @@ const ExamsAndGradesPage = ({ darkMode }) => {
     const loadCourses = async () => {
         try {
             const res = await courseApi.getAll();
-            const allCourses = res.data || [];
+            const data = res.data?.data;
+            const allCourses = Array.isArray(data) ? data : [];
             const teacherCourses = allCourses.filter(c => c.teacherId === teacherId || c.teacher === currentUser.name);
             setCourses(teacherCourses);
             if (teacherCourses.length > 0 && !selectedCourse) {
@@ -64,12 +65,14 @@ const ExamsAndGradesPage = ({ darkMode }) => {
 
         try {
             const studentRes = await studentApi.getAll();
-            const allStudents = studentRes.data || [];
+            const studentsData = studentRes.data?.data;
+            const allStudents = Array.isArray(studentsData) ? studentsData : [];
             const classStudents = allStudents.filter(s => s.class === course.class);
             setStudents(classStudents);
 
             const resultsRes = await resultApi.getAll({ courseId });
-            const allResults = resultsRes.data || [];
+            const allResultsData = resultsRes.data?.data;
+            const allResults = Array.isArray(allResultsData) ? allResultsData : [];
 
             const assignments = course.assignments || [];
             const marksMap = {};
@@ -78,7 +81,8 @@ const ExamsAndGradesPage = ({ darkMode }) => {
             for (const assign of assignments) {
                 try {
                     const subRes = await assignmentApi.getSubmissions(assign.id);
-                    submissionsMap[assign.id] = subRes.data || [];
+                    const subData = subRes.data?.data;
+                    submissionsMap[assign.id] = Array.isArray(subData) ? subData : [];
                 } catch (e) {
                     submissionsMap[assign.id] = [];
                 }
@@ -165,7 +169,8 @@ const ExamsAndGradesPage = ({ darkMode }) => {
             for (const assign of assignments) {
                 try {
                     const subRes = await assignmentApi.getSubmissions(assign.id);
-                    submissionsMap[assign.id] = subRes.data || [];
+                    const subData = subRes.data?.data;
+                    submissionsMap[assign.id] = Array.isArray(subData) ? subData : [];
                 } catch (e) {
                     submissionsMap[assign.id] = [];
                 }

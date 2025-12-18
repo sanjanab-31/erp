@@ -84,10 +84,15 @@ const TeacherDashboard = () => {
                     timetableApi.getTeacherTimetables()
                 ]);
 
-                const allStudents = studentsRes.data || [];
-                const allTeachers = teachersRes.data || [];
-                const allCourses = coursesRes.data || [];
-                const allTimetables = timetablesRes.data || [];
+                const allStudentsData = studentsRes.data?.data;
+                const allTeachersData = teachersRes.data?.data;
+                const allCoursesData = coursesRes.data?.data;
+                const allTimetablesData = timetablesRes.data?.data;
+
+                const allStudents = Array.isArray(allStudentsData) ? allStudentsData : [];
+                const allTeachers = Array.isArray(allTeachersData) ? allTeachersData : [];
+                const allCourses = Array.isArray(allCoursesData) ? allCoursesData : [];
+                const allTimetables = Array.isArray(allTimetablesData) ? allTimetablesData : [];
 
                 const teacherObj = allTeachers.find(t => t.email === userEmail);
                 let teacherId = userEmail;
