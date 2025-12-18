@@ -1,14 +1,11 @@
-// Centralized Teacher Data Store
-// This provides real-time data synchronization across Admin portal
+
 
 const STORAGE_KEY = 'erp_teachers_data';
 
-// Initialize with default data if empty
 const initializeDefaultData = () => {
     return [];
 };
 
-// Get all teachers
 export const getAllTeachers = () => {
     try {
         const data = localStorage.getItem(STORAGE_KEY);
@@ -24,20 +21,18 @@ export const getAllTeachers = () => {
     }
 };
 
-// Add a new teacher
 export const addTeacher = (teacher) => {
     try {
         const teachers = getAllTeachers();
         const newTeacher = {
             ...teacher,
-            id: Date.now(), // Generate unique ID
+            id: Date.now(), 
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
         teachers.push(newTeacher);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(teachers));
 
-        // Trigger storage event for real-time updates
         window.dispatchEvent(new Event('teachersUpdated'));
 
         return newTeacher;
@@ -47,7 +42,6 @@ export const addTeacher = (teacher) => {
     }
 };
 
-// Update a teacher
 export const updateTeacher = (id, updates) => {
     try {
         const teachers = getAllTeachers();
@@ -65,7 +59,6 @@ export const updateTeacher = (id, updates) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(teachers));
 
-        // Trigger storage event for real-time updates
         window.dispatchEvent(new Event('teachersUpdated'));
 
         return teachers[index];
@@ -75,7 +68,6 @@ export const updateTeacher = (id, updates) => {
     }
 };
 
-// Delete a teacher
 export const deleteTeacher = (id) => {
     try {
         const teachers = getAllTeachers();
@@ -87,7 +79,6 @@ export const deleteTeacher = (id) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredTeachers));
 
-        // Trigger storage event for real-time updates
         window.dispatchEvent(new Event('teachersUpdated'));
 
         return true;
@@ -97,7 +88,6 @@ export const deleteTeacher = (id) => {
     }
 };
 
-// Search teachers
 export const searchTeachers = (query) => {
     const teachers = getAllTeachers();
     const lowerQuery = query.toLowerCase();
@@ -110,7 +100,6 @@ export const searchTeachers = (query) => {
     );
 };
 
-// Filter teachers by department
 export const filterByDepartment = (department) => {
     const teachers = getAllTeachers();
     if (department === 'All Departments' || !department) {
@@ -119,7 +108,6 @@ export const filterByDepartment = (department) => {
     return teachers.filter(teacher => teacher.department === department);
 };
 
-// Filter teachers by status
 export const filterByStatus = (status) => {
     const teachers = getAllTeachers();
     if (status === 'All' || !status) {
@@ -128,13 +116,11 @@ export const filterByStatus = (status) => {
     return teachers.filter(teacher => teacher.status.toLowerCase() === status.toLowerCase());
 };
 
-// Get teacher by ID
 export const getTeacherById = (id) => {
     const teachers = getAllTeachers();
     return teachers.find(t => t.id === id);
 };
 
-// Get statistics
 export const getTeacherStats = () => {
     const teachers = getAllTeachers();
 
@@ -146,12 +132,10 @@ export const getTeacherStats = () => {
     };
 };
 
-// Subscribe to real-time updates
 export const subscribeToUpdates = (callback) => {
     const handler = () => callback(getAllTeachers());
     window.addEventListener('teachersUpdated', handler);
 
-    // Return unsubscribe function
     return () => window.removeEventListener('teachersUpdated', handler);
 };
 

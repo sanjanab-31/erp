@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, CheckCircle, XCircle, Clock, TrendingUp, AlertCircle, User } from 'lucide-react';
-import { getAllStudents } from '../../../utils/studentStore';
-import { getAllAttendance, subscribeToUpdates } from '../../../utils/attendanceStore';
+import { studentApi, attendanceApi } from '../../../services/api';
 
 const AttendancePage = ({ darkMode }) => {
     const [attendanceRecords, setAttendanceRecords] = useState([]);
@@ -16,41 +15,33 @@ const AttendancePage = ({ darkMode }) => {
 
     useEffect(() => {
         loadAttendance();
-        const unsubscribe = subscribeToUpdates(loadAttendance);
-        return unsubscribe;
-    }, []);
-
-    const loadAttendance = useCallback(() => {
-        setLoading(true);
-        console.log('Loading attendance for student email:', studentEmail);
-
-        // Find student by email
-        const students = getAllStudents();
-        const student = students.find(s => s.email === studentEmail);
-        console.log('Student found:', student);
-
-        if (student) {
-            setStudentName(student.name);
-            setStudentClass(student.class);
-            setStudentId(student.id);
-
-            // Get all attendance records
-            const allRecords = getAllAttendance();
-            console.log('All attendance records:', allRecords);
-
-            // Filter for this student
-            const studentRecords = allRecords.filter(record =>
-                record.studentId.toString() === student.id.toString()
-            );
-            console.log('Student attendance records:', studentRecords);
-
-            setAttendanceRecords(studentRecords);
-        }
-
-        setLoading(false);
     }, [studentEmail]);
 
-    // Calculate statistics
+    const loadAttendance = useCallback(async () => {
+        if (!studentEmail) return;
+        setLoading(true);
+
+        try {
+            const studentsRes = await studentApi.getAll();
+            const students = studentsRes.data || [];
+            const student = students.find(s => s.email === studentEmail);
+
+            if (student) {
+                setStudentName(student.name);
+                setStudentClass(student.class);
+                setStudentId(student.id);
+
+                const attendanceRes = await attendanceApi.getByStudent(student.id);
+                const studentRecords = attendanceRes.data || [];
+                setAttendanceRecords(studentRecords);
+            }
+        } catch (error) {
+            console.error('Error loading attendance:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [studentEmail]);
+
     const calculateStats = () => {
         let totalDays = attendanceRecords.length;
         let presentDays = attendanceRecords.filter(r => r.status === 'Present').length;
@@ -64,14 +55,12 @@ const AttendancePage = ({ darkMode }) => {
 
     const stats = calculateStats();
 
-    // Get attendance for calendar view
     const getAttendanceForDate = (date) => {
         const dateStr = date.toISOString().split('T')[0];
         const record = attendanceRecords.find(r => r.date === dateStr);
         return record ? record.status : null;
     };
 
-    // Generate calendar days
     const generateCalendarDays = () => {
         const firstDay = new Date(selectedYear, selectedMonth, 1);
         const lastDay = new Date(selectedYear, selectedMonth + 1, 0);
@@ -80,12 +69,10 @@ const AttendancePage = ({ darkMode }) => {
 
         const days = [];
 
-        // Add empty cells for days before month starts
         for (let i = 0; i < startingDayOfWeek; i++) {
             days.push(null);
         }
 
-        // Add days of month
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(selectedYear, selectedMonth, day);
             const status = getAttendanceForDate(date);
@@ -112,14 +99,14 @@ const AttendancePage = ({ darkMode }) => {
         }
     };
 
-    const getStatusIcon = (status) => {
+    const getStatusIcon = (status, className = "w-4 h-4") => {
         switch (status) {
             case 'Present':
-                return <CheckCircle className="w-4 h-4 text-white" />;
+                return <CheckCircle className={`${className} text-white`} />;
             case 'Absent':
-                return <XCircle className="w-4 h-4 text-white" />;
+                return <XCircle className={`${className} text-white`} />;
             case 'Late':
-                return <Clock className="w-4 h-4 text-white" />;
+                return <Clock className={`${className} text-white`} />;
             default:
                 return null;
         }
@@ -142,7 +129,7 @@ const AttendancePage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {/* Header */}
+            { }
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     My Attendance
@@ -152,7 +139,7 @@ const AttendancePage = ({ darkMode }) => {
                 </p>
             </div>
 
-            {/* Stats Cards */}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
@@ -191,7 +178,7 @@ const AttendancePage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Progress Bar */}
+            { }
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-8`}>
                 <div className="flex justify-between items-center mb-2">
                     <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -216,17 +203,17 @@ const AttendancePage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Calendar View */}
-            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-8`}>
-                <div className="flex items-center justify-between mb-6">
-                    <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            { }
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-3 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-8 max-w-2xl mx-auto`}>
+                <div className="flex items-center justify-between mb-3">
+                    <h3 className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                         Attendance Calendar
                     </h3>
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
                         <select
                             value={selectedMonth}
                             onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                            className={`px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
+                            className={`px-2 py-1 text-xs rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
                         >
                             {monthNames.map((month, index) => (
                                 <option key={index} value={index}>{month}</option>
@@ -235,7 +222,7 @@ const AttendancePage = ({ darkMode }) => {
                         <select
                             value={selectedYear}
                             onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                            className={`px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
+                            className={`px-2 py-1 text-xs rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
                         >
                             {[2024, 2025, 2026].map(year => (
                                 <option key={year} value={year}>{year}</option>
@@ -244,20 +231,20 @@ const AttendancePage = ({ darkMode }) => {
                     </div>
                 </div>
 
-                {/* Calendar Grid */}
-                <div className="grid grid-cols-7 gap-2">
-                    {/* Day names */}
+                { }
+                <div className="grid grid-cols-7 gap-0.5">
+                    { }
                     {dayNames.map(day => (
-                        <div key={day} className={`text-center text-sm font-semibold ${darkMode ? 'text-gray-400' : 'text-gray-600'} py-2`}>
+                        <div key={day} className={`text-center text-[10px] font-semibold ${darkMode ? 'text-gray-400' : 'text-gray-600'} py-0.5`}>
                             {day}
                         </div>
                     ))}
 
-                    {/* Calendar days */}
+                    { }
                     {calendarDays.map((dayData, index) => (
                         <div
                             key={index}
-                            className={`aspect-square flex items-center justify-center rounded-lg ${dayData
+                            className={`h-10 w-full flex items-center justify-center rounded-sm text-[10px] ${dayData
                                 ? dayData.status
                                     ? `${getStatusColor(dayData.status)} text-white`
                                     : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'
@@ -266,10 +253,10 @@ const AttendancePage = ({ darkMode }) => {
                         >
                             {dayData && (
                                 <div className="flex flex-col items-center justify-center">
-                                    <span className="text-sm font-medium">{dayData.day}</span>
+                                    <span className="text-[10px] font-medium">{dayData.day}</span>
                                     {dayData.status && (
-                                        <div className="mt-1">
-                                            {getStatusIcon(dayData.status)}
+                                        <div className="mt-0.5">
+                                            {getStatusIcon(dayData.status, 'w-2.5 h-2.5')}
                                         </div>
                                     )}
                                 </div>
@@ -278,28 +265,28 @@ const AttendancePage = ({ darkMode }) => {
                     ))}
                 </div>
 
-                {/* Legend */}
-                <div className="flex items-center justify-center space-x-6 mt-6 pt-6 border-t border-gray-200">
-                    <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 rounded bg-green-500"></div>
-                        <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Present</span>
+                { }
+                <div className="flex items-center justify-center space-x-3 mt-3 pt-3 border-t border-gray-200">
+                    <div className="flex items-center space-x-1.5">
+                        <div className="w-2.5 h-2.5 rounded bg-green-500"></div>
+                        <span className={`text-[10px] ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Present</span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 rounded bg-red-500"></div>
-                        <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Absent</span>
+                    <div className="flex items-center space-x-1.5">
+                        <div className="w-2.5 h-2.5 rounded bg-red-500"></div>
+                        <span className={`text-[10px] ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Absent</span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 rounded bg-yellow-500"></div>
-                        <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Late</span>
+                    <div className="flex items-center space-x-1.5">
+                        <div className="w-2.5 h-2.5 rounded bg-yellow-500"></div>
+                        <span className={`text-[10px] ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Late</span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <div className={`w-4 h-4 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}></div>
-                        <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Not Marked</span>
+                    <div className="flex items-center space-x-1.5">
+                        <div className={`w-2.5 h-2.5 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}></div>
+                        <span className={`text-[10px] ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Not Marked</span>
                     </div>
                 </div>
             </div>
 
-            {/* Recent Attendance */}
+            { }
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                     Recent Attendance
@@ -334,8 +321,8 @@ const AttendancePage = ({ darkMode }) => {
                                 </div>
                                 <div>
                                     <span className={`px-3 py-1 rounded-full text-sm font-semibold ${record.status === 'Present' ? 'bg-green-100 text-green-800' :
-                                            record.status === 'Absent' ? 'bg-red-100 text-red-800' :
-                                                'bg-yellow-100 text-yellow-800'
+                                        record.status === 'Absent' ? 'bg-red-100 text-red-800' :
+                                            'bg-yellow-100 text-yellow-800'
                                         }`}>
                                         {record.status}
                                     </span>
@@ -346,20 +333,6 @@ const AttendancePage = ({ darkMode }) => {
                 )}
             </div>
 
-            {/* Info Note */}
-            <div className={`${darkMode ? 'bg-blue-900 border-blue-700' : 'bg-blue-50 border-blue-200'} border rounded-xl p-4 mt-6`}>
-                <div className="flex items-start space-x-3">
-                    <AlertCircle className={`w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'} mt-0.5`} />
-                    <div>
-                        <h4 className={`font-semibold text-sm ${darkMode ? 'text-blue-300' : 'text-blue-900'} mb-1`}>
-                            Real-time Sync
-                        </h4>
-                        <p className={`text-sm ${darkMode ? 'text-blue-200' : 'text-blue-700'}`}>
-                            Your attendance is marked by your teachers. Any changes made by teachers will appear here automatically without needing to refresh the page.
-                        </p>
-                    </div>
-                </div>
-            </div>
         </div>
     );
 };

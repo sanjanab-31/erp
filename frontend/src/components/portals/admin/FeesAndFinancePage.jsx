@@ -1,17 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Edit, Trash2, Save, X, DollarSign, Users, AlertCircle, TrendingUp, Calendar, Search } from 'lucide-react';
-import { getAllStudents } from '../../../utils/studentStore';
-import {
-    getAllFees,
-    addFee,
-    updateFee,
-    deleteFee,
-    getFeeStats,
-    getOverdueFees,
-    subscribeToUpdates
-} from '../../../utils/feeStore';
+import { Plus, Edit, Trash2, Save, X, IndianRupee, Users, AlertCircle, TrendingUp, Calendar, Search } from 'lucide-react';
+import { feeApi, studentApi } from '../../../services/api';
+import { useToast } from '../../../context/ToastContext';
 
 const FeeModal = ({ darkMode, onClose, onSave, editingFee, students }) => {
+    const { showSuccess, showError, showWarning, showInfo } = useToast();
     const [formData, setFormData] = useState({
         studentId: '',
         feeType: '',
@@ -34,21 +27,21 @@ const FeeModal = ({ darkMode, onClose, onSave, editingFee, students }) => {
         e.preventDefault();
 
         if (!formData.studentId || !formData.feeType || !formData.amount || !formData.dueDate) {
-            alert('Please fill all fields');
+            showWarning('Please fill all fields');
             return;
         }
 
         const student = students.find(s => s.id.toString() === formData.studentId.toString());
 
         if (!student) {
-            alert('Student not found');
+            showInfo('Student not found');
             return;
         }
 
         const feeData = {
             ...formData,
             studentName: student.name,
-            studentClass: student.class
+            studentClass: student.class || student.grade
         };
 
         onSave(feeData);
@@ -66,7 +59,7 @@ const FeeModal = ({ darkMode, onClose, onSave, editingFee, students }) => {
     ];
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0  bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full`}>
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6 rounded-t-xl`}>
                     <div className="flex items-center justify-between">
@@ -80,7 +73,7 @@ const FeeModal = ({ darkMode, onClose, onSave, editingFee, students }) => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    {/* Student Selection */}
+                    { }
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Select Student *
@@ -95,13 +88,13 @@ const FeeModal = ({ darkMode, onClose, onSave, editingFee, students }) => {
                             <option value="">Select Student</option>
                             {students.map(student => (
                                 <option key={student.id} value={student.id}>
-                                    {student.name} - {student.class} (Roll: {student.rollNumber})
+                                    {student.name} - {student.class || student.grade} (Roll: {student.rollNumber})
                                 </option>
                             ))}
                         </select>
                     </div>
 
-                    {/* Fee Type */}
+                    { }
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Fee Type *
@@ -119,7 +112,7 @@ const FeeModal = ({ darkMode, onClose, onSave, editingFee, students }) => {
                         </select>
                     </div>
 
-                    {/* Amount */}
+                    { }
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Amount (₹) *
@@ -136,7 +129,7 @@ const FeeModal = ({ darkMode, onClose, onSave, editingFee, students }) => {
                         />
                     </div>
 
-                    {/* Due Date */}
+                    { }
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Due Date *
@@ -150,7 +143,7 @@ const FeeModal = ({ darkMode, onClose, onSave, editingFee, students }) => {
                         />
                     </div>
 
-                    {/* Action Buttons */}
+                    { }
                     <div className="flex justify-end space-x-3 pt-4">
                         <button
                             type="button"
@@ -174,6 +167,7 @@ const FeeModal = ({ darkMode, onClose, onSave, editingFee, students }) => {
 };
 
 const FeesAndFinancePage = ({ darkMode }) => {
+    const { showSuccess, showError } = useToast();
     const [fees, setFees] = useState([]);
     const [students, setStudents] = useState([]);
     const [stats, setStats] = useState({});
@@ -182,48 +176,83 @@ const FeesAndFinancePage = ({ darkMode }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('All');
 
+    const loadData = useCallback(async () => {
+        try {
+            const [feesRes, studentsRes] = await Promise.all([
+                feeApi.getAll(),
+                studentApi.getAll()
+            ]);
+
+            const allFees = feesRes.data || [];
+            const allStudents = studentsRes.data || [];
+            setFees(allFees);
+            setStudents(allStudents);
+
+            try {
+                const statsRes = await feeApi.getStats();
+                setStats(statsRes.data || {});
+            } catch {
+
+                const totalAmount = allFees.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+                const paidAmount = allFees.reduce((sum, f) => sum + Number(f.paidAmount || 0), 0);
+                const remainingAmount = totalAmount - paidAmount;
+
+                setStats({
+                    totalAmount,
+                    totalFees: allFees.length,
+                    paidAmount,
+                    paidFees: allFees.filter(f => f.status === 'Paid').length,
+                    remainingAmount,
+                    pendingFees: allFees.filter(f => f.status === 'Pending').length,
+                    partialFees: allFees.filter(f => f.status === 'Partial').length
+                });
+            }
+        } catch (error) {
+            console.error('Failed to load fee data', error);
+        }
+    }, []);
+
     useEffect(() => {
         loadData();
-        const unsubscribe = subscribeToUpdates(loadData);
-        return unsubscribe;
-    }, []);
+    }, [loadData]);
 
-    const loadData = useCallback(() => {
-        const allFees = getAllFees();
-        const allStudents = getAllStudents();
-        const feeStats = getFeeStats();
-
-        setFees(allFees);
-        setStudents(allStudents);
-        setStats(feeStats);
-    }, []);
-
-    const handleAddFee = useCallback((feeData) => {
+    const handleAddFee = useCallback(async (feeData) => {
         try {
-            addFee(feeData);
+            if (editingFee) {
+                await feeApi.update(editingFee.id, feeData);
+                showSuccess('Fee updated successfully!');
+            } else {
+                await feeApi.create(feeData);
+                showSuccess('Fee added successfully!');
+            }
             setShowAddModal(false);
-            alert('Fee added successfully!');
+            setEditingFee(null);
+            loadData();
         } catch (error) {
-            alert('Error adding fee: ' + error.message);
+            showError(`Error ${editingFee ? 'updating' : 'adding'} fee: ` + (error.response?.data?.message || error.message));
         }
-    }, []);
+    }, [editingFee, showSuccess, showError, loadData]);
 
-    const handleDelete = useCallback((feeId) => {
+    const handleDelete = useCallback(async (feeId) => {
         if (window.confirm('Are you sure you want to delete this fee?')) {
             try {
-                deleteFee(feeId);
-                alert('Fee deleted successfully!');
+                await feeApi.delete(feeId);
+                showSuccess('Fee deleted successfully!');
+                loadData();
             } catch (error) {
-                alert('Error deleting fee: ' + error.message);
+                showError('Error deleting fee: ' + (error.response?.data?.message || error.message));
             }
         }
-    }, []);
+    }, [showSuccess, showError, loadData]);
 
-    // Filter fees
     const filteredFees = fees.filter(fee => {
-        const matchesSearch = fee.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            fee.studentClass.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            fee.feeType.toLowerCase().includes(searchTerm.toLowerCase());
+        const studentName = fee.studentName || '';
+        const studentClass = fee.studentClass || '';
+        const feeType = fee.feeType || '';
+
+        const matchesSearch = studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            studentClass.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            feeType.toLowerCase().includes(searchTerm.toLowerCase());
 
         const matchesStatus = filterStatus === 'All' || fee.status === filterStatus;
 
@@ -245,7 +274,7 @@ const FeesAndFinancePage = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
+            { }
             <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Fees & Finance Management
@@ -253,15 +282,15 @@ const FeesAndFinancePage = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">Manage student fees and track payments (Real-time sync)</p>
             </div>
 
-            {/* Stats */}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Fees</h3>
-                        <DollarSign className="w-5 h-5 text-blue-500" />
+                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Receivables</h3>
+                        <IndianRupee className="w-5 h-5 text-blue-500" />
                     </div>
-                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.totalFees || 0}</p>
-                    <p className="text-sm text-gray-500 mt-1">All fee records</p>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>₹{stats.totalAmount?.toLocaleString() || 0}</p>
+                    <p className="text-sm text-gray-500 mt-1">{stats.totalFees || 0} total invoices</p>
                 </div>
 
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -270,7 +299,7 @@ const FeesAndFinancePage = ({ darkMode }) => {
                         <TrendingUp className="w-5 h-5 text-green-500" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>₹{stats.paidAmount?.toLocaleString() || 0}</p>
-                    <p className="text-sm text-gray-500 mt-1">{stats.collectionRate || 0}% collection rate</p>
+                    <p className="text-sm text-gray-500 mt-1">{stats.paidFees || 0} fully paid</p>
                 </div>
 
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -279,7 +308,7 @@ const FeesAndFinancePage = ({ darkMode }) => {
                         <AlertCircle className="w-5 h-5 text-red-500" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>₹{stats.remainingAmount?.toLocaleString() || 0}</p>
-                    <p className="text-sm text-gray-500 mt-1">{stats.pendingFees || 0} pending fees</p>
+                    <p className="text-sm text-gray-500 mt-1">{stats.pendingFees || 0} pending invoices</p>
                 </div>
 
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -288,14 +317,14 @@ const FeesAndFinancePage = ({ darkMode }) => {
                         <Users className="w-5 h-5 text-yellow-500" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.partialFees || 0}</p>
-                    <p className="text-sm text-gray-500 mt-1">Partially paid</p>
+                    <p className="text-sm text-gray-500 mt-1">Partially paid invoices</p>
                 </div>
             </div>
 
-            {/* Filters & Add Button */}
+            { }
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                    {/* Search */}
+                    { }
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                         <input
@@ -307,7 +336,7 @@ const FeesAndFinancePage = ({ darkMode }) => {
                         />
                     </div>
 
-                    {/* Status Filter */}
+                    { }
                     <select
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
@@ -332,11 +361,11 @@ const FeesAndFinancePage = ({ darkMode }) => {
                 </button>
             </div>
 
-            {/* Fees List */}
+            { }
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
                 {filteredFees.length === 0 ? (
                     <div className="p-12 text-center">
-                        <DollarSign className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <IndianRupee className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                         <p className={`text-lg font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                             No fees found
                         </p>
@@ -375,10 +404,10 @@ const FeesAndFinancePage = ({ darkMode }) => {
                                             <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>₹{fee.amount.toLocaleString()}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className={`text-sm ${darkMode ? 'text-green-400' : 'text-green-600'}`}>₹{fee.paidAmount.toLocaleString()}</div>
+                                            <div className={`text-sm ${darkMode ? 'text-green-400' : 'text-green-600'}`}>₹{fee.paidAmount?.toLocaleString() || '0'}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className={`text-sm ${darkMode ? 'text-red-400' : 'text-red-600'}`}>₹{fee.remainingAmount.toLocaleString()}</div>
+                                            <div className={`text-sm ${darkMode ? 'text-red-400' : 'text-red-600'}`}>₹{fee.remainingAmount?.toLocaleString() || fee.amount.toLocaleString()}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm text-gray-500">{new Date(fee.dueDate).toLocaleDateString()}</div>
@@ -390,8 +419,17 @@ const FeesAndFinancePage = ({ darkMode }) => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <button
+                                                onClick={() => {
+                                                    setEditingFee(fee);
+                                                    setShowAddModal(true);
+                                                }}
+                                                className="text-blue-600 hover:text-blue-900 mr-4"
+                                            >
+                                                <Edit className="w-5 h-5" />
+                                            </button>
+                                            <button
                                                 onClick={() => handleDelete(fee.id)}
-                                                className="text-red-600 hover:text-red-900 ml-4"
+                                                className="text-red-600 hover:text-red-900"
                                             >
                                                 <Trash2 className="w-5 h-5" />
                                             </button>
@@ -404,7 +442,7 @@ const FeesAndFinancePage = ({ darkMode }) => {
                 )}
             </div>
 
-            {/* Modal */}
+            { }
             {showAddModal && (
                 <FeeModal
                     darkMode={darkMode}

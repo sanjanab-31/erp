@@ -1,225 +1,141 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Plus, MoreVertical, Mail, Phone, Edit, Trash2, X, Save, UserPlus } from 'lucide-react';
-import { getAllStudents, addStudent, updateStudent, deleteStudent, subscribeToUpdates, getStudentStats } from '../../../utils/studentStore';
-import { addStudent as addUserStudent } from '../../../utils/userStore';
+import { studentApi, emailApi } from '../../../services/api';
+import { useToast } from '../../../context/ToastContext';
 
-// Move modal components outside to prevent re-creation on every render
 const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, darkMode }) => {
     const classes = ['Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
 
+    const inputClass = `w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-sm`;
+    const labelClass = `block text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`;
+    const sectionTitleClass = `text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} uppercase tracking-wider mb-3 pb-1 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`;
+
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto`}>
-                <div className={`sticky top-0 ${darkMode ? 'bg-gray-800' : 'bg-white'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6 z-10`}>
-                    <div className="flex items-center justify-between">
-                        <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                            {isEdit ? 'Edit Student' : 'Add New Student'}
-                        </h2>
-                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                            <X className="w-6 h-6 text-gray-500" />
-                        </button>
-                    </div>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl w-full max-w-6xl shadow-2xl flex flex-col max-h-[90vh]`}>
+
+                { }
+                <div className={`flex items-center justify-between p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                    <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {isEdit ? 'Edit Student Details' : 'Add New Student'}
+                    </h2>
+                    <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <X className="w-5 h-5 text-gray-500" />
+                    </button>
                 </div>
 
-                <form onSubmit={onSubmit} className="p-6 space-y-6">
-                    {/* Personal Information */}
-                    <div>
-                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-                            Personal Information
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Full Name *
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                    placeholder="Enter full name"
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Roll Number *
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formData.rollNo}
-                                    onChange={(e) => setFormData({ ...formData, rollNo: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                    placeholder="e.g., 10A-001"
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Class *
-                                </label>
-                                <select
-                                    required
-                                    value={formData.class}
-                                    onChange={(e) => setFormData({ ...formData, class: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                >
-                                    <option value="">Select Class</option>
-                                    {classes.map(cls => (
-                                        <option key={cls} value={cls}>{cls}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Gender
-                                </label>
-                                <select
-                                    value={formData.gender}
-                                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                >
-                                    <option value="">Select Gender</option>
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Date of Birth
-                                </label>
-                                <input
-                                    type="date"
-                                    value={formData.dateOfBirth}
-                                    onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Status
-                                </label>
-                                <select
-                                    value={formData.status}
-                                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                >
-                                    <option value="Active">Active</option>
-                                    <option value="Inactive">Inactive</option>
-                                    <option value="Warning">Warning</option>
-                                </select>
+                { }
+                <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                        { }
+                        <div className="space-y-4">
+                            <h3 className={sectionTitleClass}>Academic Identity</h3>
+                            <div className="space-y-3">
+                                <div>
+                                    <label className={labelClass}>Full Name *</label>
+                                    <input type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className={inputClass} placeholder="John Doe" />
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Roll Number *</label>
+                                    <input type="text" required value={formData.rollNo} onChange={(e) => setFormData({ ...formData, rollNo: e.target.value })} className={inputClass} placeholder="e.g. 10A-001" />
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Class *</label>
+                                    <select required value={formData.class} onChange={(e) => setFormData({ ...formData, class: e.target.value })} className={inputClass}>
+                                        <option value="">Select Class</option>
+                                        {classes.map(cls => <option key={cls} value={cls}>{cls}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Status</label>
+                                    <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className={inputClass}>
+                                        <option value="Active">Active</option>
+                                        <option value="Inactive">Inactive</option>
+                                        <option value="Warning">Warning</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Contact Information */}
-                    <div>
-                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-                            Contact Information
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Email *
-                                </label>
-                                <input
-                                    type="email"
-                                    required
-                                    value={formData.email}
-                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                    placeholder="student@school.com"
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Phone
-                                </label>
-                                <input
-                                    type="tel"
-                                    value={formData.phone}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                    placeholder="+1 234-567-8900"
-                                />
-                            </div>
-                            <div className="md:col-span-2">
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Address
-                                </label>
-                                <textarea
-                                    value={formData.address}
-                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                    rows="2"
-                                    placeholder="Enter address"
-                                />
+                        { }
+                        <div className="space-y-4">
+                            <h3 className={sectionTitleClass}>Personal Details</h3>
+                            <div className="space-y-3">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className={labelClass}>Gender</label>
+                                        <select value={formData.gender} onChange={(e) => setFormData({ ...formData, gender: e.target.value })} className={inputClass}>
+                                            <option value="">Select</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className={labelClass}>Date of Birth</label>
+                                        <input
+                                            type="date"
+                                            value={formData.dateOfBirth}
+                                            onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                                            max={new Date().toISOString().split('T')[0]}
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Student Email *</label>
+                                    <input type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className={inputClass} placeholder="student@school.com" />
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Student Phone</label>
+                                    <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className={inputClass} placeholder="+1 234-567-8900" />
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Parent Information */}
-                    <div>
-                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-                            Parent/Guardian Information
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Parent Name *
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formData.parent}
-                                    onChange={(e) => setFormData({ ...formData, parent: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                    placeholder="Enter parent name"
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Parent Email
-                                </label>
-                                <input
-                                    type="email"
-                                    value={formData.parentEmail}
-                                    onChange={(e) => setFormData({ ...formData, parentEmail: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                    placeholder="parent@email.com"
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Parent Phone
-                                </label>
-                                <input
-                                    type="tel"
-                                    value={formData.parentPhone}
-                                    onChange={(e) => setFormData({ ...formData, parentPhone: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                    placeholder="+1 234-567-8900"
-                                />
+                        { }
+                        <div className="space-y-4">
+                            <h3 className={sectionTitleClass}>Family & Address</h3>
+                            <div className="space-y-3">
+                                <div>
+                                    <label className={labelClass}>Parent Name *</label>
+                                    <input type="text" required value={formData.parent} onChange={(e) => setFormData({ ...formData, parent: e.target.value })} className={inputClass} placeholder="Guardian Name" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className={labelClass}>Parent Email</label>
+                                        <input type="email" value={formData.parentEmail} onChange={(e) => setFormData({ ...formData, parentEmail: e.target.value })} className={inputClass} placeholder="parent@mail.com" />
+                                    </div>
+                                    <div>
+                                        <label className={labelClass}>Parent Phone</label>
+                                        <input type="tel" value={formData.parentPhone} onChange={(e) => setFormData({ ...formData, parentPhone: e.target.value })} className={inputClass} placeholder="+1 ..." />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Address</label>
+                                    <textarea value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} className={`${inputClass} resize-none h-[88px]`} placeholder="Full residential address..." />
+                                </div>
                             </div>
                         </div>
+
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    { }
+                    <div className="flex justify-end gap-3 pt-6 mt-2 border-gray-200 dark:border-gray-700">
                         <button
                             type="button"
                             onClick={onClose}
-                            className={`px-6 py-2 rounded-lg border ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'} transition-colors`}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium border ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'} transition-colors`}
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+                            className="px-6 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
                         >
-                            <Save className="w-5 h-5" />
-                            <span>{isEdit ? 'Update Student' : 'Add Student'}</span>
+                            <Save className="w-4 h-4" />
+                            <span>{isEdit ? 'Update Student' : 'Save Student'}</span>
                         </button>
                     </div>
                 </form>
@@ -229,7 +145,7 @@ const StudentFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
 };
 
 const DeleteConfirmModal = ({ darkMode, selectedStudent, onClose, onConfirm }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>
             <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                 Confirm Delete
@@ -256,6 +172,7 @@ const DeleteConfirmModal = ({ darkMode, selectedStudent, onClose, onConfirm }) =
 );
 
 const Students = ({ darkMode }) => {
+    const { showSuccess, showError, showWarning } = useToast();
     const [students, setStudents] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterClass, setFilterClass] = useState('All Classes');
@@ -283,18 +200,33 @@ const Students = ({ darkMode }) => {
         grade: 'A'
     });
 
-    // Load students on mount and subscribe to updates
-    useEffect(() => {
-        loadStudents();
-        const unsubscribe = subscribeToUpdates(loadStudents);
-        return unsubscribe;
+    const loadStudents = useCallback(async () => {
+        try {
+            const response = await studentApi.getAll();
+            const data = response.data || [];
+            setStudents(Array.isArray(data) ? data : []);
+
+            try {
+                const statsRes = await studentApi.getStats();
+                setStats(statsRes.data || { total: 0, active: 0, inactive: 0, warning: 0 });
+            } catch (e) {
+                const s = Array.isArray(data) ? data : [];
+                setStats({
+                    total: s.length,
+                    active: s.filter(i => i.status === 'Active').length,
+                    inactive: s.filter(i => i.status === 'Inactive').length,
+                    warning: s.filter(i => i.status === 'Warning').length
+                });
+            }
+        } catch (error) {
+            console.error('Failed to load students', error);
+            setStudents([]);
+        }
     }, []);
 
-    const loadStudents = useCallback(() => {
-        const data = getAllStudents();
-        setStudents(data);
-        setStats(getStudentStats());
-    }, []);
+    useEffect(() => {
+        loadStudents();
+    }, [loadStudents]);
 
     const resetForm = useCallback(() => {
         setFormData({
@@ -315,29 +247,44 @@ const Students = ({ darkMode }) => {
         });
     }, []);
 
-    const handleAddStudent = useCallback((e) => {
+    const handleAddStudent = useCallback(async (e) => {
         e.preventDefault();
         try {
-            // Add to studentStore (for student management)
-            addStudent(formData);
 
-            // Add to userStore (for authentication) with default password
-            addUserStudent({
-                email: formData.email,
-                name: formData.name,
-                class: formData.class,
-                rollNumber: formData.rollNo,
-                parentEmail: formData.parentEmail,
-                parentName: formData.parentName,
-                phone: formData.phone,
-                address: formData.address,
-                dateOfBirth: formData.dateOfBirth,
-                createdBy: localStorage.getItem('userName') || 'admin'
-            });
+            if (formData.email && formData.parentEmail &&
+                formData.email.toLowerCase().trim() === formData.parentEmail.toLowerCase().trim()) {
+                showError('Student email and parent email cannot be the same!');
+                return;
+            }
+
+            if (formData.dateOfBirth) {
+                const dob = new Date(formData.dateOfBirth);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (dob > today) {
+                    showError('Date of birth cannot be in the future!');
+                    return;
+                }
+            }
+
+            await studentApi.create(formData);
+
+            try {
+                await emailApi.sendStudentCredentials({
+                    email: formData.email,
+                    password: 'password',
+                    name: formData.name,
+                    parentEmail: formData.parentEmail
+                });
+                showSuccess('📧 Credentials emailed successfully!');
+            } catch (emailError) {
+                console.warn('Email sending failed:', emailError);
+            }
 
             setShowAddModal(false);
             resetForm();
-            // Show credentials for both student and parent
+            loadStudents();
+
             let message = 'Student added successfully!\n\n';
             message += '📚 Student Login:\n';
             message += 'Email: ' + formData.email + '\n';
@@ -349,35 +296,56 @@ const Students = ({ darkMode }) => {
                 message += 'Password: password';
             }
 
-            alert(message);
+            showSuccess(message);
         } catch (error) {
-            alert('Error adding student: ' + error.message);
+            showError('Error adding student: ' + (error.response?.data?.message || error.message));
         }
-    }, [formData, resetForm]);
+    }, [formData, resetForm, showSuccess, showError]);
 
-    const handleEditStudent = useCallback((e) => {
+    const handleEditStudent = useCallback(async (e) => {
         e.preventDefault();
         try {
-            updateStudent(selectedStudent.id, formData);
+
+            if (formData.email && formData.parentEmail &&
+                formData.email.toLowerCase().trim() === formData.parentEmail.toLowerCase().trim()) {
+                showError('Student email and parent email cannot be the same!');
+                return;
+            }
+
+            if (formData.dateOfBirth) {
+                const dob = new Date(formData.dateOfBirth);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (dob > today) {
+                    showError('Date of birth cannot be in the future!');
+                    return;
+                }
+            }
+
+            await studentApi.update(selectedStudent.id, formData);
             setShowEditModal(false);
             setSelectedStudent(null);
             resetForm();
-            alert('Student updated successfully!');
+            loadStudents();
+            showSuccess('Student updated successfully!');
         } catch (error) {
-            alert('Error updating student: ' + error.message);
+            showError('Error updating student: ' + (error.response?.data?.message || error.message));
         }
-    }, [formData, selectedStudent, resetForm]);
+    }, [formData, selectedStudent, resetForm, showSuccess, showError, loadStudents]);
 
-    const handleDeleteStudent = useCallback(() => {
+    const handleDeleteStudent = useCallback(async () => {
         try {
-            deleteStudent(selectedStudent.id);
+
+            await studentApi.delete(selectedStudent.id);
+
             setShowDeleteConfirm(false);
             setSelectedStudent(null);
-            alert('Student deleted successfully!');
+            loadStudents();
+            showSuccess('Student deleted successfully!');
         } catch (error) {
-            alert('Error deleting student: ' + error.message);
+            showError('Error deleting student: ' + (error.response?.data?.message || error.message));
         }
-    }, [selectedStudent]);
+    }, [selectedStudent, showSuccess, showError, loadStudents]);
 
     const openEditModal = useCallback((student) => {
         setSelectedStudent(student);
@@ -419,7 +387,7 @@ const Students = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {/* Header with Stats */}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <p className="text-sm text-gray-500">Total Students</p>
@@ -439,7 +407,7 @@ const Students = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Controls */}
+            { }
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                     Students Management
@@ -489,7 +457,7 @@ const Students = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Students Table */}
+            { }
             <div className={`overflow-hidden rounded-xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="overflow-x-auto">
                     <table className={`w-full text-left ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -539,14 +507,32 @@ const Students = ({ darkMode }) => {
                                             <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{student.parent}</p>
                                             <div className="flex gap-2 mt-1">
                                                 {student.parentEmail && (
-                                                    <button className="text-gray-400 hover:text-blue-500" title={student.parentEmail}>
+                                                    <a
+                                                        href={`mailto:${student.parentEmail}`}
+                                                        className="text-gray-400 hover:text-blue-500 transition-colors"
+                                                        title={`Email: ${student.parentEmail}`}
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            navigator.clipboard.writeText(student.parentEmail);
+                                                            showSuccess(`Email copied: ${student.parentEmail}`);
+                                                        }}
+                                                    >
                                                         <Mail className="w-4 h-4" />
-                                                    </button>
+                                                    </a>
                                                 )}
                                                 {student.parentPhone && (
-                                                    <button className="text-gray-400 hover:text-green-500" title={student.parentPhone}>
+                                                    <a
+                                                        href={`tel:${student.parentPhone}`}
+                                                        className="text-gray-400 hover:text-green-500 transition-colors"
+                                                        title={`Phone: ${student.parentPhone}`}
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            navigator.clipboard.writeText(student.parentPhone);
+                                                            showSuccess(`Phone copied: ${student.parentPhone}`);
+                                                        }}
+                                                    >
                                                         <Phone className="w-4 h-4" />
-                                                    </button>
+                                                    </a>
                                                 )}
                                             </div>
                                         </td>
@@ -586,7 +572,7 @@ const Students = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Modals */}
+            { }
             {showAddModal && (
                 <StudentFormModal
                     isEdit={false}
@@ -632,3 +618,4 @@ const Students = ({ darkMode }) => {
 };
 
 export default Students;
+

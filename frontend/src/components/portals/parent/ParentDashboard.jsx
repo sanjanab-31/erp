@@ -16,23 +16,37 @@ import {
     BookOpen,
     Clock,
     Award,
-    LogOut
+    BookMarked,
+    Megaphone,
+    LogOut,
+    CheckCircle,
+    XCircle,
+    AlertCircle
 } from 'lucide-react';
-import MyChildrenPage from './MyChildrenPage';
+
 import AcademicProgressPage from './AcademicProgressPage';
 import AttendancePage from './AttendancePage';
 import FeeManagementPage from './FeeManagementPage';
 import TimetablePage from './TimetablePage';
-import ReportsPage from './ReportsPage';
 import SettingsPage from './SettingsPage';
-import ParentChildAcademics from './ParentChildAcademics';
-import { getChildrenByParentEmail } from '../../../utils/userStore';
-import { calculateAttendancePercentage, subscribeToUpdates as subscribeToAttendance } from '../../../utils/attendanceStore';
-import { getStudentFinalMarks, subscribeToAcademicUpdates } from '../../../utils/academicStore';
-import { getFeesByStudent, subscribeToUpdates as subscribeToFees } from '../../../utils/feeStore';
+import LibraryPage from './LibraryPage';
+import AnnouncementsPage from './AnnouncementsPage';
+import {
+    studentApi,
+    attendanceApi,
+    resultApi,
+    examApi,
+    feeApi,
+    courseApi,
+    timetableApi,
+    announcementApi
+} from '../../../services/api';
+import { getCheckoutSession } from '../../../utils/stripeConfig';
+import { useToast } from '../../../context/ToastContext';
 
 const ParentDashboard = () => {
     const navigate = useNavigate();
+    const { showSuccess, showError } = useToast();
     const userName = localStorage.getItem('userName') || 'Parent User';
     const userRole = localStorage.getItem('userRole') || 'Parent';
     const userEmail = localStorage.getItem('userEmail') || '';
@@ -44,8 +58,6 @@ const ParentDashboard = () => {
 
     const [dashboardData, setDashboardData] = useState({
         children: [],
-        recentActivities: [],
-        upcomingEvents: [],
         feeStatus: {
             total: 0,
             paid: 0,
@@ -56,110 +68,206 @@ const ParentDashboard = () => {
 
     const menuItems = [
         { icon: Home, label: 'Dashboard', active: true },
-        { icon: User, label: 'My Children' },
+
         { icon: GraduationCap, label: 'Academic Progress' },
         { icon: Calendar, label: 'Attendance' },
         { icon: DollarSign, label: 'Fee Management' },
         { icon: Clock, label: 'Timetable' },
-        { icon: FileText, label: 'Reports' },
-        { icon: Settings, label: 'Settings' },
-        { icon: TrendingUp, label: 'Child Academics' }
+        { icon: BookMarked, label: 'Library' },
+        { icon: Megaphone, label: 'Announcements' },
+        { icon: Settings, label: 'Settings' }
 
     ];
 
-    const handleLogout = () => {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userName');
-        navigate('/login');
-    };
-
     useEffect(() => {
-        const fetchDashboardData = () => {
-            // Get only this parent's children
-            const parentEmail = userEmail;
-            const myChildren = getChildrenByParentEmail(parentEmail);
+        const fetchDashboardData = async () => {
+            if (!userEmail) return;
 
-            // If no children found, show empty state
-            if (myChildren.length === 0) {
+            try {
+
+                const studentsRes = await studentApi.getAll();
+                const allStudents = studentsRes.data || [];
+
+                const myChildren = allStudents.filter(s => s.parentEmail === userEmail || s.email === userEmail);
+
+                if (myChildren.length === 0) {
+                    setDashboardData({
+                        children: [],
+                        feeStatus: { total: 0, paid: 0, pending: 0, nextDue: 'N/A' }
+                    });
+                    return;
+                }
+
+                const today = new Date().toISOString().split('T')[0];
+                const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                const currentDayName = days[new Date().getDay()];
+
+                const [
+                    attendanceRes,
+                    examsRes,
+                    feesRes,
+                    coursesRes,
+                    timetableRes,
+                    announcementsRes,
+                    resultsRes
+                ] = await Promise.all([
+                    attendanceApi.getAll(),
+                    examApi.getAll(),
+                    feeApi.getAll(),
+                    courseApi.getAll(),
+                    timetableApi.getClassTimetables(),
+                    announcementApi.getAll(),
+                    resultApi.getAll()
+                ]);
+
+                const allAttendance = attendanceRes.data || [];
+                const allExams = examsRes.data || [];
+                const allFees = feesRes.data || [];
+                const allCourses = coursesRes.data || [];
+                const allTimetables = timetableRes.data || [];
+                const allAnnouncements = announcementsRes.data || [];
+                const allResults = resultsRes.data || [];
+
+                const childrenData = myChildren.map(student => {
+                    const studentId = student.id;
+
+                    const studentAttendance = allAttendance.filter(a => a.studentId === studentId);
+                    const totalDays = studentAttendance.length;
+                    const presentDays = studentAttendance.filter(a => a.status === 'Present').length;
+                    const attendancePct = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
+
+                    const todaysAttendanceRecord = studentAttendance.find(a => a.date === today);
+                    const attendanceStatus = todaysAttendanceRecord ? todaysAttendanceRecord.status : 'Not Marked';
+
+                    const studentResults = allResults.filter(r => r.studentId === studentId);
+                    const avgGradeValue = studentResults.length > 0
+                        ? studentResults.reduce((sum, r) => sum + (r.percentage || 0), 0) / studentResults.length
+                        : 0;
+                    const currentGrade = avgGradeValue >= 90 ? 'A' : avgGradeValue >= 80 ? 'B+' : avgGradeValue >= 70 ? 'B' : avgGradeValue >= 60 ? 'C' : 'D';
+
+                    const upcomingExams = allExams.filter(e =>
+                        e.class === student.class && new Date(e.examDate) >= new Date(today)
+                    ).sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
+
+                    const studentFees = allFees.filter(f => f.studentId === studentId);
+                    const pendingFeesAmount = studentFees.reduce((sum, f) =>
+                        sum + (f.amount - (f.paidAmount || 0)), 0);
+                    const feeStatus = pendingFeesAmount <= 0 ? 'Paid' : 'Due';
+
+                    const studentCourses = allCourses.filter(c => c.class === student.class);
+                    let assignmentsPending = 0;
+                    let assignmentsSubmitted = 0;
+
+                    studentCourses.forEach(course => {
+                        const courseAssignments = course.assignments || [];
+                        courseAssignments.forEach(assignment => {
+                            const isSubmitted = assignment.submissions && assignment.submissions.some(sub => sub.studentId === studentId);
+                            if (isSubmitted) assignmentsSubmitted++;
+                            else assignmentsPending++;
+                        });
+                    });
+
+                    const classTimetable = allTimetables.find(t => t.className === student.class);
+                    const todaysSchedule = classTimetable && classTimetable.schedule ? (classTimetable.schedule[currentDayName] || []) : [];
+
+                    const studentAnnouncements = allAnnouncements.filter(a =>
+                        (a.targetAudience === 'Parents' || a.targetAudience === 'Students' || a.targetAudience === 'All') &&
+                        (!a.classes || a.classes.length === 0 || a.classes.includes(student.class))
+                    ).slice(0, 3);
+
+                    return {
+                        id: student.id,
+                        name: student.name,
+                        class: student.class,
+                        attendancePct,
+                        currentGrade,
+                        pendingFees: pendingFeesAmount,
+                        upcomingTestsCount: upcomingExams.length,
+                        attendanceStatus,
+                        todaysSchedule,
+                        upcomingExamsList: upcomingExams.slice(0, 3),
+                        assignmentsPending,
+                        assignmentsSubmitted,
+                        feeStatus,
+                        announcements: studentAnnouncements
+                    };
+                });
+
+                const myChildrenFees = allFees.filter(f => myChildren.some(c => c.id === f.studentId));
+                const totalFees = myChildrenFees.reduce((sum, f) => sum + f.amount, 0);
+                const paidFees = myChildrenFees.reduce((sum, f) => sum + (f.paidAmount || 0), 0);
+                const pendingFees = myChildrenFees.reduce((sum, f) => sum + (f.amount - (f.paidAmount || 0)), 0);
+
                 setDashboardData({
-                    children: [],
-                    recentActivities: [],
-                    upcomingEvents: [],
+                    children: childrenData,
                     feeStatus: {
-                        total: 0,
-                        paid: 0,
-                        pending: 0,
-                        nextDue: 'N/A'
+                        total: totalFees,
+                        paid: paidFees,
+                        pending: pendingFees,
+                        nextDue: pendingFees > 0 ? 'Due Now' : 'N/A'
                     }
                 });
-                return;
+
+            } catch (error) {
+                console.error('Failed to load parent dashboard data', error);
+                showError('Failed to load dashboard data');
             }
-
-            // Map children to dashboard data
-            const childrenData = myChildren.map(student => {
-                const studentId = student.id;
-
-                // Get attendance
-                const attendance = calculateAttendancePercentage(studentId);
-
-                // Get grades
-                const finalMarks = getStudentFinalMarks(studentId);
-                const avgGrade = finalMarks.length > 0
-                    ? finalMarks.reduce((sum, m) => sum + m.finalTotal, 0) / finalMarks.length
-                    : 0;
-                const currentGrade = avgGrade >= 90 ? 'A' : avgGrade >= 80 ? 'B+' : avgGrade >= 70 ? 'B' : avgGrade >= 60 ? 'C' : 'D';
-
-                // Get fees
-                const fees = getFeesByStudent(studentId);
-                const pendingFees = fees.reduce((sum, f) => sum + f.remainingAmount, 0);
-
-                return {
-                    id: student.id,
-                    name: student.name,
-                    class: student.class,
-                    attendance: attendance,
-                    currentGrade: currentGrade,
-                    pendingFees: pendingFees,
-                    upcomingTests: finalMarks.length
-                };
-            });
-
-            // Calculate total fee status for all children
-            const allFees = myChildren.flatMap(s => getFeesByStudent(s.id));
-            const totalFees = allFees.reduce((sum, f) => sum + f.amount, 0);
-            const paidFees = allFees.reduce((sum, f) => sum + f.paidAmount, 0);
-            const pendingFees = allFees.reduce((sum, f) => sum + f.remainingAmount, 0);
-
-            setDashboardData({
-                children: childrenData,
-                recentActivities: [], // Would come from activity log
-                upcomingEvents: [], // Would come from calendar/events store
-                feeStatus: {
-                    total: totalFees,
-                    paid: paidFees,
-                    pending: pendingFees,
-                    nextDue: 'Check Fee Management'
-                }
-            });
         };
 
-        // Initial fetch
         fetchDashboardData();
-
-        // Subscribe to updates
-        const unsubscribeAttendance = subscribeToAttendance(fetchDashboardData);
-        const unsubscribeAcademic = subscribeToAcademicUpdates(fetchDashboardData);
-        const unsubscribeFees = subscribeToFees(fetchDashboardData);
-
-        return () => {
-            unsubscribeAttendance();
-            unsubscribeAcademic();
-            unsubscribeFees();
-        };
     }, [userEmail]);
+
+    useEffect(() => {
+        const handlePaymentReturn = async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const paymentStatus = urlParams.get('payment');
+            const sessionId = urlParams.get('session_id');
+
+            if (paymentStatus === 'success' && sessionId) {
+                const processedSessions = JSON.parse(sessionStorage.getItem('processedSessions') || '[]');
+                if (processedSessions.includes(sessionId)) {
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    return;
+                }
+
+                const pendingPaymentStr = sessionStorage.getItem('pendingPayment');
+                if (pendingPaymentStr) {
+                    try {
+                        const pendingPayment = JSON.parse(pendingPaymentStr);
+
+                        const session = await getCheckoutSession(sessionId);
+
+                        if (session.status === 'paid') {
+                            await feeApi.update(pendingPayment.feeId, {
+                                status: 'Paid',
+                                paidAmount: pendingPayment.amount,
+                                paymentMethod: 'Stripe (Card)',
+                                transactionId: session.paymentIntentId || sessionId,
+                                paidBy: 'Parent',
+                                stripeSessionId: sessionId,
+                            });
+
+                            processedSessions.push(sessionId);
+                            sessionStorage.setItem('processedSessions', JSON.stringify(processedSessions));
+                            sessionStorage.removeItem('pendingPayment');
+                            showSuccess('Payment successful! Your fee has been updated.');
+                            setActiveTab('Fee Management');
+                        }
+                    } catch (err) {
+                        console.error('Error processing payment return:', err);
+                        showError('Error processing payment: ' + err.message);
+                    }
+                }
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else if (paymentStatus === 'cancelled') {
+                sessionStorage.removeItem('pendingPayment');
+                showError('Payment was cancelled.');
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        };
+
+        handlePaymentReturn();
+    }, []);
 
     const getGreeting = () => {
         const hour = new Date().getHours();
@@ -169,106 +277,210 @@ const ParentDashboard = () => {
     };
 
     const renderContent = () => {
-        if (activeTab === 'My Children') return <MyChildrenPage darkMode={darkMode} />;
+
         if (activeTab === 'Academic Progress') return <AcademicProgressPage darkMode={darkMode} />;
         if (activeTab === 'Attendance') return <AttendancePage darkMode={darkMode} />;
         if (activeTab === 'Fee Management') return <FeeManagementPage darkMode={darkMode} />;
         if (activeTab === 'Timetable') return <TimetablePage darkMode={darkMode} />;
-        if (activeTab === 'Reports') return <ReportsPage darkMode={darkMode} />;
         if (activeTab === 'Settings') return <SettingsPage darkMode={darkMode} />;
-        if (activeTab === 'Child Academics') return <ParentChildAcademics darkMode={darkMode} />;
-        // Default Dashboard
+        if (activeTab === 'Library') return <LibraryPage darkMode={darkMode} />;
+        if (activeTab === 'Announcements') return <AnnouncementsPage darkMode={darkMode} />;
+
         return (
             <>
                 <div className="mb-8">
                     <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                         {getGreeting()}, {userName.split(' ')[0]}!
                     </h1>
-                    <p className="text-sm text-gray-500">Parent Dashboard - Monitor Your Child's Progress</p>
+                    <p className="text-sm text-gray-500">Parent Dashboard - Live Updates</p>
                 </div>
+
                 {dashboardData.children.map((child) => (
-                    <div key={child.id} className="mb-8">
-                        <h2 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>{child.name}'s Overview</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div key={child.id} className="mb-12 border-b pb-8 last:border-0">
+                        {}
+                        {dashboardData.children.length > 1 && (
+                            <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-6`}>{child.name}'s Dashboard</h2>
+                        )}
+
+                        {}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            {}
                             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Attendance</h3>
                                     <TrendingUp className="w-5 h-5 text-gray-400" />
                                 </div>
-                                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{child.attendance}%</p>
+                                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{child.attendancePct}%</p>
                                 <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
-                                    <div className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full" style={{ width: `${child.attendance}%` }}></div>
+                                    <div className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full" style={{ width: `${child.attendancePct}%` }}></div>
                                 </div>
                             </div>
+
+                            {}
                             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Current Grade</h3>
                                     <Award className="w-5 h-5 text-gray-400" />
                                 </div>
                                 <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{child.currentGrade}</p>
-                                <p className="text-sm text-gray-500 mt-2">Excellent performance</p>
+                                <p className="text-sm text-green-500 mt-2">Excellent performance</p>
                             </div>
+
+                            {}
                             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Pending Fees</h3>
                                     <DollarSign className="w-5 h-5 text-gray-400" />
                                 </div>
-                                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>${child.pendingFees}</p>
-                                <p className="text-sm text-green-500 mt-2">All paid up!</p>
+                                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>₹{child.pendingFees}</p>
+                                <p className={`text-sm mt-2 ${child.pendingFees === 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                    {child.pendingFees === 0 ? 'All paid up!' : 'Dues Pending'}
+                                </p>
                             </div>
+
+                            {}
                             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Upcoming Tests</h3>
                                     <BookOpen className="w-5 h-5 text-gray-400" />
                                 </div>
-                                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{child.upcomingTests}</p>
+                                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{child.upcomingTestsCount}</p>
                                 <p className="text-sm text-gray-500 mt-2">This week</p>
+                            </div>
+                        </div>
+
+                        {}
+                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
+                            <div className="p-6 border-b border-gray-200">
+                                <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Student Daily Status</h3>
+                                <p className="text-sm text-gray-500">Real-time updates for {new Date().toLocaleDateString()}</p>
+                            </div>
+                            <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {}
+                                <div className="space-y-6">
+                                    {}
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-2xl font-bold">
+                                            {child.name.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <h4 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{child.name}</h4>
+                                            <p className="text-gray-500">{child.class}</p>
+                                        </div>
+                                    </div>
+
+                                    {}
+                                    <div className={`p-4 rounded-lg flex items-center justify-between ${child.attendanceStatus === 'Present' ? 'bg-green-50 border border-green-200' :
+                                        child.attendanceStatus === 'Absent' ? 'bg-red-50 border border-red-200' :
+                                            child.attendanceStatus === 'Late' ? 'bg-yellow-50 border border-yellow-200' :
+                                                'bg-gray-50 border border-gray-200'
+                                        }`}>
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-600">Today's Attendance</p>
+                                            <p className={`text-lg font-bold ${child.attendanceStatus === 'Present' ? 'text-green-700' :
+                                                child.attendanceStatus === 'Absent' ? 'text-red-700' :
+                                                    child.attendanceStatus === 'Late' ? 'text-yellow-700' :
+                                                        'text-gray-700'
+                                                }`}>
+                                                {child.attendanceStatus}
+                                            </p>
+                                        </div>
+                                        {child.attendanceStatus === 'Present' && <CheckCircle className="w-8 h-8 text-green-500" />}
+                                        {child.attendanceStatus === 'Absent' && <XCircle className="w-8 h-8 text-red-500" />}
+                                        {child.attendanceStatus === 'Late' && <AlertCircle className="w-8 h-8 text-yellow-500" />}
+                                        {child.attendanceStatus === 'Not Marked' && <Clock className="w-8 h-8 text-gray-400" />}
+                                    </div>
+
+                                    {}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
+                                            <p className="text-sm text-gray-600">Pending Assignments</p>
+                                            <p className="text-2xl font-bold text-orange-600">{child.assignmentsPending}</p>
+                                        </div>
+                                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                                            <p className="text-sm text-gray-600">Submitted Assignments</p>
+                                            <p className="text-2xl font-bold text-blue-600">{child.assignmentsSubmitted}</p>
+                                        </div>
+                                    </div>
+
+                                    {}
+                                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                        <span className="text-gray-700 font-medium">Fee Status</span>
+                                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${child.feeStatus === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                            }`}>
+                                            {child.feeStatus}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {}
+                                <div className="space-y-6">
+                                    {}
+                                    <div>
+                                        <h4 className={`text-sm font-bold uppercase tracking-wider mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Upcoming Exams</h4>
+                                        {child.upcomingExamsList.length > 0 ? (
+                                            <div className="space-y-3">
+                                                {child.upcomingExamsList.map(exam => (
+                                                    <div key={exam.id} className="flex items-center bg-white border border-gray-100 p-3 rounded-lg shadow-sm">
+                                                        <div className="w-12 h-12 bg-red-100 rounded-lg flex flex-col items-center justify-center text-red-600 mr-4">
+                                                            <span className="text-xs font-bold">{new Date(exam.examDate).toLocaleDateString(undefined, { month: 'short' })}</span>
+                                                            <span className="text-lg font-bold">{new Date(exam.examDate).getDate()}</span>
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold text-gray-900">{exam.subject}</p>
+                                                            <p className="text-xs text-gray-500">{exam.examName} • {exam.startTime}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-500 italic p-2">No upcoming exams this week.</p>
+                                        )}
+                                    </div>
+
+                                    {}
+                                    <div>
+                                        <h4 className={`text-sm font-bold uppercase tracking-wider mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Today's Schedule</h4>
+                                        {child.todaysSchedule.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {child.todaysSchedule.sort((a, b) => a.time.localeCompare(b.time)).map((slot, idx) => (
+                                                    <div key={idx} className="flex justify-between items-center text-sm p-2 hover:bg-gray-50 rounded">
+                                                        <span className="font-medium text-gray-700 w-20">{slot.time}</span>
+                                                        <span className="flex-1 font-semibold text-gray-900">{slot.subject}</span>
+                                                        <span className="text-gray-500 text-xs">{slot.room}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-500 italic p-2">No classes scheduled for today.</p>
+                                        )}
+                                    </div>
+
+                                    {}
+                                    <div>
+                                        <h4 className={`text-sm font-bold uppercase tracking-wider mb-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Latest Announcements</h4>
+                                        {child.announcements.length > 0 ? (
+                                            <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
+                                                <div className="flex items-start">
+                                                    <Megaphone className="w-4 h-4 text-indigo-600 mt-1 mr-2 flex-shrink-0" />
+                                                    <div>
+                                                        <p className="text-sm font-bold text-indigo-900">{child.announcements[0].title}</p>
+                                                        <p className="text-xs text-indigo-700 mt-1 line-clamp-2">{child.announcements[0].description}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-500 italic">No new announcements.</p>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 ))}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Recent Activities</h3>
-                        <div className="space-y-4">
-                            {dashboardData.recentActivities.map((activity) => (
-                                <div key={activity.id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex-1">
-                                            <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>{activity.child}</h4>
-                                            <p className="text-sm text-gray-500 mb-1">{activity.activity}</p>
-                                            <p className="text-xs text-gray-500">{activity.time}</p>
-                                        </div>
-                                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${activity.type === 'assignment' ? 'bg-blue-100 text-blue-600' : activity.type === 'attendance' ? 'bg-green-100 text-green-600' : 'bg-purple-100 text-purple-600'}`}>
-                                            {activity.type}
-                                        </span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Upcoming Events</h3>
-                        <div className="space-y-4">
-                            {dashboardData.upcomingEvents.map((event) => (
-                                <div key={event.id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex-1">
-                                            <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>{event.title}</h4>
-                                            <p className="text-sm text-gray-500 mb-1">{event.date}</p>
-                                            <p className="text-xs text-gray-500">{event.time}</p>
-                                        </div>
-                                        <Calendar className="w-5 h-5 text-orange-500" />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
             </>
         );
     };
-
 
     return (
         <div className={`flex h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
@@ -303,6 +515,8 @@ const ParentDashboard = () => {
                         ))}
                     </ul>
                 </nav>
+
+                {}
             </aside>
 
             <main className="flex-1 flex flex-col overflow-hidden">

@@ -1,255 +1,155 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Plus, MoreVertical, Mail, Phone, Edit, Trash2, X, Save, UserPlus, BookOpen, Calendar, Award } from 'lucide-react';
-import { getAllTeachers, addTeacher, updateTeacher, deleteTeacher, subscribeToUpdates, getTeacherStats } from '../../../utils/teacherStore';
-import { addTeacher as addUserTeacher } from '../../../utils/userStore';
+import { teacherApi, emailApi } from '../../../services/api';
+import { useToast } from '../../../context/ToastContext';
 
-// Move modal components outside to prevent re-creation on every render
 const TeacherFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, darkMode }) => {
     const departments = ['Mathematics', 'Science', 'English', 'Social Studies', 'Computer Science', 'Physical Education', 'Arts', 'Languages'];
     const qualifications = ['B.Ed', 'M.Ed', 'B.A', 'M.A', 'B.Sc', 'M.Sc', 'B.Tech', 'M.Tech', 'PhD'];
 
+    const inputClass = `w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-sm`;
+    const labelClass = `block text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`;
+    const sectionTitleClass = `text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} uppercase tracking-wider mb-3 pb-1 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`;
+
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto`}>
-                <div className={`sticky top-0 ${darkMode ? 'bg-gray-800' : 'bg-white'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6 z-10`}>
-                    <div className="flex items-center justify-between">
-                        <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                            {isEdit ? 'Edit Teacher' : 'Add New Teacher'}
-                        </h2>
-                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                            <X className="w-6 h-6 text-gray-500" />
-                        </button>
-                    </div>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl w-full max-w-6xl shadow-2xl flex flex-col max-h-[90vh]`}>
+
+                { }
+                <div className={`flex items-center justify-between p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                    <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {isEdit ? 'Edit Teacher Details' : 'Add New Teacher'}
+                    </h2>
+                    <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <X className="w-5 h-5 text-gray-500" />
+                    </button>
                 </div>
 
-                <form onSubmit={onSubmit} className="p-6 space-y-6">
-                    {/* Personal Information */}
-                    <div>
-                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-                            Personal Information
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Full Name *
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                    placeholder="Enter full name"
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Employee ID *
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formData.employeeId}
-                                    onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                    placeholder="e.g., T-101"
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Department *
-                                </label>
-                                <select
-                                    required
-                                    value={formData.department}
-                                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                >
-                                    <option value="">Select Department</option>
-                                    {departments.map(dept => (
-                                        <option key={dept} value={dept}>{dept}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Subject *
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formData.subject}
-                                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                    placeholder="e.g., Mathematics"
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Qualification
-                                </label>
-                                <select
-                                    value={formData.qualification}
-                                    onChange={(e) => setFormData({ ...formData, qualification: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                >
-                                    <option value="">Select Qualification</option>
-                                    {qualifications.map(qual => (
-                                        <option key={qual} value={qual}>{qual}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Gender
-                                </label>
-                                <select
-                                    value={formData.gender}
-                                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                >
-                                    <option value="">Select Gender</option>
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Date of Birth
-                                </label>
-                                <input
-                                    type="date"
-                                    value={formData.dateOfBirth}
-                                    onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Joining Date
-                                </label>
-                                <input
-                                    type="date"
-                                    value={formData.joiningDate}
-                                    onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                />
+                { }
+                <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                        { }
+                        <div className="space-y-4">
+                            <h3 className={sectionTitleClass}>Identity & Status</h3>
+                            <div className="space-y-3">
+                                <div>
+                                    <label className={labelClass}>Full Name *</label>
+                                    <input type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className={inputClass} placeholder="Enter full name" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className={labelClass}>Employee ID *</label>
+                                        <input type="text" required value={formData.employeeId} onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })} className={inputClass} placeholder="T-101" />
+                                    </div>
+                                    <div>
+                                        <label className={labelClass}>Status</label>
+                                        <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className={inputClass}>
+                                            <option value="Active">Active</option>
+                                            <option value="Inactive">Inactive</option>
+                                            <option value="On Leave">On Leave</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Joining Date</label>
+                                    <input type="date" value={formData.joiningDate} onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })} className={inputClass} />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className={labelClass}>Experience (Yrs)</label>
+                                        <input type="number" min="0" value={formData.experience} onChange={(e) => setFormData({ ...formData, experience: e.target.value })} className={inputClass} placeholder="0" />
+                                    </div>
+                                    <div>
+                                        <label className={labelClass}>Salary</label>
+                                        <input type="number" min="0" value={formData.salary} onChange={(e) => setFormData({ ...formData, salary: e.target.value })} className={inputClass} placeholder="0" />
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Contact Information */}
-                    <div>
-                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-                            Contact Information
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Email *
-                                </label>
-                                <input
-                                    type="email"
-                                    required
-                                    value={formData.email}
-                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                    placeholder="teacher@school.com"
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Phone *
-                                </label>
-                                <input
-                                    type="tel"
-                                    required
-                                    value={formData.phone}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                    placeholder="+1 234-567-8900"
-                                />
-                            </div>
-                            <div className="md:col-span-2">
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Address
-                                </label>
-                                <textarea
-                                    value={formData.address}
-                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                    rows="2"
-                                    placeholder="Enter address"
-                                />
+                        { }
+                        <div className="space-y-4">
+                            <h3 className={sectionTitleClass}>Academic Role</h3>
+                            <div className="space-y-3">
+                                <div>
+                                    <label className={labelClass}>Department *</label>
+                                    <select required value={formData.department} onChange={(e) => setFormData({ ...formData, department: e.target.value })} className={inputClass}>
+                                        <option value="">Select Department</option>
+                                        {departments.map(dept => <option key={dept} value={dept}>{dept}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Subject *</label>
+                                    <input type="text" required value={formData.subject} onChange={(e) => setFormData({ ...formData, subject: e.target.value })} className={inputClass} placeholder="e.g. Mathematics" />
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Qualification</label>
+                                    <select value={formData.qualification} onChange={(e) => setFormData({ ...formData, qualification: e.target.value })} className={inputClass}>
+                                        <option value="">Select Qualification</option>
+                                        {qualifications.map(qual => <option key={qual} value={qual}>{qual}</option>)}
+                                    </select>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Employment Details */}
-                    <div>
-                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-                            Employment Details
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Experience (Years)
-                                </label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    value={formData.experience}
-                                    onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                    placeholder="0"
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Salary
-                                </label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    value={formData.salary}
-                                    onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                    placeholder="0"
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Status
-                                </label>
-                                <select
-                                    value={formData.status}
-                                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none`}
-                                >
-                                    <option value="Active">Active</option>
-                                    <option value="Inactive">Inactive</option>
-                                    <option value="On Leave">On Leave</option>
-                                </select>
+                        { }
+                        <div className="space-y-4">
+                            <h3 className={sectionTitleClass}>Personal & Contact</h3>
+                            <div className="space-y-3">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className={labelClass}>Gender</label>
+                                        <select value={formData.gender} onChange={(e) => setFormData({ ...formData, gender: e.target.value })} className={inputClass}>
+                                            <option value="">Select</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className={labelClass}>Date of Birth</label>
+                                        <input
+                                            type="date"
+                                            value={formData.dateOfBirth}
+                                            onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                                            max={new Date().toISOString().split('T')[0]}
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Email *</label>
+                                    <input type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className={inputClass} placeholder="teacher@school.com" />
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Phone *</label>
+                                    <input type="tel" required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className={inputClass} placeholder="+1 234-567-8900" />
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Address</label>
+                                    <textarea value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} className={`${inputClass} resize-none h-[88px]`} rows="3" placeholder="Residential Address" />
+                                </div>
                             </div>
                         </div>
+
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    { }
+                    <div className="flex justify-end gap-3 pt-6 mt-2  border-gray-200 dark:border-gray-700">
                         <button
                             type="button"
                             onClick={onClose}
-                            className={`px-6 py-2 rounded-lg border ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'} transition-colors`}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium border ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'} transition-colors`}
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+                            className="px-6 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
                         >
-                            <Save className="w-5 h-5" />
-                            <span>{isEdit ? 'Update Teacher' : 'Add Teacher'}</span>
+                            <Save className="w-4 h-4" />
+                            <span>{isEdit ? 'Update Teacher' : 'Save Teacher'}</span>
                         </button>
                     </div>
                 </form>
@@ -259,7 +159,7 @@ const TeacherFormModal = ({ isEdit, onClose, onSubmit, formData, setFormData, da
 };
 
 const DeleteConfirmModal = ({ darkMode, selectedTeacher, onClose, onConfirm }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>
             <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                 Confirm Delete
@@ -286,6 +186,7 @@ const DeleteConfirmModal = ({ darkMode, selectedTeacher, onClose, onConfirm }) =
 );
 
 const Teachers = ({ darkMode }) => {
+    const { showSuccess, showError, showWarning } = useToast();
     const [teachers, setTeachers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterDepartment, setFilterDepartment] = useState('All Departments');
@@ -313,18 +214,33 @@ const Teachers = ({ darkMode }) => {
         status: 'Active'
     });
 
-    // Load teachers on mount and subscribe to updates
-    useEffect(() => {
-        loadTeachers();
-        const unsubscribe = subscribeToUpdates(loadTeachers);
-        return unsubscribe;
+    const loadTeachers = useCallback(async () => {
+        try {
+            const response = await teacherApi.getAll();
+            const data = response.data || [];
+            setTeachers(data);
+
+            try {
+                const statsResponse = await teacherApi.getStats();
+                setStats(statsResponse.data || { total: 0, active: 0, inactive: 0, onLeave: 0 });
+            } catch (statsError) {
+
+                setStats({
+                    total: data.length,
+                    active: data.filter(t => t.status === 'Active').length,
+                    inactive: data.filter(t => t.status === 'Inactive').length,
+                    onLeave: data.filter(t => t.status === 'On Leave').length
+                });
+            }
+        } catch (error) {
+            console.error('Failed to load teachers', error);
+            setTeachers([]);
+        }
     }, []);
 
-    const loadTeachers = useCallback(() => {
-        const data = getAllTeachers();
-        setTeachers(data);
-        setStats(getTeacherStats());
-    }, []);
+    useEffect(() => {
+        loadTeachers();
+    }, [loadTeachers]);
 
     const resetForm = useCallback(() => {
         setFormData({
@@ -345,56 +261,79 @@ const Teachers = ({ darkMode }) => {
         });
     }, []);
 
-    const handleAddTeacher = useCallback((e) => {
+    const handleAddTeacher = useCallback(async (e) => {
         e.preventDefault();
         try {
-            // Add to teacherStore (for teacher management)
-            addTeacher(formData);
 
-            // Add to userStore (for authentication) with default password
-            addUserTeacher({
-                email: formData.email,
-                name: formData.name,
-                subject: formData.subject,
-                department: formData.department,
-                qualification: formData.qualification,
-                phone: formData.phone,
-                address: formData.address,
-                dateOfBirth: formData.dateOfBirth,
-                createdBy: localStorage.getItem('userName') || 'admin'
-            });
+            if (formData.dateOfBirth) {
+                const dob = new Date(formData.dateOfBirth);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (dob > today) {
+                    showError('Date of birth cannot be in the future!');
+                    return;
+                }
+            }
+
+            await teacherApi.create(formData);
+
+            try {
+                await emailApi.sendTeacherCredentials({
+                    email: formData.email,
+                    password: 'password',
+                    name: formData.name
+                });
+                showSuccess('📧 Credentials emailed successfully to Faculty!');
+            } catch (emailError) {
+                console.warn('Email sending failed:', emailError);
+            }
 
             setShowAddModal(false);
             resetForm();
-            alert('Teacher added successfully! Login credentials:\nEmail: ' + formData.email + '\nPassword: password');
+            loadTeachers();
+            showSuccess('Teacher added successfully!');
         } catch (error) {
-            alert('Error adding teacher: ' + error.message);
+            showError('Error adding teacher: ' + (error.response?.data?.message || error.message));
         }
-    }, [formData, resetForm]);
+    }, [formData, resetForm, showSuccess, showError, loadTeachers]);
 
-    const handleEditTeacher = useCallback((e) => {
+    const handleEditTeacher = useCallback(async (e) => {
         e.preventDefault();
         try {
-            updateTeacher(selectedTeacher.id, formData);
+
+            if (formData.dateOfBirth) {
+                const dob = new Date(formData.dateOfBirth);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (dob > today) {
+                    showError('Date of birth cannot be in the future!');
+                    return;
+                }
+            }
+
+            await teacherApi.update(selectedTeacher.id, formData);
             setShowEditModal(false);
             setSelectedTeacher(null);
             resetForm();
-            alert('Teacher updated successfully!');
+            loadTeachers();
+            showSuccess('Teacher updated successfully!');
         } catch (error) {
-            alert('Error updating teacher: ' + error.message);
+            showError('Error updating teacher: ' + (error.response?.data?.message || error.message));
         }
-    }, [formData, selectedTeacher, resetForm]);
+    }, [formData, selectedTeacher, resetForm, showSuccess, showError, loadTeachers]);
 
-    const handleDeleteTeacher = useCallback(() => {
+    const handleDeleteTeacher = useCallback(async () => {
         try {
-            deleteTeacher(selectedTeacher.id);
+            await teacherApi.delete(selectedTeacher.id);
+
             setShowDeleteConfirm(false);
             setSelectedTeacher(null);
-            alert('Teacher deleted successfully!');
+            loadTeachers();
+            showSuccess('Teacher deleted successfully!');
         } catch (error) {
-            alert('Error deleting teacher: ' + error.message);
+            showError('Error deleting teacher: ' + (error.response?.data?.message || error.message));
         }
-    }, [selectedTeacher]);
+    }, [selectedTeacher, showSuccess, showError, loadTeachers]);
 
     const openEditModal = useCallback((teacher) => {
         setSelectedTeacher(teacher);
@@ -437,7 +376,7 @@ const Teachers = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {/* Header with Stats */}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <p className="text-sm text-gray-500">Total Teachers</p>
@@ -457,7 +396,7 @@ const Teachers = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Controls */}
+            { }
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                     Teachers Management
@@ -507,7 +446,7 @@ const Teachers = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Teachers Grid */}
+            { }
             {filteredTeachers.length === 0 ? (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 text-center border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <UserPlus className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -586,7 +525,7 @@ const Teachers = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Modals */}
+            { }
             {showAddModal && (
                 <TeacherFormModal
                     isEdit={false}

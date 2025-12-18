@@ -15,19 +15,7 @@ import {
     MoreVertical,
     Filter
 } from 'lucide-react';
-import {
-    sendMessage,
-    getUserConversations,
-    getConversationMessages,
-    markConversationAsRead,
-    getUserAnnouncements,
-    createAnnouncement,
-    markAnnouncementAsRead,
-    getUserNotifications,
-    markNotificationAsRead,
-    getUnreadCounts,
-    subscribeToCommunicationUpdates
-} from '../../../utils/communicationStore';
+import { communicationApi } from '../../../services/api';
 
 const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
     const [activeTab, setActiveTab] = useState('messages');
@@ -43,7 +31,9 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
     const [notifications, setNotifications] = useState([]);
     const [unreadCounts, setUnreadCounts] = useState({ messages: 0, announcements: 0, notifications: 0 });
 
-    // New message form
+    const userEmail = localStorage.getItem('userEmail');
+    const userName = localStorage.getItem('userName');
+
     const [newMessage, setNewMessage] = useState({
         recipientId: '',
         recipientName: '',
@@ -52,7 +42,6 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
         text: ''
     });
 
-    // New announcement form
     const [newAnnouncement, setNewAnnouncement] = useState({
         title: '',
         content: '',
@@ -61,96 +50,117 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
         category: 'General'
     });
 
-    // Load data on mount and subscribe to updates
     useEffect(() => {
         loadData();
+    }, [activeTab]);
 
-        const unsubscribe = subscribeToCommunicationUpdates(() => {
-            loadData();
-        });
-
-        return () => unsubscribe();
-    }, []);
-
-    // Load selected conversation messages
     useEffect(() => {
         if (selectedConversation) {
-            const messages = getConversationMessages(selectedConversation.id);
-            setCurrentMessages(messages);
-            markConversationAsRead(selectedConversation.id);
+            loadMessages(selectedConversation.id);
         }
     }, [selectedConversation]);
 
-    const loadData = () => {
-        setConversations(getUserConversations());
-        setAnnouncements(getUserAnnouncements());
-        setNotifications(getUserNotifications());
-        setUnreadCounts(getUnreadCounts());
+    const loadData = async () => {
+        try {
+            const [convRes, annRes, notifRes, unreadRes] = await Promise.all([
+                communicationApi.getConversations({ userEmail }),
+                communicationApi.getAnnouncements({ portalType }),
+                communicationApi.getNotifications({ userEmail }),
+                communicationApi.getUnreadCounts({ userEmail })
+            ]);
+
+            setConversations(convRes.data || []);
+            setAnnouncements(annRes.data || []);
+            setNotifications(notifRes.data || []);
+            setUnreadCounts(unreadRes.data || { messages: 0, announcements: 0, notifications: 0 });
+        } catch (error) {
+            console.error('Error loading communication data:', error);
+        }
     };
 
-    const handleSendMessage = () => {
+    const loadMessages = async (conversationId) => {
+        try {
+            const res = await communicationApi.getMessages(conversationId);
+            setCurrentMessages(res.data || []);
+            await communicationApi.markAsRead(conversationId, { userEmail });
+            loadData();
+        } catch (error) {
+            console.error('Error loading messages:', error);
+        }
+    };
+
+    const handleSendMessage = async () => {
         if (messageText.trim() && selectedConversation) {
-            sendMessage({
-                conversationId: selectedConversation.id,
-                recipientId: selectedConversation.otherParticipant.id,
-                recipientName: selectedConversation.otherParticipant.name,
-                recipientRole: selectedConversation.otherParticipant.role,
-                text: messageText,
-                type: 'direct'
-            });
-            setMessageText('');
+            try {
+                await communicationApi.sendMessage({
+                    conversationId: selectedConversation.id,
+                    recipientId: selectedConversation.otherParticipant.id,
+                    recipientName: selectedConversation.otherParticipant.name,
+                    recipientRole: selectedConversation.otherParticipant.role,
+                    text: messageText,
+                    type: 'direct',
+                    senderEmail: userEmail,
+                    senderName: userName
+                });
+                setMessageText('');
+                loadMessages(selectedConversation.id);
+            } catch (error) {
+                console.error('Error sending message:', error);
+            }
         }
     };
 
-    const handleNewMessage = () => {
+    const handleNewMessage = async () => {
         if (newMessage.text.trim() && newMessage.recipientId) {
-            sendMessage({
-                recipientId: newMessage.recipientId,
-                recipientName: newMessage.recipientName,
-                recipientRole: newMessage.recipientRole,
-                subject: newMessage.subject,
-                text: newMessage.text,
-                type: 'direct'
-            });
-            setShowNewMessageModal(false);
-            setNewMessage({ recipientId: '', recipientName: '', recipientRole: '', subject: '', text: '' });
+            try {
+                await communicationApi.sendMessage({
+                    recipientId: newMessage.recipientId,
+                    recipientName: newMessage.recipientName,
+                    recipientRole: newMessage.recipientRole,
+                    subject: newMessage.subject,
+                    text: newMessage.text,
+                    type: 'direct',
+                    senderEmail: userEmail,
+                    senderName: userName
+                });
+                setShowNewMessageModal(false);
+                setNewMessage({ recipientId: '', recipientName: '', recipientRole: '', subject: '', text: '' });
+                loadData();
+            } catch (error) {
+                console.error('Error sending new message:', error);
+            }
         }
     };
 
-    const handleCreateAnnouncement = () => {
+    const handleCreateAnnouncement = async () => {
         if (newAnnouncement.title.trim() && newAnnouncement.content.trim()) {
-            createAnnouncement(newAnnouncement);
-            setShowNewAnnouncementModal(false);
-            setNewAnnouncement({ title: '', content: '', recipients: 'all', priority: 'medium', category: 'General' });
+            try {
+                await communicationApi.createAnnouncement({
+                    ...newAnnouncement,
+                    authorEmail: userEmail,
+                    authorName: userName
+                });
+                setShowNewAnnouncementModal(false);
+                setNewAnnouncement({ title: '', content: '', recipients: 'all', priority: 'medium', category: 'General' });
+                loadData();
+            } catch (error) {
+                console.error('Error creating announcement:', error);
+            }
         }
     };
 
-    const filteredConversations = conversations.filter(conv =>
-        conv.otherParticipant?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    const getInitials = (name) => {
-        return name?.split(' ').map(n => n[0]).join('').toUpperCase() || '??';
-    };
-
-    const formatTime = (timestamp) => {
-        const date = new Date(timestamp);
-        const now = new Date();
-        const diffMs = now - date;
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMs / 3600000);
-        const diffDays = Math.floor(diffMs / 86400000);
-
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return `${diffMins}m ago`;
-        if (diffHours < 24) return `${diffHours}h ago`;
-        if (diffDays < 7) return `${diffDays}d ago`;
-        return date.toLocaleDateString();
+    const markNotificationAsRead = async (id) => {
+        try {
+            await communicationApi.markNotificationRead(id);
+            loadData();
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
     };
 
     const renderMessagesTab = () => (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Conversations List */}
+            { }
             <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border overflow-hidden`}>
                 <div className="p-4 border-b border-gray-200">
                     <div className="flex items-center justify-between mb-4">
@@ -185,10 +195,10 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
                             key={conv.id}
                             onClick={() => setSelectedConversation(conv)}
                             className={`p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'} cursor-pointer transition-colors ${selectedConversation?.id === conv.id
-                                    ? 'bg-blue-50'
-                                    : darkMode
-                                        ? 'hover:bg-gray-700'
-                                        : 'hover:bg-gray-50'
+                                ? 'bg-blue-50'
+                                : darkMode
+                                    ? 'hover:bg-gray-700'
+                                    : 'hover:bg-gray-50'
                                 }`}
                         >
                             <div className="flex items-start space-x-3">
@@ -224,11 +234,11 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
                 </div>
             </div>
 
-            {/* Message Content */}
+            { }
             <div className={`lg:col-span-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border flex flex-col`}>
                 {selectedConversation ? (
                     <>
-                        {/* Chat Header */}
+                        { }
                         <div className={`p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} flex items-center justify-between`}>
                             <div className="flex items-center space-x-3">
                                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
@@ -243,7 +253,7 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
                             </div>
                         </div>
 
-                        {/* Messages */}
+                        { }
                         <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[400px]">
                             {currentMessages.map((message) => {
                                 const isSent = message.senderRole !== selectedConversation.otherParticipant?.role;
@@ -253,10 +263,10 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
                                         className={`flex ${isSent ? 'justify-end' : 'justify-start'}`}
                                     >
                                         <div className={`max-w-[70%] ${isSent
-                                                ? 'bg-blue-600 text-white'
-                                                : darkMode
-                                                    ? 'bg-gray-700 text-white'
-                                                    : 'bg-gray-100 text-gray-900'
+                                            ? 'bg-blue-600 text-white'
+                                            : darkMode
+                                                ? 'bg-gray-700 text-white'
+                                                : 'bg-gray-100 text-gray-900'
                                             } rounded-lg p-3`}>
                                             {message.subject && (
                                                 <p className="text-xs font-semibold mb-1 opacity-80">{message.subject}</p>
@@ -272,7 +282,7 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
                             })}
                         </div>
 
-                        {/* Message Input */}
+                        { }
                         <div className={`p-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                             <div className="flex items-center space-x-2">
                                 <input
@@ -334,10 +344,10 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
                                     {announcement.title}
                                 </h3>
                                 <span className={`px-3 py-1 rounded-full text-xs font-semibold ${announcement.priority === 'high'
-                                        ? 'bg-red-100 text-red-600'
-                                        : announcement.priority === 'medium'
-                                            ? 'bg-yellow-100 text-yellow-600'
-                                            : 'bg-blue-100 text-blue-600'
+                                    ? 'bg-red-100 text-red-600'
+                                    : announcement.priority === 'medium'
+                                        ? 'bg-yellow-100 text-yellow-600'
+                                        : 'bg-blue-100 text-blue-600'
                                     }`}>
                                     {announcement.priority.charAt(0).toUpperCase() + announcement.priority.slice(1)} Priority
                                 </span>
@@ -402,7 +412,7 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
+            { }
             <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Communication Center
@@ -410,7 +420,7 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
                 <p className="text-sm text-gray-500">Messages, announcements, and notifications</p>
             </div>
 
-            {/* Stats Cards */}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
@@ -443,7 +453,7 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
                 </div>
             </div>
 
-            {/* Tabs */}
+            { }
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="border-b border-gray-200">
                     <div className="flex space-x-8 px-6">
@@ -452,8 +462,8 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
                                 className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors capitalize relative ${activeTab === tab
-                                        ? 'border-blue-600 text-blue-600'
-                                        : `border-transparent ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`
+                                    ? 'border-blue-600 text-blue-600'
+                                    : `border-transparent ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`
                                     }`}
                             >
                                 {tab}
@@ -474,7 +484,7 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
                 </div>
             </div>
 
-            {/* New Message Modal */}
+            { }
             {showNewMessageModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 max-w-md w-full`}>
@@ -539,7 +549,7 @@ const CommunicationPage = ({ darkMode, portalType = 'student' }) => {
                 </div>
             )}
 
-            {/* New Announcement Modal */}
+            { }
             {showNewAnnouncementModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 max-w-md w-full`}>

@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BookOpen, FileText, Link as LinkIcon, Calendar, Upload, CheckCircle, X, Save } from 'lucide-react';
-import { getAllStudents } from '../../../utils/studentStore';
-import { getCoursesForStudent, getCoursesByClass, submitAssignment, subscribeToUpdates } from '../../../utils/courseStore';
+import { studentApi, courseApi, assignmentApi } from '../../../services/api';
+import { useToast } from '../../../context/ToastContext';
 
 const SubmissionModal = ({ darkMode, onClose, onSubmit, assignment, courseName }) => {
+    const { showSuccess, showError, showWarning, showInfo } = useToast();
     const [link, setLink] = useState('');
 
     const handleSubmit = (e) => {
         e.preventDefault();
 
         if (!link.trim()) {
-            alert('Please enter a link');
+            showWarning('Please enter a link');
             return;
         }
 
@@ -100,63 +101,82 @@ const CoursesPage = ({ darkMode }) => {
     useEffect(() => {
         if (studentClass) {
             loadCourses();
-            const unsubscribe = subscribeToUpdates(loadCourses);
-            return unsubscribe;
         }
     }, [studentClass]);
 
-    const loadStudentInfo = useCallback(() => {
-        console.log('Loading student info for email:', studentEmail);
-        const students = getAllStudents();
-        console.log('All students:', students);
+    const loadStudentInfo = useCallback(async () => {
+        if (!studentEmail) return;
+        try {
+            const studentRes = await studentApi.getAll();
+            const allStudents = studentRes.data || [];
+            const student = allStudents.find(s => s.email === studentEmail);
 
-        const student = students.find(s => s.email === studentEmail);
-        console.log('Student found:', student);
-
-        if (student) {
-            setStudentId(student.id);
-            setStudentName(student.name);
-            setStudentClass(student.class);
-            console.log('Student ID set to:', student.id);
-            console.log('Student Name set to:', student.name);
-            console.log('Student Class set to:', student.class);
+            if (student) {
+                setStudentId(student.id);
+                setStudentName(student.name);
+                setStudentClass(student.class);
+            }
+        } catch (error) {
+            console.error(error);
         }
     }, [studentEmail]);
 
-    const loadCourses = useCallback(() => {
-        if (studentClass) {
-            console.log('Loading courses for class:', studentClass);
-            // Get courses for student's class
-            const classCourses = getCoursesByClass(studentClass);
-            console.log('Class courses found:', classCourses);
-            setCourses(classCourses);
+    const loadCourses = useCallback(async () => {
+        if (!studentClass) return;
 
-            // Update selected course if it exists
+        try {
+            const res = await courseApi.getAll();
+            const allCourses = res.data || [];
+            const classCourses = allCourses.filter(c => c.class === studentClass);
+
+            const enrichedCourses = await Promise.all(classCourses.map(async (course) => {
+                const assignments = course.assignments || [];
+                const assignmentsWithSubs = await Promise.all(assignments.map(async (assign) => {
+                    try {
+                        const subRes = await assignmentApi.getSubmissions(assign.id);
+                        const submissions = subRes.data || [];
+                        return { ...assign, submissions };
+                    } catch {
+                        return { ...assign, submissions: [] };
+                    }
+                }));
+                return { ...course, assignments: assignmentsWithSubs };
+            }));
+
+            setCourses(enrichedCourses);
+
             if (selectedCourse) {
-                const updated = classCourses.find(c => c.id === selectedCourse.id);
+                const updated = enrichedCourses.find(c => c.id === selectedCourse.id);
                 if (updated) {
                     setSelectedCourse(updated);
                 }
             }
-        } else {
-            console.log('No student class set, cannot load courses');
+        } catch (error) {
+            console.error(error);
         }
     }, [studentClass, selectedCourse]);
 
-    const handleSubmitAssignment = useCallback((link) => {
+    const handleSubmitAssignment = useCallback(async (link) => {
         try {
-            submitAssignment(selectedCourse.id, selectedAssignment.id, {
-                studentId,
-                studentName,
-                link
+            await assignmentApi.createSubmission({
+                assignmentId: selectedAssignment.id,
+                courseId: selectedCourse.id,
+                studentId: studentId,
+                studentName: studentName,
+                link: link,
+                status: 'submitted',
+                submittedAt: new Date().toISOString()
             });
+
             setShowSubmissionModal(false);
             setSelectedAssignment(null);
-            alert('Assignment submitted successfully!');
+            showSuccess('Assignment submitted successfully!');
+            loadCourses();
         } catch (error) {
-            alert('Error submitting assignment: ' + error.message);
+            console.error(error);
+            showError('Error submitting assignment: ' + (error.response?.data?.message || error.message));
         }
-    }, [selectedCourse, selectedAssignment, studentId, studentName]);
+    }, [selectedCourse, selectedAssignment, studentId, studentName, loadCourses]);
 
     const hasSubmitted = (assignment) => {
         return assignment.submissions.some(s => s.studentId.toString() === studentId.toString());
@@ -168,7 +188,7 @@ const CoursesPage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {/* Header */}
+            { }
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     My Courses
@@ -178,7 +198,7 @@ const CoursesPage = ({ darkMode }) => {
                 </p>
             </div>
 
-            {/* Courses List */}
+            { }
             {courses.length === 0 ? (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-center`}>
                     <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -191,7 +211,7 @@ const CoursesPage = ({ darkMode }) => {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Courses Sidebar */}
+                    {}
                     <div className="lg:col-span-1 space-y-4">
                         {courses.map(course => (
                             <div
@@ -213,11 +233,11 @@ const CoursesPage = ({ darkMode }) => {
                         ))}
                     </div>
 
-                    {/* Course Details */}
+                    {}
                     <div className="lg:col-span-2">
                         {selectedCourse ? (
                             <div className="space-y-6">
-                                {/* Course Header */}
+                                {}
                                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                     <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                                         {selectedCourse.courseName}
@@ -237,7 +257,7 @@ const CoursesPage = ({ darkMode }) => {
                                     </div>
                                 </div>
 
-                                {/* Course Materials */}
+                                {}
                                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                     <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                                         Course Materials
@@ -273,7 +293,7 @@ const CoursesPage = ({ darkMode }) => {
                                     )}
                                 </div>
 
-                                {/* Assignments */}
+                                {}
                                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                     <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                                         Assignments
@@ -337,7 +357,7 @@ const CoursesPage = ({ darkMode }) => {
                                                             )}
                                                         </div>
 
-                                                        {/* Submission Info */}
+                                                        {}
                                                         {submitted && submission && (
                                                             <div className="mt-3 pt-3 border-t border-green-200">
                                                                 <p className="text-sm font-medium text-gray-500 mb-1">Your Submission:</p>
@@ -372,7 +392,7 @@ const CoursesPage = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Submission Modal */}
+            { }
             {showSubmissionModal && selectedAssignment && (
                 <SubmissionModal
                     darkMode={darkMode}

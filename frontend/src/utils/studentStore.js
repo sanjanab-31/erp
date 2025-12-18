@@ -1,14 +1,11 @@
-// Centralized Student Data Store
-// This provides real-time data synchronization across Admin and Teacher portals
+
 
 const STORAGE_KEY = 'erp_students_data';
 
-// Initialize with default data if empty
 const initializeDefaultData = () => {
     return [];
 };
 
-// Get all students
 export const getAllStudents = () => {
     try {
         const data = localStorage.getItem(STORAGE_KEY);
@@ -24,20 +21,18 @@ export const getAllStudents = () => {
     }
 };
 
-// Add a new student
 export const addStudent = (student) => {
     try {
         const students = getAllStudents();
         const newStudent = {
             ...student,
-            id: Date.now(), // Generate unique ID
+            id: Date.now(), 
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
         students.push(newStudent);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(students));
 
-        // Trigger storage event for real-time updates
         window.dispatchEvent(new Event('studentsUpdated'));
 
         return newStudent;
@@ -47,7 +42,6 @@ export const addStudent = (student) => {
     }
 };
 
-// Update a student
 export const updateStudent = (id, updates) => {
     try {
         const students = getAllStudents();
@@ -65,7 +59,6 @@ export const updateStudent = (id, updates) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(students));
 
-        // Trigger storage event for real-time updates
         window.dispatchEvent(new Event('studentsUpdated'));
 
         return students[index];
@@ -75,7 +68,6 @@ export const updateStudent = (id, updates) => {
     }
 };
 
-// Delete a student
 export const deleteStudent = (id) => {
     try {
         const students = getAllStudents();
@@ -87,7 +79,6 @@ export const deleteStudent = (id) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredStudents));
 
-        // Trigger storage event for real-time updates
         window.dispatchEvent(new Event('studentsUpdated'));
 
         return true;
@@ -97,7 +88,6 @@ export const deleteStudent = (id) => {
     }
 };
 
-// Search students
 export const searchStudents = (query) => {
     const students = getAllStudents();
     const lowerQuery = query.toLowerCase();
@@ -110,7 +100,6 @@ export const searchStudents = (query) => {
     );
 };
 
-// Filter students by class
 export const filterByClass = (className) => {
     const students = getAllStudents();
     if (className === 'All Classes' || !className) {
@@ -119,7 +108,6 @@ export const filterByClass = (className) => {
     return students.filter(student => student.class === className);
 };
 
-// Filter students by status
 export const filterByStatus = (status) => {
     const students = getAllStudents();
     if (status === 'All' || !status) {
@@ -128,13 +116,11 @@ export const filterByStatus = (status) => {
     return students.filter(student => student.status.toLowerCase() === status.toLowerCase());
 };
 
-// Get student by ID
 export const getStudentById = (id) => {
     const students = getAllStudents();
     return students.find(s => s.id === id);
 };
 
-// Get statistics
 export const getStudentStats = () => {
     const students = getAllStudents();
 
@@ -149,12 +135,10 @@ export const getStudentStats = () => {
     };
 };
 
-// Subscribe to real-time updates
 export const subscribeToUpdates = (callback) => {
     const handler = () => callback(getAllStudents());
     window.addEventListener('studentsUpdated', handler);
 
-    // Return unsubscribe function
     return () => window.removeEventListener('studentsUpdated', handler);
 };
 

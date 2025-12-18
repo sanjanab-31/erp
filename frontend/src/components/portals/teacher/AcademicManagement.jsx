@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../../../context/ToastContext';
 import {
     BookOpen,
     Plus,
@@ -17,23 +18,15 @@ import {
     TrendingUp
 } from 'lucide-react';
 import {
-    createCourse,
-    getCoursesByTeacher,
-    createAssignment,
-    getAssignmentsByCourse,
-    getSubmissionsByAssignment,
-    gradeSubmission,
-    enterExamMarks,
-    getExamMarksByCourse,
-    uploadCourseMaterial,
-    getCourseMaterials,
-    deleteAssignment,
-    deleteCourseMaterial,
-    calculateFinalMarks,
-    subscribeToAcademicUpdates
-} from '../../../utils/academicStore';
+    courseApi,
+    assignmentApi,
+    resultApi,
+    studentApi,
+    teacherApi
+} from '../../../services/api';
 
 const AcademicManagement = ({ darkMode }) => {
+    const { showSuccess, showError, showWarning, showInfo } = useToast();
     const [activeTab, setActiveTab] = useState('courses');
     const [courses, setCourses] = useState([]);
     const [selectedCourse, setSelectedCourse] = useState(null);
@@ -53,7 +46,6 @@ const AcademicManagement = ({ darkMode }) => {
     const teacherId = currentUser.id || localStorage.getItem('userId') || 'teacher_1';
     const teacherName = currentUser.name || localStorage.getItem('userName') || 'Teacher';
 
-    // Course form
     const [courseForm, setCourseForm] = useState({
         name: '',
         code: '',
@@ -61,7 +53,6 @@ const AcademicManagement = ({ darkMode }) => {
         description: ''
     });
 
-    // Assignment form
     const [assignmentForm, setAssignmentForm] = useState({
         title: '',
         description: '',
@@ -69,13 +60,11 @@ const AcademicManagement = ({ darkMode }) => {
         maxMarks: 100
     });
 
-    // Grading form
     const [gradingForm, setGradingForm] = useState({
         marks: '',
         feedback: ''
     });
 
-    // Exam marks form
     const [examMarksForm, setExamMarksForm] = useState({
         studentId: '',
         studentName: '',
@@ -84,7 +73,6 @@ const AcademicManagement = ({ darkMode }) => {
         exam3: ''
     });
 
-    // Material form
     const [materialForm, setMaterialForm] = useState({
         title: '',
         description: '',
@@ -92,16 +80,8 @@ const AcademicManagement = ({ darkMode }) => {
         type: 'link'
     });
 
-    // Load data
     useEffect(() => {
         loadCourses();
-        const unsubscribe = subscribeToAcademicUpdates(() => {
-            loadCourses();
-            if (selectedCourse) {
-                loadCourseData(selectedCourse.id);
-            }
-        });
-        return unsubscribe;
     }, []);
 
     useEffect(() => {
@@ -110,75 +90,87 @@ const AcademicManagement = ({ darkMode }) => {
         }
     }, [selectedCourse]);
 
-    const loadCourses = () => {
-        const teacherCourses = getCoursesByTeacher(teacherId);
-        setCourses(teacherCourses);
+    const loadCourses = async () => {
+        try {
+            const res = await courseApi.getAll({ teacherId });
+            setCourses(res.data || []);
+        } catch (error) {
+            console.error('Error loading courses:', error);
+        }
     };
 
-    const loadCourseData = (courseId) => {
-        const courseAssignments = getAssignmentsByCourse(courseId);
-        setAssignments(courseAssignments);
+    const loadCourseData = async (courseId) => {
+        try {
+            const [assignmentsRes, resultsRes] = await Promise.all([
+                assignmentApi.getAll({ courseId }),
+                resultApi.getAll({ courseId })
+            ]);
 
-        const courseExamMarks = getExamMarksByCourse(courseId);
-        setExamMarks(courseExamMarks);
+            setAssignments(assignmentsRes.data || []);
+            setExamMarks(resultsRes.data || []);
 
-        const courseMaterials = getCourseMaterials(courseId);
-        setMaterials(courseMaterials);
+            const currentCourse = courses.find(c => c.id === courseId);
+            setMaterials(currentCourse?.materials || []);
+        } catch (error) {
+            console.error('Error loading course data:', error);
+        }
     };
 
-    const handleCreateCourse = (e) => {
+    const handleCreateCourse = async (e) => {
         e.preventDefault();
         try {
-            createCourse({
+            await courseApi.create({
                 ...courseForm,
                 teacherId,
                 teacherName
             });
             setShowCreateCourseModal(false);
             setCourseForm({ name: '', code: '', class: '', description: '' });
-            alert('Course created successfully!');
+            showSuccess('Course created successfully!');
+            loadCourses();
         } catch (error) {
-            alert('Error creating course: ' + error.message);
+            showError('Error creating course: ' + error.message);
         }
     };
 
-    const handleAddAssignment = (e) => {
+    const handleAddAssignment = async (e) => {
         e.preventDefault();
         try {
-            createAssignment({
+            await assignmentApi.create({
                 ...assignmentForm,
                 courseId: selectedCourse.id,
                 createdBy: teacherId
             });
             setShowAddAssignmentModal(false);
             setAssignmentForm({ title: '', description: '', dueDate: '', maxMarks: 100 });
-            alert('Assignment added successfully!');
+            showSuccess('Assignment added successfully!');
+            loadCourseData(selectedCourse.id);
         } catch (error) {
-            alert('Error adding assignment: ' + error.message);
+            showError('Error adding assignment: ' + error.message);
         }
     };
 
-    const handleGradeSubmission = (e) => {
+    const handleGradeSubmission = async (e) => {
         e.preventDefault();
         try {
-            gradeSubmission(
-                selectedSubmission.id,
-                parseFloat(gradingForm.marks),
-                gradingForm.feedback
-            );
+            await assignmentApi.gradeSubmission(selectedSubmission.id, {
+                marks: parseFloat(gradingForm.marks),
+                feedback: gradingForm.feedback
+            });
             setShowGradingModal(false);
             setGradingForm({ marks: '', feedback: '' });
             setSelectedSubmission(null);
-            alert('Submission graded successfully!');
+            showSuccess('Submission graded successfully!');
+            loadCourseData(selectedCourse.id);
         } catch (error) {
-            alert('Error grading submission: ' + error.message);
+            showError('Error grading submission: ' + error.message);
         }
     };
 
-    const handleEnterExamMarks = (e) => {
+    const handleEnterExamMarks = async (e) => {
         e.preventDefault();
         try {
-            enterExamMarks({
+            await resultApi.save({
                 courseId: selectedCourse.id,
                 studentId: examMarksForm.studentId,
                 studentName: examMarksForm.studentName,
@@ -189,25 +181,32 @@ const AcademicManagement = ({ darkMode }) => {
             });
             setShowExamMarksModal(false);
             setExamMarksForm({ studentId: '', studentName: '', exam1: '', exam2: '', exam3: '' });
-            alert('Exam marks entered successfully!');
+            showSuccess('Exam marks entered successfully!');
+            loadCourseData(selectedCourse.id);
         } catch (error) {
-            alert('Error entering exam marks: ' + error.message);
+            showError('Error entering exam marks: ' + error.message);
         }
     };
 
-    const handleUploadMaterial = (e) => {
+    const handleUploadMaterial = async (e) => {
         e.preventDefault();
         try {
-            uploadCourseMaterial({
+            const updatedMaterials = [...materials, {
                 ...materialForm,
-                courseId: selectedCourse.id,
-                uploadedBy: teacherId
+                id: Date.now().toString(),
+                uploadedAt: new Date().toISOString()
+            }];
+
+            await courseApi.update(selectedCourse.id, {
+                materials: updatedMaterials
             });
+
             setShowMaterialModal(false);
             setMaterialForm({ title: '', description: '', link: '', type: 'link' });
-            alert('Material uploaded successfully!');
+            showSuccess('Material uploaded successfully!');
+            loadCourseData(selectedCourse.id);
         } catch (error) {
-            alert('Error uploading material: ' + error.message);
+            showError('Error uploading material: ' + error.message);
         }
     };
 
@@ -228,7 +227,7 @@ const AcademicManagement = ({ darkMode }) => {
                 </h2>
                 <button
                     onClick={() => setShowCreateCourseModal(true)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
                     <Plus className="w-5 h-5" />
                     <span>Create Course</span>
@@ -257,10 +256,10 @@ const AcademicManagement = ({ darkMode }) => {
                             className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border p-6 cursor-pointer hover:shadow-lg transition-all`}
                         >
                             <div className="flex items-start justify-between mb-4">
-                                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-purple-600 rounded-lg flex items-center justify-center">
                                     <BookOpen className="w-6 h-6 text-white" />
                                 </div>
-                                <span className="px-3 py-1 bg-blue-100 text-blue-600 text-xs font-semibold rounded-full">
+                                <span className="px-3 py-1 bg-green-100 text-green-600 text-xs font-semibold rounded-full">
                                     {course.class}
                                 </span>
                             </div>
@@ -304,8 +303,8 @@ const AcademicManagement = ({ darkMode }) => {
                         onClick={() => setShowAddAssignmentModal(true)}
                         disabled={assignments.length >= 2}
                         className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${assignments.length >= 2
-                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-green-600 text-white hover:bg-green-700'
                             }`}
                     >
                         <Plus className="w-5 h-5" />
@@ -323,7 +322,7 @@ const AcademicManagement = ({ darkMode }) => {
                 ) : (
                     <div className="space-y-4">
                         {assignments.map((assignment) => {
-                            const assignmentSubmissions = getSubmissionsByAssignment(assignment.id);
+                            const assignmentSubmissions = assignment.submissions || [];
                             const gradedCount = assignmentSubmissions.filter(s => s.status === 'graded').length;
 
                             return (
@@ -351,9 +350,15 @@ const AcademicManagement = ({ darkMode }) => {
                                             </div>
                                         </div>
                                         <button
-                                            onClick={() => {
+                                            onClick={async () => {
                                                 if (confirm('Delete this assignment?')) {
-                                                    deleteAssignment(assignment.id);
+                                                    try {
+                                                        await assignmentApi.delete(assignment.id);
+                                                        showSuccess('Assignment deleted');
+                                                        loadCourseData(selectedCourse.id);
+                                                    } catch (error) {
+                                                        showError('Error deleting assignment');
+                                                    }
                                                 }
                                             }}
                                             className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
@@ -401,7 +406,7 @@ const AcademicManagement = ({ darkMode }) => {
                                                             href={submission.driveLink}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="text-sm text-blue-500 hover:underline flex items-center space-x-1"
+                                                            className="text-sm text-green-500 hover:underline flex items-center space-x-1"
                                                         >
                                                             <LinkIcon className="w-3 h-3" />
                                                             <span>View Submission</span>
@@ -421,7 +426,7 @@ const AcademicManagement = ({ darkMode }) => {
                                                         )}
                                                         <button
                                                             onClick={() => openGradingModal(submission)}
-                                                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+                                                            className="px-3 py-1 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700"
                                                         >
                                                             {submission.status === 'graded' ? 'Edit Grade' : 'Grade'}
                                                         </button>
@@ -456,7 +461,7 @@ const AcademicManagement = ({ darkMode }) => {
                     </h2>
                     <button
                         onClick={() => setShowExamMarksModal(true)}
-                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                     >
                         <Plus className="w-5 h-5" />
                         <span>Enter Marks</span>
@@ -487,7 +492,12 @@ const AcademicManagement = ({ darkMode }) => {
                                 <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
                                     {examMarks.map((marks) => {
                                         const total = (marks.exam1 + marks.exam2 + marks.exam3);
-                                        const finalMarks = calculateFinalMarks(marks.studentId, selectedCourse.id);
+
+                                        const calculateFinalGradeValue = () => {
+                                            const totalExam = (marks.exam1 + marks.exam2 + marks.exam3);
+                                            return { examMarks: Math.round((totalExam / 300) * 75) };
+                                        };
+                                        const finalMarks = calculateFinalGradeValue();
 
                                         return (
                                             <tr key={marks.id} className={darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
@@ -512,7 +522,7 @@ const AcademicManagement = ({ darkMode }) => {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className="font-bold text-blue-600">
+                                                    <span className="font-bold text-green-600">
                                                         {total}/300
                                                     </span>
                                                     <p className="text-xs text-gray-500">
@@ -531,7 +541,7 @@ const AcademicManagement = ({ darkMode }) => {
                                                             });
                                                             setShowExamMarksModal(true);
                                                         }}
-                                                        className="text-blue-600 hover:text-blue-700"
+                                                        className="text-green-600 hover:text-green-700"
                                                     >
                                                         <Edit className="w-4 h-4" />
                                                     </button>
@@ -565,7 +575,7 @@ const AcademicManagement = ({ darkMode }) => {
                     </h2>
                     <button
                         onClick={() => setShowMaterialModal(true)}
-                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                     >
                         <Upload className="w-5 h-5" />
                         <span>Upload Material</span>
@@ -591,9 +601,18 @@ const AcademicManagement = ({ darkMode }) => {
                                         {material.title}
                                     </h3>
                                     <button
-                                        onClick={() => {
+                                        onClick={async () => {
                                             if (confirm('Delete this material?')) {
-                                                deleteCourseMaterial(material.id);
+                                                try {
+                                                    const updatedMaterials = materials.filter(m => m.id !== material.id);
+                                                    await courseApi.update(selectedCourse.id, {
+                                                        materials: updatedMaterials
+                                                    });
+                                                    showSuccess('Material deleted');
+                                                    loadCourseData(selectedCourse.id);
+                                                } catch (error) {
+                                                    showError('Error deleting material');
+                                                }
                                             }
                                         }}
                                         className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
@@ -610,7 +629,7 @@ const AcademicManagement = ({ darkMode }) => {
                                     href={material.link}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center space-x-2 text-blue-500 hover:underline"
+                                    className="inline-flex items-center space-x-2 text-green-500 hover:underline"
                                 >
                                     <LinkIcon className="w-4 h-4" />
                                     <span>Open Material</span>
@@ -628,7 +647,7 @@ const AcademicManagement = ({ darkMode }) => {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
+            { }
             <div>
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     Academic Management
@@ -636,7 +655,7 @@ const AcademicManagement = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">Manage courses, assignments, and student marks</p>
             </div>
 
-            {/* Tabs */}
+            { }
             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="border-b border-gray-200">
                     <div className="flex space-x-8 px-6">
@@ -645,8 +664,8 @@ const AcademicManagement = ({ darkMode }) => {
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
                                 className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors capitalize ${activeTab === tab
-                                        ? 'border-blue-600 text-blue-600'
-                                        : `border-transparent ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`
+                                    ? 'border-green-600 text-green-600'
+                                    : `border-transparent ${darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`
                                     }`}
                             >
                                 {tab === 'examMarks' ? 'Exam Marks' : tab}
@@ -663,7 +682,7 @@ const AcademicManagement = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Create Course Modal */}
+            { }
             {showCreateCourseModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>
@@ -683,7 +702,7 @@ const AcademicManagement = ({ darkMode }) => {
                                     required
                                     value={courseForm.name}
                                     onChange={(e) => setCourseForm({ ...courseForm, name: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                                     placeholder="e.g., Mathematics"
                                 />
                             </div>
@@ -696,7 +715,7 @@ const AcademicManagement = ({ darkMode }) => {
                                     required
                                     value={courseForm.code}
                                     onChange={(e) => setCourseForm({ ...courseForm, code: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                                     placeholder="e.g., MATH101"
                                 />
                             </div>
@@ -708,7 +727,7 @@ const AcademicManagement = ({ darkMode }) => {
                                     required
                                     value={courseForm.class}
                                     onChange={(e) => setCourseForm({ ...courseForm, class: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                                 >
                                     <option value="">Select Class</option>
                                     <option value="Grade 9-A">Grade 9-A</option>
@@ -729,13 +748,13 @@ const AcademicManagement = ({ darkMode }) => {
                                     value={courseForm.description}
                                     onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })}
                                     rows="3"
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                                     placeholder="Course description..."
                                 />
                             </div>
                             <button
                                 type="submit"
-                                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                             >
                                 Create Course
                             </button>
@@ -744,7 +763,7 @@ const AcademicManagement = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Add Assignment Modal */}
+            { }
             {showAddAssignmentModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>
@@ -764,7 +783,7 @@ const AcademicManagement = ({ darkMode }) => {
                                     required
                                     value={assignmentForm.title}
                                     onChange={(e) => setAssignmentForm({ ...assignmentForm, title: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                                 />
                             </div>
                             <div>
@@ -775,7 +794,7 @@ const AcademicManagement = ({ darkMode }) => {
                                     value={assignmentForm.description}
                                     onChange={(e) => setAssignmentForm({ ...assignmentForm, description: e.target.value })}
                                     rows="3"
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                                 />
                             </div>
                             <div>
@@ -787,7 +806,7 @@ const AcademicManagement = ({ darkMode }) => {
                                     required
                                     value={assignmentForm.dueDate}
                                     onChange={(e) => setAssignmentForm({ ...assignmentForm, dueDate: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                                 />
                             </div>
                             <div>
@@ -798,12 +817,12 @@ const AcademicManagement = ({ darkMode }) => {
                                     type="number"
                                     value={assignmentForm.maxMarks}
                                     onChange={(e) => setAssignmentForm({ ...assignmentForm, maxMarks: parseInt(e.target.value) })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                                 />
                             </div>
                             <button
                                 type="submit"
-                                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                             >
                                 Add Assignment
                             </button>
@@ -812,7 +831,7 @@ const AcademicManagement = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Grading Modal */}
+            { }
             {showGradingModal && selectedSubmission && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>
@@ -837,7 +856,7 @@ const AcademicManagement = ({ darkMode }) => {
                                     step="0.01"
                                     value={gradingForm.marks}
                                     onChange={(e) => setGradingForm({ ...gradingForm, marks: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                                 />
                             </div>
                             <div>
@@ -848,13 +867,13 @@ const AcademicManagement = ({ darkMode }) => {
                                     value={gradingForm.feedback}
                                     onChange={(e) => setGradingForm({ ...gradingForm, feedback: e.target.value })}
                                     rows="3"
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                                     placeholder="Optional feedback..."
                                 />
                             </div>
                             <button
                                 type="submit"
-                                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                             >
                                 Save Grade
                             </button>
@@ -863,7 +882,7 @@ const AcademicManagement = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Exam Marks Modal */}
+            { }
             {showExamMarksModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>
@@ -883,7 +902,7 @@ const AcademicManagement = ({ darkMode }) => {
                                     required
                                     value={examMarksForm.studentId}
                                     onChange={(e) => setExamMarksForm({ ...examMarksForm, studentId: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                                     placeholder="e.g., student_123"
                                 />
                             </div>
@@ -896,7 +915,7 @@ const AcademicManagement = ({ darkMode }) => {
                                     required
                                     value={examMarksForm.studentName}
                                     onChange={(e) => setExamMarksForm({ ...examMarksForm, studentName: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                                 />
                             </div>
                             <div className="grid grid-cols-3 gap-4">
@@ -911,7 +930,7 @@ const AcademicManagement = ({ darkMode }) => {
                                         max="100"
                                         value={examMarksForm.exam1}
                                         onChange={(e) => setExamMarksForm({ ...examMarksForm, exam1: e.target.value })}
-                                        className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                        className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                                     />
                                 </div>
                                 <div>
@@ -925,7 +944,7 @@ const AcademicManagement = ({ darkMode }) => {
                                         max="100"
                                         value={examMarksForm.exam2}
                                         onChange={(e) => setExamMarksForm({ ...examMarksForm, exam2: e.target.value })}
-                                        className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                        className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                                     />
                                 </div>
                                 <div>
@@ -939,13 +958,13 @@ const AcademicManagement = ({ darkMode }) => {
                                         max="100"
                                         value={examMarksForm.exam3}
                                         onChange={(e) => setExamMarksForm({ ...examMarksForm, exam3: e.target.value })}
-                                        className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                        className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                                     />
                                 </div>
                             </div>
                             <button
                                 type="submit"
-                                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                             >
                                 Save Exam Marks
                             </button>
@@ -954,7 +973,7 @@ const AcademicManagement = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Upload Material Modal */}
+            { }
             {showMaterialModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full p-6`}>
@@ -974,7 +993,7 @@ const AcademicManagement = ({ darkMode }) => {
                                     required
                                     value={materialForm.title}
                                     onChange={(e) => setMaterialForm({ ...materialForm, title: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                                 />
                             </div>
                             <div>
@@ -985,7 +1004,7 @@ const AcademicManagement = ({ darkMode }) => {
                                     value={materialForm.description}
                                     onChange={(e) => setMaterialForm({ ...materialForm, description: e.target.value })}
                                     rows="2"
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                                 />
                             </div>
                             <div>
@@ -997,13 +1016,13 @@ const AcademicManagement = ({ darkMode }) => {
                                     required
                                     value={materialForm.link}
                                     onChange={(e) => setMaterialForm({ ...materialForm, link: e.target.value })}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-green-500`}
                                     placeholder="https://drive.google.com/..."
                                 />
                             </div>
                             <button
                                 type="submit"
-                                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                             >
                                 Upload Material
                             </button>
@@ -1016,3 +1035,4 @@ const AcademicManagement = ({ darkMode }) => {
 };
 
 export default AcademicManagement;
+

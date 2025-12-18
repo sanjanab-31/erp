@@ -5,10 +5,9 @@ import {
     Users,
     GraduationCap,
     UserCheck,
-    DollarSign,
+    IndianRupee,
     Calendar,
     BookMarked,
-    Bus,
     BarChart3,
     Settings,
     Bell,
@@ -17,13 +16,13 @@ import {
     Sun,
     TrendingUp,
     UserPlus,
-    CalendarPlus,
     FileText,
     ChevronDown,
     LogOut,
     CheckCircle,
     AlertCircle,
     Info,
+    Megaphone,
     X
 } from 'lucide-react';
 import Students from './Students';
@@ -34,13 +33,15 @@ import FeesAndFinancePage from './FeesAndFinancePage';
 import TimetablePage from './TimetablePage';
 import SettingsPage from './SettingsPage';
 import AdminExamSchedules from './AdminExamSchedules';
-import { getStudentStats, subscribeToUpdates as subscribeToStudents } from '../../../utils/studentStore';
-import { getTeacherStats, subscribeToUpdates as subscribeToTeachers } from '../../../utils/teacherStore';
-import { getFeeStats, subscribeToUpdates as subscribeToFees } from '../../../utils/feeStore';
-import { getOverallAttendanceStats, subscribeToUpdates as subscribeToAttendance } from '../../../utils/attendanceStore';
+import LibraryPage from './LibraryPage';
+import AnnouncementsPage from './AnnouncementsPage';
+import ReportsPage from './ReportsPage';
+import { studentApi, teacherApi, feeApi, attendanceApi, announcementApi } from '../../../services/api';
+import { initializeActivityLog } from '../../../utils/activityLogger';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
+
     const userName = localStorage.getItem('userName') || 'John Admin';
     const userRole = localStorage.getItem('userRole') || 'Admin';
 
@@ -52,7 +53,6 @@ const AdminDashboard = () => {
     const [modalType, setModalType] = useState('');
     const [showNotificationPanel, setShowNotificationPanel] = useState(false);
 
-    // Real-time dashboard data with live updates
     const [dashboardData, setDashboardData] = useState({
         totalStudents: 0,
         totalTeachers: 0,
@@ -97,70 +97,53 @@ const AdminDashboard = () => {
         { icon: GraduationCap, label: 'Teachers' },
         { icon: UserCheck, label: 'Attendance' },
         { icon: BookMarked, label: 'Courses' },
-        { icon: DollarSign, label: 'Fees & Finance' },
+        { icon: IndianRupee, label: 'Fees & Finance' },
         { icon: Calendar, label: 'Timetable' },
+        { icon: Calendar, label: 'Exam Schedules' },
         { icon: BookMarked, label: 'Library' },
-        { icon: Bus, label: 'Transport' },
+        { icon: Megaphone, label: 'Announcements' },
         { icon: BarChart3, label: 'Reports' },
-        { icon: Settings, label: 'Settings' },
-        { icon: Calendar, label: 'Exam Schedules' }
+        { icon: Settings, label: 'Settings' }
     ];
 
-    const quickActions = [
-        { icon: UserPlus, label: 'Add New Student', color: 'bg-blue-500', action: 'addStudent' },
-        { icon: GraduationCap, label: 'Add New Teacher', color: 'bg-green-500', action: 'addTeacher' },
-        { icon: CalendarPlus, label: 'Schedule Event', color: 'bg-purple-500', action: 'scheduleEvent' },
-        { icon: FileText, label: 'Generate Report', color: 'bg-orange-500', action: 'generateReport' }
-    ];
+    const [recentAnnouncements, setRecentAnnouncements] = useState([]);
 
-    // Fetch and subscribe to real-time data updates
     useEffect(() => {
-        const fetchDashboardData = () => {
-            // Get student stats
-            const studentStats = getStudentStats();
+        const fetchDashboardData = async () => {
+            try {
 
-            // Get teacher stats
-            const teacherStats = getTeacherStats();
+                const [studentRes, teacherRes, feeRes, attendanceRes] = await Promise.allSettled([
+                    studentApi.getStats(),
+                    teacherApi.getStats(),
+                    feeApi.getStats(),
+                    attendanceApi.getStats()
+                ]);
 
-            // Get fee stats
-            const feeStats = getFeeStats();
+                const studentStats = studentRes.status === 'fulfilled' ? studentRes.value.data : { total: 0, active: 0 };
+                const teacherStats = teacherRes.status === 'fulfilled' ? teacherRes.value.data : { total: 0, active: 0 };
+                const feeStats = feeRes.status === 'fulfilled' ? feeRes.value.data : { paidAmount: 0, collectionRate: 0 };
+                const attendanceStats = attendanceRes.status === 'fulfilled' ? attendanceRes.value.data : { totalRecords: 0, present: 0, late: 0 };
 
-            // Get attendance stats
-            const attendanceStats = getOverallAttendanceStats();
+                const attendanceRate = attendanceStats.totalRecords > 0
+                    ? Math.round(((attendanceStats.present + attendanceStats.late) / attendanceStats.totalRecords) * 100)
+                    : 0;
 
-            // Calculate attendance rate
-            const attendanceRate = attendanceStats.totalRecords > 0
-                ? Math.round(((attendanceStats.present + attendanceStats.late) / attendanceStats.totalRecords) * 100)
-                : 0;
-
-            setDashboardData({
-                totalStudents: studentStats.total,
-                totalTeachers: teacherStats.total,
-                revenue: feeStats.paidAmount || 0,
-                attendanceRate: attendanceRate,
-                studentsChange: `${studentStats.active} active students`,
-                teachersChange: `${teacherStats.active} active staff members`,
-                revenueChange: `${feeStats.collectionRate}% collection rate`,
-                attendanceChange: 'Overall attendance rate'
-            });
+                setDashboardData({
+                    totalStudents: studentStats.total || 0,
+                    totalTeachers: teacherStats.total || 0,
+                    revenue: feeStats.paidAmount || 0,
+                    attendanceRate: attendanceRate,
+                    studentsChange: `${studentStats.active || 0} active students`,
+                    teachersChange: `${teacherStats.active || 0} active staff members`,
+                    revenueChange: `${feeStats.collectionRate || 0}% collection rate`,
+                    attendanceChange: 'Overall attendance rate'
+                });
+            } catch (error) {
+                console.error('Error fetching dashboard data', error);
+            }
         };
 
-        // Initial fetch
         fetchDashboardData();
-
-        // Subscribe to updates
-        const unsubscribeStudents = subscribeToStudents(fetchDashboardData);
-        const unsubscribeTeachers = subscribeToTeachers(fetchDashboardData);
-        const unsubscribeFees = subscribeToFees(fetchDashboardData);
-        const unsubscribeAttendance = subscribeToAttendance(fetchDashboardData);
-
-        // Cleanup subscriptions
-        return () => {
-            unsubscribeStudents();
-            unsubscribeTeachers();
-            unsubscribeFees();
-            unsubscribeAttendance();
-        };
     }, []);
 
     const getGreeting = () => {
@@ -170,17 +153,65 @@ const AdminDashboard = () => {
         return 'Good evening';
     };
 
-    const handleQuickAction = (action) => {
-        setModalType(action);
-        setShowModal(true);
-    };
+    useEffect(() => {
+
+        initializeActivityLog();
+
+        const fetchRecentActivities = () => {
+            try {
+                const activityLog = JSON.parse(localStorage.getItem('adminActivityLog') || '[]');
+
+                const recentActivitiesData = activityLog.slice(0, 3).map(activity => ({
+                    id: activity.id || Date.now(),
+                    type: activity.type || 'info',
+                    title: activity.title || 'Activity',
+                    description: activity.description || '',
+                    time: activity.time || 'Recently',
+                    icon: activity.type === 'success' ? CheckCircle :
+                        activity.type === 'warning' ? AlertCircle : Info
+                }));
+
+                if (recentActivitiesData.length > 0) {
+                    setRecentActivities(recentActivitiesData);
+                }
+            } catch (error) {
+                console.error('Error fetching recent activities:', error);
+            }
+        };
+
+        fetchRecentActivities();
+
+        const handleNewActivity = () => {
+            fetchRecentActivities();
+        };
+
+        window.addEventListener('adminActivityAdded', handleNewActivity);
+
+        const interval = setInterval(fetchRecentActivities, 30000);
+
+        return () => {
+            window.removeEventListener('adminActivityAdded', handleNewActivity);
+            clearInterval(interval);
+        };
+    }, []);
+
+    useEffect(() => {
+        const fetchAnnouncements = async () => {
+            try {
+                const response = await announcementApi.getAll();
+                const announcements = response.data || [];
+
+                setRecentAnnouncements(announcements.slice(0, 3));
+            } catch (error) {
+                console.error('Failed to fetch announcements', error);
+            }
+        };
+
+        fetchAnnouncements();
+    }, []);
 
     const handleLogout = () => {
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userName');
-        localStorage.removeItem('token');
+        localStorage.clear();
         navigate('/login');
     };
 
@@ -202,10 +233,9 @@ const AdminDashboard = () => {
 
         const handleSubmit = (e) => {
             e.preventDefault();
-            // Handle form submission based on type
+
             console.log('Form submitted:', type, formData);
 
-            // Add new activity
             const newActivity = {
                 id: Date.now(),
                 type: 'success',
@@ -413,6 +443,12 @@ const AdminDashboard = () => {
                 return <TimetablePage darkMode={darkMode} />;
             case 'Settings':
                 return <SettingsPage darkMode={darkMode} />;
+            case 'Library':
+                return <LibraryPage darkMode={darkMode} />;
+            case 'Announcements':
+                return <AnnouncementsPage darkMode={darkMode} />;
+            case 'Reports':
+                return <ReportsPage darkMode={darkMode} />;
             case 'Dashboard':
             default:
                 return (
@@ -452,10 +488,10 @@ const AdminDashboard = () => {
                             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-shadow`}>
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Revenue</h3>
-                                    <DollarSign className="w-5 h-5 text-blue-500" />
+                                    <IndianRupee className="w-5 h-5 text-blue-500" />
                                 </div>
                                 <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
-                                    ${dashboardData.revenue.toLocaleString()}
+                                    ₹{dashboardData.revenue.toLocaleString('en-IN')}
                                 </p>
                                 <p className="text-sm text-green-500">{dashboardData.revenueChange}</p>
                             </div>
@@ -501,25 +537,61 @@ const AdminDashboard = () => {
                             </div>
 
                             <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                                <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
-                                    Quick Actions
-                                </h3>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                        Recent Announcements
+                                    </h3>
+                                    <button
+                                        onClick={() => setActiveTab('Announcements')}
+                                        className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                                    >
+                                        View All
+                                    </button>
+                                </div>
                                 <div className="space-y-3">
-                                    {quickActions.map((action, index) => (
-                                        <button
-                                            key={index}
-                                            onClick={() => handleQuickAction(action.action)}
-                                            className={`w-full flex items-center space-x-3 p-4 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                                                } transition-all hover:shadow-md`}
-                                        >
-                                            <div className={`p-2 rounded-lg ${action.color} bg-opacity-10`}>
-                                                <action.icon className={`w-5 h-5 ${action.color.replace('bg-', 'text-')}`} />
+                                    {recentAnnouncements.length === 0 ? (
+                                        <div className="text-center py-8">
+                                            <Megaphone className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                                            <p className="text-sm text-gray-500">No announcements yet</p>
+                                        </div>
+                                    ) : (
+                                        recentAnnouncements.map((announcement) => (
+                                            <div
+                                                key={announcement.id}
+                                                className={`p-4 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} hover:shadow-md transition-shadow cursor-pointer`}
+                                                onClick={() => setActiveTab('Announcements')}
+                                            >
+                                                <div className="flex items-start space-x-3">
+                                                    <div className="p-2 rounded-lg bg-orange-100">
+                                                        <Megaphone className="w-5 h-5 text-orange-600" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'} truncate`}>
+                                                            {announcement.title}
+                                                        </p>
+                                                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                                                            {announcement.description}
+                                                        </p>
+                                                        <div className="flex items-center space-x-3 mt-2">
+                                                            <span className="text-xs text-gray-400">
+                                                                {new Date(announcement.publishDate).toLocaleDateString()}
+                                                            </span>
+                                                            <span className={`text-xs px-2 py-1 rounded-full ${announcement.targetAudience === 'All'
+                                                                ? 'bg-blue-100 text-blue-600'
+                                                                : announcement.targetAudience === 'Teachers'
+                                                                    ? 'bg-green-100 text-green-600'
+                                                                    : announcement.targetAudience === 'Students'
+                                                                        ? 'bg-purple-100 text-purple-600'
+                                                                        : 'bg-pink-100 text-pink-600'
+                                                                }`}>
+                                                                {announcement.targetAudience}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                {action.label}
-                                            </span>
-                                        </button>
-                                    ))}
+                                        ))
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -530,9 +602,9 @@ const AdminDashboard = () => {
 
     return (
         <div className={`flex h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-            {/* Sidebar */}
+            { }
             <aside className={`w-64 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r flex flex-col`}>
-                {/* Logo */}
+                { }
                 <div className={`px-6 py-3 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg flex items-center justify-center">
@@ -545,7 +617,7 @@ const AdminDashboard = () => {
                     </div>
                 </div>
 
-                {/* Navigation */}
+                { }
                 <nav className="flex-1 p-4 overflow-y-auto">
                     <ul className="space-y-1">
                         {menuItems.map((item, index) => (
@@ -566,9 +638,9 @@ const AdminDashboard = () => {
                 </nav>
             </aside>
 
-            {/* Main Content */}
+            { }
             <main className="flex-1 flex flex-col overflow-hidden">
-                {/* Header */}
+                { }
                 <header className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b px-8 py-4`}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
@@ -582,7 +654,7 @@ const AdminDashboard = () => {
                         </div>
 
                         <div className="flex items-center space-x-4">
-                            {/* Search */}
+                            { }
                             <div className="relative">
                                 <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                                 <input
@@ -597,20 +669,59 @@ const AdminDashboard = () => {
                                 />
                             </div>
 
-                            {/* Notifications */}
-                            <button
-                                onClick={() => setShowNotificationPanel(!showNotificationPanel)}
-                                className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                            >
-                                <Bell className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`} />
-                                {notifications > 0 && (
-                                    <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
-                                        {notifications}
-                                    </span>
-                                )}
-                            </button>
+                            { }
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowNotificationPanel(!showNotificationPanel)}
+                                    className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                                >
+                                    <Bell className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`} />
+                                    {notifications > 0 && (
+                                        <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
+                                            {notifications}
+                                        </span>
+                                    )}
+                                </button>
 
-                            {/* Dark Mode Toggle */}
+                                { }
+                                {showNotificationPanel && (
+                                    <div className={`absolute top-full right-0 mt-2 w-80 rounded-xl shadow-2xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} z-50 overflow-hidden`}>
+                                        <div className={`p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                                            <div className="flex justify-between items-center">
+                                                <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Recent Activities</h3>
+                                                <button onClick={() => setShowNotificationPanel(false)} className="text-gray-400 hover:text-gray-500">
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="max-h-96 overflow-y-auto">
+                                            {recentActivities.length === 0 ? (
+                                                <div className="p-4 text-center text-gray-500 text-sm">No recent activities</div>
+                                            ) : (
+                                                recentActivities.map((activity) => (
+                                                    <div key={activity.id} className={`p-3 border-b ${darkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-gray-50 hover:bg-gray-50'} transition-colors flex items-start space-x-3`}>
+                                                        <div className={`p-2 rounded-full ${getActivityColor(activity.type)} bg-opacity-20`}>
+                                                            <activity.icon className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'} truncate`}>{activity.title}</p>
+                                                            <p className="text-xs text-gray-500 mt-0.5">{activity.description}</p>
+                                                            <p className="text-xs text-gray-400 mt-1">{activity.time}</p>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                        <div className={`p-2 text-center border-t ${darkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-100 bg-gray-50'}`}>
+                                            <button onClick={() => { setActiveTab('Reports'); setShowNotificationPanel(false); }} className="text-xs text-purple-600 hover:text-purple-700 font-medium">
+                                                View All Activity
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            { }
                             <button
                                 onClick={() => setDarkMode(!darkMode)}
                                 className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}
@@ -618,21 +729,24 @@ const AdminDashboard = () => {
                                 {darkMode ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-gray-700" />}
                             </button>
 
-                            {/* Settings */}
-                            <button className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}>
+                            { }
+                            <button
+                                onClick={() => setActiveTab('Settings')}
+                                className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}
+                            >
                                 <Settings className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`} />
                             </button>
                         </div>
                     </div>
                 </header>
 
-                {/* Dashboard Content */}
+                { }
                 <div className="flex-1 overflow-y-auto p-8">
                     {renderContent()}
                 </div>
             </main>
 
-            {/* Modals */}
+            { }
             {showModal && <Modal type={modalType} onClose={() => setShowModal(false)} />}
         </div>
     );

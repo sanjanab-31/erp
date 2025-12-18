@@ -7,16 +7,18 @@ import {
     Clock,
     BookOpen
 } from 'lucide-react';
-import { getClassTimetable, subscribeToUpdates } from '../../../utils/timetableStore';
-import { getAllStudents } from '../../../utils/studentStore';
+import { studentApi, timetableApi } from '../../../services/api';
 
 const TimetablePage = ({ darkMode }) => {
     const [timetable, setTimetable] = useState(null);
     const [loading, setLoading] = useState(true);
     const [studentClass, setStudentClass] = useState('');
 
-    // Get logged-in student info
     const studentEmail = localStorage.getItem('userEmail');
+
+    useEffect(() => {
+        loadData();
+    }, [studentEmail]);
 
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
     const timeSlots = [
@@ -29,47 +31,27 @@ const TimetablePage = ({ darkMode }) => {
         '15:00-16:00'
     ];
 
-    // Load student's class and timetable
-    useEffect(() => {
-        loadStudentClass();
-    }, []);
+    const loadData = async () => {
+        if (!studentEmail) return;
+        setLoading(true);
+        try {
+            const studentRes = await studentApi.getAll();
+            const students = studentRes.data || [];
+            const student = students.find(s => s.email === studentEmail);
 
-    useEffect(() => {
-        if (studentClass) {
-            loadTimetable();
-            const unsubscribe = subscribeToUpdates(loadTimetable);
-            return unsubscribe;
+            if (student) {
+                setStudentClass(student.class);
+                const ttRes = await timetableApi.getAll({ className: student.class });
+                const classTimetables = ttRes.data || [];
+                setTimetable(classTimetables[0] || null);
+            }
+        } catch (error) {
+            console.error('Error loading timetable:', error);
+        } finally {
+            setLoading(false);
         }
-    }, [studentClass]);
+    };
 
-    const loadStudentClass = useCallback(() => {
-        console.log('Loading student class for email:', studentEmail);
-        // Find student by email to get their class
-        const students = getAllStudents();
-        console.log('All students:', students);
-
-        const student = students.find(s => s.email === studentEmail);
-        console.log('Student found:', student);
-
-        if (student) {
-            setStudentClass(student.class);
-            console.log('Student class set to:', student.class);
-        } else {
-            console.log('Student not found with email:', studentEmail);
-        }
-        setLoading(false);
-    }, [studentEmail]);
-
-    const loadTimetable = useCallback(() => {
-        if (studentClass) {
-            console.log('Loading timetable for class:', studentClass);
-            const classTT = getClassTimetable(studentClass);
-            console.log('Class timetable found:', classTT);
-            setTimetable(classTT);
-        }
-    }, [studentClass]);
-
-    // Organize schedule by day
     const scheduleByDay = {};
     days.forEach(day => {
         scheduleByDay[day] = [];
@@ -83,12 +65,10 @@ const TimetablePage = ({ darkMode }) => {
         });
     }
 
-    // Calculate stats
     const totalClasses = timetable?.schedule?.length || 0;
-    const todayIndex = new Date().getDay() - 1; // 0 = Monday
+    const todayIndex = new Date().getDay() - 1;
     const todayClasses = todayIndex >= 0 && todayIndex < 5 ? scheduleByDay[days[todayIndex]]?.length || 0 : 0;
 
-    // Get unique subjects
     const uniqueSubjects = timetable?.schedule
         ? [...new Set(timetable.schedule.map(entry => entry.subject).filter(s => s))]
         : [];
@@ -134,7 +114,7 @@ const TimetablePage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {/* Header */}
+            { }
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     My Timetable
@@ -156,7 +136,7 @@ const TimetablePage = ({ darkMode }) => {
                 </div>
             ) : (
                 <>
-                    {/* Stats Cards */}
+                    {}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                             <div className="flex items-center justify-between mb-4">
@@ -186,7 +166,7 @@ const TimetablePage = ({ darkMode }) => {
                         </div>
                     </div>
 
-                    {/* Timetable Grid */}
+                    { }
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden mb-6`}>
                         <div className="p-6 border-b border-gray-200">
                             <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -248,7 +228,7 @@ const TimetablePage = ({ darkMode }) => {
                         </div>
                     </div>
 
-                    {/* Subject Legend */}
+                    { }
                     {uniqueSubjects.length > 0 && (
                         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6`}>
                             <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
@@ -267,20 +247,6 @@ const TimetablePage = ({ darkMode }) => {
                         </div>
                     )}
 
-                    {/* Info Note */}
-                    <div className={`${darkMode ? 'bg-blue-900 border-blue-700' : 'bg-blue-50 border-blue-200'} border rounded-xl p-4`}>
-                        <div className="flex items-start space-x-3">
-                            <AlertCircle className={`w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'} mt-0.5`} />
-                            <div>
-                                <h4 className={`font-semibold text-sm ${darkMode ? 'text-blue-300' : 'text-blue-900'} mb-1`}>
-                                    Real-time Sync
-                                </h4>
-                                <p className={`text-sm ${darkMode ? 'text-blue-200' : 'text-blue-700'}`}>
-                                    Your timetable is managed by the admin. Any changes made by the admin will appear here automatically without needing to refresh the page.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
                 </>
             )}
         </div>

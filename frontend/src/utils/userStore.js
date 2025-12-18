@@ -1,17 +1,15 @@
-// User Management Store
-// Manages all users (students, teachers, parents) added by admin
+
 
 const STORAGE_KEY = 'erp_users';
 const DEFAULT_PASSWORD = 'password';
 
-// Initialize with admin user
 const initializeDefaultUsers = () => {
     return {
         users: [
             {
                 id: 'admin_1',
                 email: 'admin@eshwar.com',
-                password: 'admin123', // Admin has different password
+                password: 'admin123', 
                 name: 'Admin User',
                 role: 'admin',
                 createdAt: new Date().toISOString(),
@@ -22,7 +20,6 @@ const initializeDefaultUsers = () => {
     };
 };
 
-// Get all users
 export const getAllUsers = () => {
     try {
         const data = localStorage.getItem(STORAGE_KEY);
@@ -38,19 +35,16 @@ export const getAllUsers = () => {
     }
 };
 
-// Get user by email
 export const getUserByEmail = (email) => {
     const users = getAllUsers();
     return users.find(user => user.email.toLowerCase() === email.toLowerCase());
 };
 
-// Get user by ID
 export const getUserById = (id) => {
     const users = getAllUsers();
     return users.find(user => user.id === id);
 };
 
-// Authenticate user
 export const authenticateUser = (email, password, role) => {
     const user = getUserByEmail(email);
 
@@ -73,12 +67,10 @@ export const authenticateUser = (email, password, role) => {
     return user;
 };
 
-// Add new student
 export const addStudent = (studentData) => {
     try {
         const users = getAllUsers();
 
-        // Check if email already exists
         if (getUserByEmail(studentData.email)) {
             throw new Error('Email already exists');
         }
@@ -102,15 +94,13 @@ export const addStudent = (studentData) => {
 
         users.push(newStudent);
 
-        // Automatically create parent account if parent email is provided
         if (studentData.parentEmail && studentData.parentEmail.trim()) {
             const parentEmail = studentData.parentEmail.trim();
 
-            // Check if parent account already exists
             const existingParent = getUserByEmail(parentEmail);
 
             if (!existingParent) {
-                // Create new parent account
+                
                 const newParent = {
                     id: `parent_${Date.now()}`,
                     email: parentEmail,
@@ -130,8 +120,7 @@ export const addStudent = (studentData) => {
 
                 users.push(newParent);
             } else if (existingParent.role === 'parent') {
-                // If parent exists, link this student to them
-                // You can add multiple children support here if needed
+
                 console.log(`Parent account already exists for ${parentEmail}`);
             }
         }
@@ -146,12 +135,10 @@ export const addStudent = (studentData) => {
     }
 };
 
-// Add new teacher
 export const addTeacher = (teacherData) => {
     try {
         const users = getAllUsers();
 
-        // Check if email already exists
         if (getUserByEmail(teacherData.email)) {
             throw new Error('Email already exists');
         }
@@ -184,12 +171,10 @@ export const addTeacher = (teacherData) => {
     }
 };
 
-// Add new parent
 export const addParent = (parentData) => {
     try {
         const users = getAllUsers();
 
-        // Check if email already exists
         if (getUserByEmail(parentData.email)) {
             throw new Error('Email already exists');
         }
@@ -220,7 +205,6 @@ export const addParent = (parentData) => {
     }
 };
 
-// Update user
 export const updateUser = (userId, updates) => {
     try {
         const users = getAllUsers();
@@ -230,7 +214,6 @@ export const updateUser = (userId, updates) => {
             throw new Error('User not found');
         }
 
-        // Don't allow changing email to existing email
         if (updates.email && updates.email !== users[userIndex].email) {
             const existingUser = getUserByEmail(updates.email);
             if (existingUser && existingUser.id !== userId) {
@@ -249,7 +232,6 @@ export const updateUser = (userId, updates) => {
     }
 };
 
-// Delete user (soft delete - set active to false)
 export const deleteUser = (userId) => {
     try {
         const users = getAllUsers();
@@ -259,7 +241,6 @@ export const deleteUser = (userId) => {
             throw new Error('User not found');
         }
 
-        // Don't allow deleting admin
         if (users[userIndex].role === 'admin') {
             throw new Error('Cannot delete admin user');
         }
@@ -275,7 +256,6 @@ export const deleteUser = (userId) => {
     }
 };
 
-// Permanently delete user
 export const permanentlyDeleteUser = (userId) => {
     try {
         const users = getAllUsers();
@@ -285,7 +265,6 @@ export const permanentlyDeleteUser = (userId) => {
             throw new Error('User not found');
         }
 
-        // Don't allow deleting admin
         if (users[userIndex].role === 'admin') {
             throw new Error('Cannot delete admin user');
         }
@@ -301,7 +280,68 @@ export const permanentlyDeleteUser = (userId) => {
     }
 };
 
-// Activate user
+export const deleteStudentAndParent = (studentEmail, parentEmail) => {
+    try {
+        const users = getAllUsers();
+
+        const studentIndex = users.findIndex(u =>
+            u.email.toLowerCase() === studentEmail.toLowerCase() && u.role === 'student'
+        );
+
+        if (studentIndex !== -1) {
+            users.splice(studentIndex, 1);
+        }
+
+        if (parentEmail && parentEmail.trim()) {
+            const parentIndex = users.findIndex(u =>
+                u.email.toLowerCase() === parentEmail.toLowerCase() && u.role === 'parent'
+            );
+
+            if (parentIndex !== -1) {
+                
+                const otherChildren = users.filter(u =>
+                    u.role === 'student' &&
+                    u.parentEmail &&
+                    u.parentEmail.toLowerCase() === parentEmail.toLowerCase()
+                );
+
+                if (otherChildren.length === 0) {
+                    users.splice(parentIndex, 1);
+                }
+            }
+        }
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ users }));
+        window.dispatchEvent(new Event('usersUpdated'));
+
+        return true;
+    } catch (error) {
+        console.error('Error deleting student and parent:', error);
+        throw error;
+    }
+};
+
+export const deleteTeacherByEmail = (teacherEmail) => {
+    try {
+        const users = getAllUsers();
+
+        const teacherIndex = users.findIndex(u =>
+            u.email.toLowerCase() === teacherEmail.toLowerCase() && u.role === 'teacher'
+        );
+
+        if (teacherIndex !== -1) {
+            users.splice(teacherIndex, 1);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ users }));
+            window.dispatchEvent(new Event('usersUpdated'));
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error deleting teacher:', error);
+        throw error;
+    }
+};
+
 export const activateUser = (userId) => {
     try {
         const users = getAllUsers();
@@ -322,7 +362,6 @@ export const activateUser = (userId) => {
     }
 };
 
-// Change password
 export const changeUserPassword = (userId, newPassword) => {
     try {
         const users = getAllUsers();
@@ -343,39 +382,32 @@ export const changeUserPassword = (userId, newPassword) => {
     }
 };
 
-// Reset password to default
 export const resetUserPassword = (userId) => {
     return changeUserPassword(userId, DEFAULT_PASSWORD);
 };
 
-// Get users by role
 export const getUsersByRole = (role) => {
     const users = getAllUsers();
     return users.filter(u => u.role.toLowerCase() === role.toLowerCase());
 };
 
-// Get active users
 export const getActiveUsers = () => {
     const users = getAllUsers();
     return users.filter(u => u.active);
 };
 
-// Get active users by role
 export const getActiveUsersByRole = (role) => {
     const users = getAllUsers();
     return users.filter(u => u.role.toLowerCase() === role.toLowerCase() && u.active);
 };
 
-// Subscribe to user updates
 export const subscribeToUserUpdates = (callback) => {
     const handler = () => callback(getAllUsers());
     window.addEventListener('usersUpdated', handler);
 
-    // Return unsubscribe function
     return () => window.removeEventListener('usersUpdated', handler);
 };
 
-// Get children by parent email
 export const getChildrenByParentEmail = (parentEmail) => {
     const users = getAllUsers();
     const parent = users.find(u => u.email.toLowerCase() === parentEmail.toLowerCase() && u.role === 'parent');
@@ -384,7 +416,6 @@ export const getChildrenByParentEmail = (parentEmail) => {
         return [];
     }
 
-    // Get all students whose parentEmail matches this parent's email
     return users.filter(u =>
         u.role === 'student' &&
         u.parentEmail &&
@@ -392,7 +423,6 @@ export const getChildrenByParentEmail = (parentEmail) => {
     );
 };
 
-// Get children by parent ID
 export const getChildrenByParentId = (parentId) => {
     const parent = getUserById(parentId);
     if (!parent || parent.role !== 'parent') {
@@ -401,12 +431,10 @@ export const getChildrenByParentId = (parentId) => {
     return getChildrenByParentEmail(parent.email);
 };
 
-// Get students by parent email (alias for getChildrenByParentEmail)
 export const getStudentsByParentEmail = (parentEmail) => {
     return getChildrenByParentEmail(parentEmail);
 };
 
-// Get statistics
 export const getUserStatistics = () => {
     const users = getAllUsers();
     return {
@@ -434,6 +462,8 @@ export default {
     updateUser,
     deleteUser,
     permanentlyDeleteUser,
+    deleteStudentAndParent,
+    deleteTeacherByEmail,
     activateUser,
     changeUserPassword,
     resetUserPassword,

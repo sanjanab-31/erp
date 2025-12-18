@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { DollarSign, CreditCard, Calendar, AlertCircle, CheckCircle, Clock, X } from 'lucide-react';
-import { getAllStudents } from '../../../utils/studentStore';
-import { getFeesByStudent, makePayment, subscribeToUpdates } from '../../../utils/feeStore';
+import { studentApi, feeApi } from '../../../services/api';
+import StripePaymentModal from './StripePaymentModal';
+import { useToast } from '../../../context/ToastContext';
 
 const PaymentModal = ({ darkMode, fee, onClose, onPaymentSuccess }) => {
+    const { showSuccess, showError, showWarning } = useToast();
     const [paymentData, setPaymentData] = useState({
         amount: fee.remainingAmount,
         paymentMethod: 'UPI',
@@ -17,33 +19,42 @@ const PaymentModal = ({ darkMode, fee, onClose, onPaymentSuccess }) => {
         }
     }, [paymentType, fee.remainingAmount]);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!paymentData.transactionId.trim()) {
-            alert('Please enter transaction ID');
+            showWarning('Please enter transaction ID');
             return;
         }
 
         if (parseFloat(paymentData.amount) <= 0) {
-            alert('Amount must be greater than 0');
+            showWarning('Amount must be greater than 0');
             return;
         }
 
         if (parseFloat(paymentData.amount) > fee.remainingAmount) {
-            alert('Amount cannot be greater than remaining amount');
+            showWarning('Amount cannot be greater than remaining amount');
             return;
         }
 
         try {
-            makePayment(fee.id, {
-                ...paymentData,
-                paidBy: 'Parent'
+            await feeApi.update(fee.id, {
+                status: parseFloat(paymentData.amount) >= fee.remainingAmount ? 'Paid' : 'Partial',
+                paidAmount: (fee.paidAmount || 0) + parseFloat(paymentData.amount),
+
+                paymentDetails: {
+                    amount: parseFloat(paymentData.amount),
+                    paymentMethod: paymentData.paymentMethod,
+                    transactionId: paymentData.transactionId,
+                    paidBy: 'Parent',
+                    paymentDate: new Date().toISOString()
+                }
             });
-            alert('Payment successful!');
+            showSuccess('Payment successful!');
             onPaymentSuccess();
         } catch (error) {
-            alert('Error processing payment: ' + error.message);
+            console.error(error);
+            showError('Error processing payment: ' + (error.response?.data?.message || error.message));
         }
     };
 
@@ -62,7 +73,7 @@ const PaymentModal = ({ darkMode, fee, onClose, onPaymentSuccess }) => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    {/* Fee Details */}
+                    { }
                     <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                         <div className="space-y-2">
                             <div className="flex justify-between">
@@ -84,7 +95,7 @@ const PaymentModal = ({ darkMode, fee, onClose, onPaymentSuccess }) => {
                         </div>
                     </div>
 
-                    {/* Payment Type */}
+                    { }
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Payment Type *
@@ -113,7 +124,7 @@ const PaymentModal = ({ darkMode, fee, onClose, onPaymentSuccess }) => {
                         </div>
                     </div>
 
-                    {/* Amount */}
+                    { }
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Amount (₹) *
@@ -135,7 +146,7 @@ const PaymentModal = ({ darkMode, fee, onClose, onPaymentSuccess }) => {
                         )}
                     </div>
 
-                    {/* Payment Method */}
+                    { }
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Payment Method *
@@ -151,7 +162,7 @@ const PaymentModal = ({ darkMode, fee, onClose, onPaymentSuccess }) => {
                         </select>
                     </div>
 
-                    {/* Transaction ID */}
+                    { }
                     <div>
                         <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                             Transaction ID / Reference Number *
@@ -167,7 +178,7 @@ const PaymentModal = ({ darkMode, fee, onClose, onPaymentSuccess }) => {
                         <p className="text-xs text-gray-500 mt-1">Enter the transaction ID from your payment app/bank</p>
                     </div>
 
-                    {/* Action Buttons */}
+                    { }
                     <div className="flex justify-end space-x-3 pt-4">
                         <button
                             type="button"
@@ -196,53 +207,52 @@ const FeeManagementPage = ({ darkMode }) => {
     const [childName, setChildName] = useState('');
     const [selectedFee, setSelectedFee] = useState(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [showStripeModal, setShowStripeModal] = useState(false);
 
     const parentEmail = localStorage.getItem('userEmail');
 
     useEffect(() => {
         loadFees();
-        const unsubscribe = subscribeToUpdates(loadFees);
-        return unsubscribe;
-    }, []);
-
-    const loadFees = useCallback(() => {
-        setLoading(true);
-        console.log('Loading fees for parent email:', parentEmail);
-
-        // Find child by parent email
-        const students = getAllStudents();
-        console.log('All students:', students);
-
-        const child = students.find(s => s.parentEmail === parentEmail || s.guardianEmail === parentEmail);
-        console.log('Child found:', child);
-
-        if (child) {
-            setChildName(child.name);
-            console.log('Child ID:', child.id);
-
-            const childFees = getFeesByStudent(child.id);
-            console.log('Child fees found:', childFees);
-            setFees(childFees);
-        } else {
-            console.log('Child not found for parent email:', parentEmail);
-            console.log('Trying to match with student emails...');
-
-            // Debug: Show all parent/guardian emails
-            students.forEach(s => {
-                console.log(`Student: ${s.name}, Parent Email: ${s.parentEmail}, Guardian Email: ${s.guardianEmail}`);
-            });
-        }
-
-        setLoading(false);
     }, [parentEmail]);
 
-    const handlePayment = (fee) => {
+    const loadFees = useCallback(async () => {
+        if (!parentEmail) return;
+        setLoading(true);
+
+        try {
+            const studentRes = await studentApi.getAll();
+            const students = studentRes.data || [];
+            const child = students.find(s => s.parentEmail === parentEmail || s.guardianEmail === parentEmail || s.email === parentEmail);
+
+            if (child) {
+                setChildName(child.name);
+                const feesRes = await feeApi.getAll();
+                const allFees = feesRes.data || [];
+                const childFees = allFees.filter(f => f.studentId === child.id);
+                setFees(childFees);
+            } else {
+                console.log('Child not found for parent email:', parentEmail);
+                setFees([]);
+            }
+        } catch (error) {
+            console.error('Error loading fees:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [parentEmail]);
+
+    const handlePayment = (fee, method = 'manual') => {
         setSelectedFee(fee);
-        setShowPaymentModal(true);
+        if (method === 'stripe') {
+            setShowStripeModal(true);
+        } else {
+            setShowPaymentModal(true);
+        }
     };
 
     const handlePaymentSuccess = () => {
         setShowPaymentModal(false);
+        setShowStripeModal(false);
         setSelectedFee(null);
         loadFees();
     };
@@ -281,7 +291,7 @@ const FeeManagementPage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            {/* Header */}
+            { }
             <div className="mb-8">
                 <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                     {childName ? `${childName}'s Fees` : 'Fee Management'}
@@ -289,7 +299,7 @@ const FeeManagementPage = ({ darkMode }) => {
                 <p className="text-sm text-gray-500">View and pay fees (Real-time sync with Admin)</p>
             </div>
 
-            {/* Stats */}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
@@ -319,7 +329,7 @@ const FeeManagementPage = ({ darkMode }) => {
                 </div>
             </div>
 
-            {/* Fees List */}
+            { }
             {fees.length === 0 ? (
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-center`}>
                     <DollarSign className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -366,7 +376,7 @@ const FeeManagementPage = ({ darkMode }) => {
                                         </div>
                                     </div>
 
-                                    {/* Payment History */}
+                                    { }
                                     {fee.payments && fee.payments.length > 0 && (
                                         <div className="mt-4 pt-4 border-t border-gray-200">
                                             <p className="text-xs font-semibold text-gray-500 mb-2">Payment History:</p>
@@ -388,8 +398,8 @@ const FeeManagementPage = ({ darkMode }) => {
                                 {fee.status !== 'Paid' && (
                                     <div>
                                         <button
-                                            onClick={() => handlePayment(fee)}
-                                            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2"
+                                            onClick={() => handlePayment(fee, 'stripe')}
+                                            className="w-full px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center justify-center space-x-2"
                                         >
                                             <CreditCard className="w-5 h-5" />
                                             <span>Pay Now</span>
@@ -402,13 +412,23 @@ const FeeManagementPage = ({ darkMode }) => {
                 </div>
             )}
 
-            {/* Payment Modal */}
+            { }
             {showPaymentModal && selectedFee && (
                 <PaymentModal
                     darkMode={darkMode}
                     fee={selectedFee}
                     onClose={() => { setShowPaymentModal(false); setSelectedFee(null); }}
                     onPaymentSuccess={handlePaymentSuccess}
+                />
+            )}
+
+            { }
+            {showStripeModal && selectedFee && (
+                <StripePaymentModal
+                    darkMode={darkMode}
+                    fee={selectedFee}
+                    studentName={childName}
+                    onClose={() => { setShowStripeModal(false); setSelectedFee(null); }}
                 />
             )}
         </div>

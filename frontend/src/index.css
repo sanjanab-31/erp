@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-/* Mazzard Font Declarations */
 @font-face {
     font-family: 'Mazzard';
     src: url('/fonts/Mazzard Font/MazzardH-Regular.otf') format('opentype');
@@ -65,7 +64,6 @@ body {
     font-family: 'Mazzard', system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
-/* Remove all focus rings globally */
 *,
 *:focus,
 *:focus-visible {
@@ -73,7 +71,6 @@ body {
     box-shadow: none !important;
 }
 
-/* Remove focus ring from buttons, inputs, and all interactive elements */
 button:focus,
 input:focus,
 textarea:focus,
@@ -83,7 +80,6 @@ a:focus {
     box-shadow: none !important;
 }
 
-/* Hide scrollbar for sidebar navigation */
 nav::-webkit-scrollbar,
 aside::-webkit-scrollbar {
     display: none;
@@ -92,9 +88,9 @@ aside::-webkit-scrollbar {
 nav,
 aside {
     -ms-overflow-style: none;
-    /* IE and Edge */
+    
     scrollbar-width: none;
-    /* Firefox */
+    
 }
 
 @keyframes slideIn {
@@ -127,4 +123,43 @@ aside {
 
 .animate-fadeIn {
     animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.animate-slideUp {
+    animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.animate-slideInRight {
+    animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes shrink {
+    from {
+        width: 100%;
+    }
+    to {
+        width: 0%;
+    }
 }
