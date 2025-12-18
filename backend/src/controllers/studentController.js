@@ -77,6 +77,19 @@ export const getStudentById = async (req, res) => {
     }
 };
 
+export const getStudentByEmail = async (req, res) => {
+    try {
+        const { email } = req.params;
+        const student = await Student.findOne({ email });
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+        res.json({ success: true, data: student });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 export const createStudent = async (req, res) => {
     try {
         const { email, password, name, department, year, ...rest } = req.body;

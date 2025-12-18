@@ -203,12 +203,12 @@ const Students = ({ darkMode }) => {
     const loadStudents = useCallback(async () => {
         try {
             const response = await studentApi.getAll();
-            const data = response.data || [];
+            const data = response.data?.data || [];
             setStudents(Array.isArray(data) ? data : []);
 
             try {
                 const statsRes = await studentApi.getStats();
-                setStats(statsRes.data || { total: 0, active: 0, inactive: 0, warning: 0 });
+                setStats(statsRes.data?.data || { total: 0, active: 0, inactive: 0, warning: 0 });
             } catch (e) {
                 const s = Array.isArray(data) ? data : [];
                 setStats({

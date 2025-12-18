@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 dotenv.config();
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/erp_db')
+mongoose.connect(process.env.MONGO_URL)
     .then(() => console.log('✅ MongoDB Connected'))
     .catch((err) => console.error('❌ MongoDB Connection Error:', err));
 
@@ -27,6 +27,9 @@ import communicationRoutes from './routes/communication.js';
 import timetableRoutes from './routes/timetable.js';
 import settingsRoutes from './routes/settings.js';
 import emailRoutes from './routes/emailRoutes.js';
+import teacherAttendanceRoutes from './routes/teacherAttendance.js';
+import libraryRoutes from './routes/library.js';
+import resultRoutes from './routes/resultRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -61,7 +64,9 @@ app.use('/api/fees', feeRoutes);
 app.use('/api/communication', communicationRoutes);
 app.use('/api/timetable', timetableRoutes);
 app.use('/api/settings', settingsRoutes);
-app.use('/api/email', emailRoutes);
+app.use('/api/teacher-attendance', teacherAttendanceRoutes);
+app.use('/api/library', libraryRoutes);
+app.use('/api/results', resultRoutes);
 
 app.use((err, req, res, next) => {
     console.error(err.stack);

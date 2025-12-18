@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { User, Bell, Lock, Palette, Settings as SettingsIcon, Camera, Mail, Phone, MapPin, FileText, LogOut } from 'lucide-react';
 import { studentApi, settingsApi } from '../../../services/api';
 
-const SettingsPage = ({ darkMode }) => {
+const SettingsPage = () => {
+    const { darkMode } = useOutletContext();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('Profile');
     const [saveMessage, setSaveMessage] = useState('');

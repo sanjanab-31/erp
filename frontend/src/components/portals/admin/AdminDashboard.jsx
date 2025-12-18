@@ -119,10 +119,10 @@ const AdminDashboard = () => {
                     attendanceApi.getStats()
                 ]);
 
-                const studentStats = studentRes.status === 'fulfilled' ? studentRes.value.data : { total: 0, active: 0 };
-                const teacherStats = teacherRes.status === 'fulfilled' ? teacherRes.value.data : { total: 0, active: 0 };
-                const feeStats = feeRes.status === 'fulfilled' ? feeRes.value.data : { paidAmount: 0, collectionRate: 0 };
-                const attendanceStats = attendanceRes.status === 'fulfilled' ? attendanceRes.value.data : { totalRecords: 0, present: 0, late: 0 };
+                const studentStats = studentRes.status === 'fulfilled' ? studentRes.value.data?.data : { total: 0, active: 0 };
+                const teacherStats = teacherRes.status === 'fulfilled' ? teacherRes.value.data?.data : { total: 0, active: 0 };
+                const feeStats = feeRes.status === 'fulfilled' ? feeRes.value.data?.data : { paidAmount: 0, collectionRate: 0 };
+                const attendanceStats = attendanceRes.status === 'fulfilled' ? attendanceRes.value.data?.data : { totalRecords: 0, present: 0, late: 0 };
 
                 const attendanceRate = attendanceStats.totalRecords > 0
                     ? Math.round(((attendanceStats.present + attendanceStats.late) / attendanceStats.totalRecords) * 100)

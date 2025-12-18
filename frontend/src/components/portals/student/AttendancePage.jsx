@@ -1,46 +1,35 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { Calendar, CheckCircle, XCircle, Clock, TrendingUp, AlertCircle, User } from 'lucide-react';
 import { studentApi, attendanceApi } from '../../../services/api';
 
-const AttendancePage = ({ darkMode }) => {
+const AttendancePage = () => {
+    const { darkMode, student } = useOutletContext();
     const [attendanceRecords, setAttendanceRecords] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [studentName, setStudentName] = useState('');
-    const [studentClass, setStudentClass] = useState('');
-    const [studentId, setStudentId] = useState('');
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-    const studentEmail = localStorage.getItem('userEmail');
-
     useEffect(() => {
-        loadAttendance();
-    }, [studentEmail]);
+        if (student) {
+            loadAttendance();
+        }
+    }, [student]);
 
     const loadAttendance = useCallback(async () => {
-        if (!studentEmail) return;
+        if (!student) return;
         setLoading(true);
 
         try {
-            const studentsRes = await studentApi.getAll();
-            const students = studentsRes.data || [];
-            const student = students.find(s => s.email === studentEmail);
-
-            if (student) {
-                setStudentName(student.name);
-                setStudentClass(student.class);
-                setStudentId(student.id);
-
-                const attendanceRes = await attendanceApi.getByStudent(student.id);
-                const studentRecords = attendanceRes.data || [];
-                setAttendanceRecords(studentRecords);
-            }
+            const attendanceRes = await attendanceApi.getByStudent(student.id);
+            const studentRecords = attendanceRes.data?.data || [];
+            setAttendanceRecords(studentRecords);
         } catch (error) {
             console.error('Error loading attendance:', error);
         } finally {
             setLoading(false);
         }
-    }, [studentEmail]);
+    }, [student]);
 
     const calculateStats = () => {
         let totalDays = attendanceRecords.length;
@@ -135,7 +124,7 @@ const AttendancePage = ({ darkMode }) => {
                     My Attendance
                 </h1>
                 <p className="text-sm text-gray-500">
-                    {studentName} - {studentClass} (Real-time sync with Teacher)
+                    {student ? `${student.name} - ${student.class} (Real-time sync with Teacher)` : 'Loading...'}
                 </p>
             </div>
 

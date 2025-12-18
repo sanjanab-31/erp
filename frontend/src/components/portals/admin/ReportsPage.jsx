@@ -55,11 +55,11 @@ const ReportsPage = ({ darkMode }) => {
                 attendanceApi.getStats()
             ]);
 
-            const allStudents = studentsRes.data || [];
-            const allTeachers = teachersRes.data || [];
-            const allFees = feesRes.data || [];
-            const feeStats = feeStatsRes.data || {};
-            const attendanceStats = attendanceStatsRes.data || {};
+            const allStudents = studentsRes.data?.data || [];
+            const allTeachers = teachersRes.data?.data || [];
+            const allFees = feesRes.data?.data || [];
+            const feeStats = feeStatsRes.data?.data || {};
+            const attendanceStats = attendanceStatsRes.data?.data || {};
 
             const filteredStudents = selectedClass === 'All Classes'
                 ? allStudents

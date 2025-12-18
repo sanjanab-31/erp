@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
     Download,
     TrendingUp,
@@ -16,7 +17,8 @@ import {
     assignmentApi
 } from '../../../services/api';
 
-const ExamsAndGrades = ({ darkMode }) => {
+const ExamsAndGrades = () => {
+    const { darkMode, student } = useOutletContext();
     const [activeTab, setActiveTab] = useState('My Grades');
     const [courses, setCourses] = useState([]);
     const [examSchedules, setExamSchedules] = useState([]);
@@ -27,24 +29,12 @@ const ExamsAndGrades = ({ darkMode }) => {
     const studentEmail = localStorage.getItem('userEmail') || '';
 
     useEffect(() => {
-        const init = async () => {
-            if (studentEmail) {
-                try {
-                    const studentRes = await studentApi.getAll();
-                    const allStudents = studentRes.data || [];
-                    const student = allStudents.find(s => s.email === studentEmail);
-                    if (student) {
-                        setStudentId(student.id);
-                        setStudentClass(student.class);
-                        loadData(student);
-                    }
-                } catch (e) {
-                    console.error("Error loading student:", e);
-                }
-            }
-        };
-        init();
-    }, [studentEmail]);
+        if (student) {
+            setStudentId(student.id);
+            setStudentClass(student.class);
+            loadData(student);
+        }
+    }, [student]);
 
     const loadData = async (student) => {
         const sClass = student.class;
@@ -52,18 +42,18 @@ const ExamsAndGrades = ({ darkMode }) => {
 
         try {
             const [coursesRes, examsRes, resultsRes] = await Promise.all([
-                courseApi.getAll(),
-                examApi.getAll(),
-                resultApi.getAll()
+                courseApi.getAll({ class: sClass }),
+                examApi.getAll(), // Assuming backend handles optimization or returns all for now
+                resultApi.getAll({ studentId: sId })
             ]);
 
-            const classCourses = (coursesRes.data || []).filter(c => c.class === sClass);
+            const classCourses = coursesRes.data?.data || [];
             setCourses(classCourses);
 
-            const classSchedules = (examsRes.data || []).filter(e => e.class === sClass);
+            const classSchedules = (examsRes.data?.data || []).filter(e => e.class === sClass);
             setExamSchedules(classSchedules);
 
-            const allResults = resultsRes.data || [];
+            const allResults = resultsRes.data?.data || [];
 
             const marksData = await Promise.all(classCourses.map(async (course) => {
                 const result = allResults.find(r => r.courseId === course.id && r.studentId === sId);

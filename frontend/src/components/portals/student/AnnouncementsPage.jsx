@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
     Megaphone,
     Search,
@@ -9,22 +10,25 @@ import {
 } from 'lucide-react';
 import { announcementApi } from '../../../services/api';
 
-const AnnouncementsPage = ({ darkMode }) => {
+const AnnouncementsPage = () => {
+    const { darkMode, student } = useOutletContext();
     const [announcements, setAnnouncements] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const studentClass = 'Grade 10-A';
-
     useEffect(() => {
         const loadData = async () => {
+            if (!student) return;
             setLoading(true);
             try {
                 const res = await announcementApi.getAll();
-                const all = res.data || [];
+                const all = res.data?.data || [];
+                const studentClass = student.class;
 
                 const filtered = all.filter(a => {
                     const audienceMatch = a.targetAudience === 'Students' || a.targetAudience === 'All';
+                    // If no classes specified, assume valid for all classes if audience matches.
+                    // Or if specific classes listed, check if student's class is in it.
                     const classMatch = !a.classes || a.classes.length === 0 || a.classes.includes(studentClass);
                     return audienceMatch && classMatch;
                 });
@@ -37,8 +41,10 @@ const AnnouncementsPage = ({ darkMode }) => {
             }
         };
 
-        loadData();
-    }, []);
+        if (student) {
+            loadData();
+        }
+    }, [student]);
 
     const filteredAnnouncements = announcements.filter(a =>
         a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

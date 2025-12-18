@@ -183,8 +183,8 @@ const FeesAndFinancePage = ({ darkMode }) => {
                 studentApi.getAll()
             ]);
 
-            const allFees = feesRes.data || [];
-            const allStudents = studentsRes.data || [];
+            const allFees = feesRes.data?.data || [];
+            const allStudents = studentsRes.data?.data || [];
             setFees(allFees);
             setStudents(allStudents);
 
@@ -245,7 +245,7 @@ const FeesAndFinancePage = ({ darkMode }) => {
         }
     }, [showSuccess, showError, loadData]);
 
-    const filteredFees = fees.filter(fee => {
+    const filteredFees = Array.isArray(fees) ? fees.filter(fee => {
         const studentName = fee.studentName || '';
         const studentClass = fee.studentClass || '';
         const feeType = fee.feeType || '';
@@ -257,7 +257,7 @@ const FeesAndFinancePage = ({ darkMode }) => {
         const matchesStatus = filterStatus === 'All' || fee.status === filterStatus;
 
         return matchesSearch && matchesStatus;
-    });
+    }) : [];
 
     const getStatusColor = (status) => {
         switch (status) {

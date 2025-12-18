@@ -144,6 +144,20 @@ export const createAnnouncement = async (req, res) => {
     }
 };
 
+// Archive an announcement (soft delete)
+export const archiveAnnouncement = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updated = await Announcement.findOneAndUpdate({ id }, { archived: true }, { new: true });
+        if (!updated) {
+            return res.status(404).json({ success: false, message: 'Announcement not found' });
+        }
+        res.json({ success: true, data: updated });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 // --- Notifications ---
 
 export const getUserNotifications = async (req, res) => {

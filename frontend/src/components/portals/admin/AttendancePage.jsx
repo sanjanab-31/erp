@@ -44,7 +44,7 @@ const AttendancePage = ({ darkMode }) => {
     const loadStudentData = useCallback(async () => {
         try {
             const response = await studentApi.getAll();
-            setAllStudents(response.data || []);
+            setAllStudents(response.data?.data || []);
         } catch (error) {
             console.error("Failed to load students", error);
         }
@@ -53,7 +53,7 @@ const AttendancePage = ({ darkMode }) => {
     const loadTeacherData = useCallback(async () => {
         try {
             const response = await teacherApi.getAll();
-            setAllTeachers(response.data || []);
+            setAllTeachers(response.data?.data || []);
         } catch (error) {
             console.error("Failed to load teachers", error);
         }
@@ -70,19 +70,19 @@ const AttendancePage = ({ darkMode }) => {
             ]);
 
             if (sStatsRes.status === 'fulfilled') {
-                setStudentStats(sStatsRes.value.data || { total: 0, present: 0, absent: 0, late: 0 });
+                setStudentStats(sStatsRes.value.data?.data || { total: 0, present: 0, absent: 0, late: 0 });
             }
             if (sRecsRes.status === 'fulfilled') {
-                setStudentAttendanceRecords(sRecsRes.value.data || []);
+                setStudentAttendanceRecords(sRecsRes.value.data?.data || []);
             }
 
             if (tStatsRes.status === 'fulfilled') {
-                setTeacherStats(tStatsRes.value.data || { total: 0, present: 0, absent: 0, late: 0 });
+                setTeacherStats(tStatsRes.value.data?.data || { total: 0, present: 0, absent: 0, late: 0 });
             }
 
             let tAttendance = [];
             if (tRecsRes.status === 'fulfilled') {
-                tAttendance = tRecsRes.value.data || [];
+                tAttendance = tRecsRes.value.data?.data || [];
                 setDbTeacherAttendance(tAttendance);
             }
 

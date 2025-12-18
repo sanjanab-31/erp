@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
     Calendar,
     MapPin,
@@ -9,16 +10,16 @@ import {
 } from 'lucide-react';
 import { studentApi, timetableApi } from '../../../services/api';
 
-const TimetablePage = ({ darkMode }) => {
+const TimetablePage = () => {
+    const { darkMode, student } = useOutletContext();
     const [timetable, setTimetable] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [studentClass, setStudentClass] = useState('');
-
-    const studentEmail = localStorage.getItem('userEmail');
 
     useEffect(() => {
-        loadData();
-    }, [studentEmail]);
+        if (student) {
+            loadData();
+        }
+    }, [student]);
 
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
     const timeSlots = [
@@ -32,19 +33,11 @@ const TimetablePage = ({ darkMode }) => {
     ];
 
     const loadData = async () => {
-        if (!studentEmail) return;
+        if (!student) return;
         setLoading(true);
         try {
-            const studentRes = await studentApi.getAll();
-            const students = studentRes.data || [];
-            const student = students.find(s => s.email === studentEmail);
-
-            if (student) {
-                setStudentClass(student.class);
-                const ttRes = await timetableApi.getAll({ className: student.class });
-                const classTimetables = ttRes.data || [];
-                setTimetable(classTimetables[0] || null);
-            }
+            const ttRes = await timetableApi.getClass(student.class);
+            setTimetable(ttRes.data?.data || null);
         } catch (error) {
             console.error('Error loading timetable:', error);
         } finally {
@@ -120,7 +113,7 @@ const TimetablePage = ({ darkMode }) => {
                     My Timetable
                 </h1>
                 <p className="text-sm text-gray-500">
-                    {studentClass ? `Class ${studentClass} Schedule (Real-time sync with Admin)` : 'View your class schedule'}
+                    {student ? `Class ${student.class} Schedule (Real-time sync with Admin)` : 'View your class schedule'}
                 </p>
             </div>
 
@@ -136,7 +129,7 @@ const TimetablePage = ({ darkMode }) => {
                 </div>
             ) : (
                 <>
-                    {}
+                    { }
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                             <div className="flex items-center justify-between mb-4">

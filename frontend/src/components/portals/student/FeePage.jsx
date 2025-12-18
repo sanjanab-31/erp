@@ -1,38 +1,34 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { DollarSign, Calendar, AlertCircle, CheckCircle, Clock, Info } from 'lucide-react';
 import { studentApi, feeApi } from '../../../services/api';
 
-const FeePage = ({ darkMode }) => {
+const FeePage = () => {
+    const { darkMode, student } = useOutletContext();
     const [fees, setFees] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [studentName, setStudentName] = useState('');
-
-    const studentEmail = localStorage.getItem('userEmail');
+    const [studentName, setStudentName] = useState(student ? student.name : '');
 
     useEffect(() => {
-        loadFees();
-    }, [studentEmail]);
+        if (student) {
+            setStudentName(student.name);
+            loadFees();
+        }
+    }, [student]);
 
     const loadFees = useCallback(async () => {
-        if (!studentEmail) return;
+        if (!student) return;
         setLoading(true);
 
         try {
-            const studentRes = await studentApi.getAll();
-            const students = studentRes.data || [];
-            const student = students.find(s => s.email === studentEmail);
-
-            if (student) {
-                setStudentName(student.name);
-                const feeRes = await feeApi.getAll({ studentId: student.id });
-                setFees(feeRes.data || []);
-            }
+            const feeRes = await feeApi.getAll({ studentId: student.id });
+            setFees(feeRes.data?.data || []);
         } catch (error) {
             console.error('Error loading fees:', error);
         } finally {
             setLoading(false);
         }
-    }, [studentEmail]);
+    }, [student]);
 
     const getStatusColor = (status) => {
         switch (status) {

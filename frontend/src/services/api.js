@@ -48,6 +48,7 @@ export const settingsApi = {
 
 export const studentApi = {
     getAll: (params) => api.get('/students', { params }),
+    getByEmail: (email) => api.get(`/students/email/${email}`),
     getById: (id) => api.get(`/students/${id}`),
     create: (data) => api.post('/students', data),
     update: (id, data) => api.put(`/students/${id}`, data),
@@ -146,6 +147,7 @@ export const assignmentApi = {
 export const timetableApi = {
     getTeacherTimetables: () => api.get('/timetable/teachers'),
     getClassTimetables: () => api.get('/timetable/classes'),
+    getClass: (className) => api.get(`/timetable/class/${className}`),
     saveTeacherTimetable: (data) => api.post('/timetable/teachers', data),
     saveClassTimetable: (data) => api.post('/timetable/classes', data),
     deleteTeacherTimetable: (id) => api.delete(`/timetable/teachers/${id}`),

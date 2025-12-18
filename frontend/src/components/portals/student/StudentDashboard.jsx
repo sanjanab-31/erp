@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import AttendancePage from './AttendancePage';
-import FeePage from './FeePage';
-import ExamsAndGrades from './ExamsAndGrades';
-
-import CoursesPage from './CoursesPage';
-import TimetablePage from './TimetablePage';
-import LibraryPage from './LibraryPage';
-import SettingsPage from './SettingsPage';
-import AnnouncementsPage from './AnnouncementsPage';
-import ReportsPage from './ReportsPage';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { studentApi } from '../../../services/api';
 import {
     Home,
     Calendar,
@@ -23,347 +14,67 @@ import {
     Search,
     Moon,
     Sun,
-    TrendingUp,
-    BookOpenCheck,
-    Library,
     Megaphone,
-    FileText,
-    LogOut
+    FileText
 } from 'lucide-react';
-import {
-    studentApi,
-    attendanceApi,
-    resultApi,
-    courseApi,
-    libraryApi
-} from '../../../services/api';
 
 const StudentPortal = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+
     const userName = localStorage.getItem('userName') || 'Mike Wilson';
     const userRole = localStorage.getItem('userRole') || 'Student';
     const userEmail = localStorage.getItem('userEmail') || '';
-    const userId = localStorage.getItem('userId') || '';
 
-    const [activeTab, setActiveTab] = useState('Dashboard');
     const [darkMode, setDarkMode] = useState(false);
     const [notifications, setNotifications] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
-
-    const [dashboardData, setDashboardData] = useState({
-        attendance: 0,
-        currentGrade: '-',
-        gradePerformance: 'Loading...',
-        assignments: {
-            pending: 0,
-            total: 0
-        },
-        libraryBooks: {
-            issued: 0,
-            total: 0
-        },
-        upcomingAssignments: [],
-        recentGrades: []
-    });
-
-    const menuItems = [
-        { icon: Home, label: 'Dashboard', active: true },
-        { icon: Calendar, label: 'Attendance' },
-        { icon: GraduationCap, label: 'Exams & Grade' },
-        { icon: BookOpen, label: 'Courses' },
-        { icon: DollarSign, label: 'Fees & Finance' },
-        { icon: Clock, label: 'Timetable' },
-        { icon: BookMarked, label: 'Library' },
-        { icon: Megaphone, label: 'Announcements' },
-        { icon: FileText, label: 'Reports' },
-        { icon: Settings, label: 'Settings' },
-
-    ];
-
-    const handleLogout = () => {
-        localStorage.clear();
-        navigate('/login');
-    };
+    const [student, setStudent] = useState(null);
 
     useEffect(() => {
-        const fetchDashboardData = async () => {
-            if (!userEmail) return;
-
-            try {
-
-                const studentsRes = await studentApi.getAll();
-                const student = (studentsRes.data?.data || []).find(s => s.email === userEmail);
-
-                if (!student) {
-                    console.log('Student not found for email:', userEmail);
-                    return;
+        const fetchStudentData = async () => {
+            if (userEmail) {
+                try {
+                    const response = await studentApi.getByEmail(userEmail);
+                    if (response.data && response.data.success) {
+                        setStudent(response.data.data);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch student profile:', error);
                 }
-
-                const studentId = student.id;
-
-                const [
-                    attendanceRes,
-                    resultsRes,
-                    coursesRes,
-                    libraryUsageRes
-                ] = await Promise.all([
-                    attendanceApi.getAll(),
-                    resultApi.getAll(),
-                    courseApi.getAll(),
-                    libraryApi.getAllIssues()
-                ]);
-
-                const allAttendance = attendanceRes.data || [];
-                const studentAttendance = allAttendance.filter(a => a.studentId === studentId);
-                const totalDays = studentAttendance.length;
-                const presentDays = studentAttendance.filter(a => a.status === 'Present').length;
-                const attendancePct = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
-
-                const allResults = resultsRes.data || [];
-                const studentResults = allResults.filter(r => r.studentId === studentId);
-
-                const avgGrade = studentResults.length > 0
-                    ? studentResults.reduce((sum, r) => sum + (r.percentage || 0), 0) / studentResults.length
-                    : 0;
-                const overallGrade = avgGrade >= 90 ? 'A' : avgGrade >= 80 ? 'B+' : avgGrade >= 70 ? 'B' : avgGrade >= 60 ? 'C' : 'D';
-
-                const recentGrades = studentResults.slice(0, 2).map((r, idx) => ({
-                    id: idx + 1,
-                    subject: r.subject || 'Subject',
-                    assessment: r.examName || 'Assessment',
-                    grade: (r.percentage || 0) >= 90 ? 'A' : (r.percentage || 0) >= 80 ? 'B+' : 'B',
-                    color: (r.percentage || 0) >= 90 ? 'green' : 'blue'
-                }));
-
-                const allCourses = coursesRes.data || [];
-                const studentCourses = allCourses.filter(c => c.class === student.class);
-
-                let pendingSubmissions = 0;
-                let totalAssignments = 0;
-                let upcomingAssignments = [];
-
-                studentCourses.forEach(c => {
-                    const assigns = c.assignments || [];
-                    totalAssignments += assigns.length;
-                    assigns.forEach(a => {
-                        const isSubmitted = a.submissions && a.submissions.some(s => s.studentId === studentId);
-                        if (!isSubmitted) {
-                            pendingSubmissions++;
-                            upcomingAssignments.push({
-                                id: a.id,
-                                title: a.title,
-                                description: c.name,
-                                dueDate: a.dueDate,
-                                status: new Date(a.dueDate) < new Date(Date.now() + 86400000) ? 'urgent' : 'normal'
-                            });
-                        }
-                    });
-                });
-
-                const allIssues = libraryUsageRes.data || [];
-                const myIssues = allIssues.filter(i => i.studentId === studentId && i.status === 'Issued');
-
-                setDashboardData({
-                    attendance: attendancePct,
-                    currentGrade: overallGrade,
-                    gradePerformance: studentResults.length > 0 ? `Average: ${avgGrade.toFixed(1)}%` : 'No grades yet',
-                    assignments: {
-                        pending: pendingSubmissions,
-                        total: totalAssignments
-                    },
-                    libraryBooks: {
-                        issued: myIssues.length,
-                        total: 5
-                    },
-                    upcomingAssignments: upcomingAssignments.slice(0, 3),
-                    recentGrades: recentGrades
-                });
-
-            } catch (error) {
-                console.error("Failed to load student dashboard", error);
             }
         };
-
-        fetchDashboardData();
+        fetchStudentData();
     }, [userEmail]);
 
-    const getGreeting = () => {
-        const hour = new Date().getHours();
-        if (hour < 12) return 'Good morning';
-        if (hour < 18) return 'Good afternoon';
-        return 'Good evening';
-    };
+    const menuItems = [
+        { icon: Home, label: 'Dashboard', path: '' },
+        { icon: Calendar, label: 'Attendance', path: 'attendance' },
+        { icon: GraduationCap, label: 'Exams & Grade', path: 'exams' },
+        { icon: BookOpen, label: 'Courses', path: 'courses' },
+        { icon: DollarSign, label: 'Fees & Finance', path: 'fees' },
+        { icon: Clock, label: 'Timetable', path: 'timetable' },
+        { icon: BookMarked, label: 'Library', path: 'library' },
+        { icon: Megaphone, label: 'Announcements', path: 'announcements' },
+        { icon: FileText, label: 'Reports', path: 'reports' },
+        { icon: Settings, label: 'Settings', path: 'settings' },
+    ];
 
-    const renderContent = () => {
-        if (activeTab === 'Attendance') {
-            return <AttendancePage />;
-        }
+    const currentPath = location.pathname.split('/').pop();
+    const activeLabel = menuItems.find(item => {
+        if (item.path === '' && (location.pathname.endsWith('/student') || location.pathname.endsWith('/student/'))) return true;
+        return item.path === currentPath;
+    })?.label || 'Dashboard';
 
-        if (activeTab === 'Fees & Finance') {
-            return <FeePage />;
-        }
-
-        if (activeTab === 'Exams & Grade') {
-            return <ExamsAndGrades darkMode={darkMode} />;
-        }
-
-        if (activeTab === 'Courses') {
-            return <CoursesPage darkMode={darkMode} />;
-        }
-
-        if (activeTab === 'Timetable') {
-            return <TimetablePage darkMode={darkMode} />;
-        }
-
-        if (activeTab === 'Library') {
-            return <LibraryPage darkMode={darkMode} />;
-        }
-
-        if (activeTab === 'Announcements') {
-            return <AnnouncementsPage darkMode={darkMode} />;
-        }
-
-        if (activeTab === 'Reports') {
-            return <ReportsPage darkMode={darkMode} />;
-        }
-
-        if (activeTab === 'Settings') {
-            return <SettingsPage darkMode={darkMode} />;
-        }
-
-        return (
-            <div className="flex-1 overflow-y-auto p-8">
-                { }
-                <div className="mb-8">
-                    <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
-                        {getGreeting()}, {userName.split(' ')[0]}!
-                    </h1>
-                    <p className="text-sm text-gray-500">Student Dashboard</p>
-                </div>
-
-                { }
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    { }
-                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Attendance</h3>
-                            <TrendingUp className="w-5 h-5 text-gray-400" />
-                        </div>
-                        <div className="mb-3">
-                            <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.attendance}%</p>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                                className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500"
-                                style={{ width: `${dashboardData.attendance}%` }}
-                            ></div>
-                        </div>
-                    </div>
-
-                    { }
-                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Current Grade</h3>
-                            <GraduationCap className="w-5 h-5 text-gray-400" />
-                        </div>
-                        <div className="mb-2">
-                            <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.currentGrade}</p>
-                        </div>
-                        <p className="text-sm text-gray-500">{dashboardData.gradePerformance}</p>
-                    </div>
-
-                    { }
-                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Assignments</h3>
-                            <BookOpenCheck className="w-5 h-5 text-gray-400" />
-                        </div>
-                        <div className="mb-2">
-                            <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.assignments.pending}</p>
-                        </div>
-                        <p className="text-sm text-gray-500">Pending submissions</p>
-                    </div>
-
-                    { }
-                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Library Books</h3>
-                            <Library className="w-5 h-5 text-gray-400" />
-                        </div>
-                        <div className="mb-2">
-                            <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.libraryBooks.issued}</p>
-                        </div>
-                        <p className="text-sm text-gray-500">Currently issued</p>
-                    </div>
-                </div>
-
-                { }
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    { }
-                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Upcoming Assignments</h3>
-                        <div className="space-y-4">
-                            {dashboardData.upcomingAssignments.map((assignment) => (
-                                <div
-                                    key={assignment.id}
-                                    className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}
-                                >
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex-1">
-                                            <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>{assignment.title}</h4>
-                                            <p className="text-sm text-gray-500 mb-2">{assignment.description}</p>
-                                            <p className={`text-xs ${assignment.status === 'urgent' ? 'text-red-500' : 'text-gray-500'}`}>
-                                                {assignment.dueDate}
-                                            </p>
-                                        </div>
-                                        {assignment.status === 'urgent' && (
-                                            <span className="px-3 py-1 bg-red-100 text-red-600 text-xs font-semibold rounded-full">
-                                                Due tomorrow
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    { }
-                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Recent Grades</h3>
-                        <div className="space-y-4">
-                            {dashboardData.recentGrades.map((grade) => (
-                                <div
-                                    key={grade.id}
-                                    className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1">
-                                            <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>{grade.subject}</h4>
-                                            <p className="text-sm text-gray-500">{grade.assessment}</p>
-                                        </div>
-                                        <span
-                                            className={`px-4 py-2 rounded-lg font-bold text-lg ${grade.color === 'green'
-                                                ? 'bg-green-100 text-green-600'
-                                                : 'bg-blue-100 text-blue-600'
-                                                }`}
-                                        >
-                                            {grade.grade}
-                                        </span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
+    const handleNavigation = (path) => {
+        navigate(path);
     };
 
     return (
         <div className={`flex h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-            { }
+            {/* Sidebar */}
             <aside className={`w-64 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r flex flex-col`}>
-                { }
+                {/* Logo Area */}
                 <div className="px-6 py-3 border-b border-gray-200">
                     <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
@@ -376,42 +87,45 @@ const StudentPortal = () => {
                     </div>
                 </div>
 
-                { }
+                {/* Navigation */}
                 <nav className="flex-1 p-4 overflow-y-auto">
                     <ul className="space-y-1">
-                        {menuItems.map((item, index) => (
-                            <li key={index}>
-                                <button
-                                    onClick={() => setActiveTab(item.label)}
-                                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${activeTab === item.label
-                                        ? 'bg-blue-50 text-blue-600'
-                                        : `${darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`
-                                        }`}
-                                >
-                                    <item.icon className="w-5 h-5" />
-                                    <span className="text-sm font-medium">{item.label}</span>
-                                </button>
-                            </li>
-                        ))}
+                        {menuItems.map((item, index) => {
+                            const isActive = activeLabel === item.label;
+                            return (
+                                <li key={index}>
+                                    <button
+                                        onClick={() => handleNavigation(item.path)}
+                                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${isActive
+                                            ? 'bg-blue-50 text-blue-600'
+                                            : `${darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`
+                                            }`}
+                                    >
+                                        <item.icon className="w-5 h-5" />
+                                        <span className="text-sm font-medium">{item.label}</span>
+                                    </button>
+                                </li>
+                            );
+                        })}
                     </ul>
                 </nav>
             </aside>
 
-            { }
+            {/* Main Content */}
             <main className="flex-1 flex flex-col overflow-hidden">
-                { }
+                {/* Top Header */}
                 <header className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b px-8 py-4`}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
                             <div className="flex items-center space-x-2 text-sm text-gray-500">
                                 <Home className="w-4 h-4" />
                                 <span>/</span>
-                                <span className={darkMode ? 'text-white' : 'text-gray-900'}>{activeTab}</span>
+                                <span className={darkMode ? 'text-white' : 'text-gray-900'}>{activeLabel}</span>
                             </div>
                         </div>
 
                         <div className="flex items-center space-x-4">
-                            { }
+                            {/* Search */}
                             <div className="relative">
                                 <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                                 <input
@@ -426,7 +140,7 @@ const StudentPortal = () => {
                                 />
                             </div>
 
-                            { }
+                            {/* Notifications */}
                             <button className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
                                 <Bell className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`} />
                                 {notifications > 0 && (
@@ -436,7 +150,7 @@ const StudentPortal = () => {
                                 )}
                             </button>
 
-                            { }
+                            {/* Dark Mode Toggle */}
                             <button
                                 onClick={() => setDarkMode(!darkMode)}
                                 className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}
@@ -448,7 +162,7 @@ const StudentPortal = () => {
                                 )}
                             </button>
 
-                            { }
+                            {/* Settings */}
                             <button className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}>
                                 <Settings className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`} />
                             </button>
@@ -456,8 +170,8 @@ const StudentPortal = () => {
                     </div>
                 </header>
 
-                { }
-                {renderContent()}
+                {/* Page Content */}
+                <Outlet context={{ darkMode, userName, userEmail, student }} />
             </main>
         </div>
     );

@@ -222,7 +222,7 @@ const Teachers = ({ darkMode }) => {
 
             try {
                 const statsResponse = await teacherApi.getStats();
-                setStats(statsResponse.data || { total: 0, active: 0, inactive: 0, onLeave: 0 });
+                setStats(statsResponse.data?.data || { total: 0, active: 0, inactive: 0, onLeave: 0 });
             } catch (statsError) {
 
                 setStats({
