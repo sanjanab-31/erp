@@ -152,19 +152,19 @@ const CoursesPage = ({ darkMode }) => {
 
             { }
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Courses</h3>
-                        <BookOpen className="w-5 h-5 text-blue-500" />
+                        <BookOpen className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{courses.length}</p>
                     <p className="text-xs text-gray-500 mt-1">All courses in system</p>
                 </div>
 
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Active Courses</h3>
-                        <Award className="w-5 h-5 text-green-500" />
+                        <Award className="w-5 h-5 text-green-500 group-hover:scale-110 transition-transform" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                         {activeCourses.length}
@@ -172,10 +172,10 @@ const CoursesPage = ({ darkMode }) => {
                     <p className="text-xs text-gray-500 mt-1">Currently running</p>
                 </div>
 
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Teachers</h3>
-                        <GraduationCap className="w-5 h-5 text-purple-500" />
+                        <GraduationCap className="w-5 h-5 text-purple-500 group-hover:scale-110 transition-transform" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                         {new Set(courses.map(c => String(c.teacherId))).size}
@@ -183,10 +183,10 @@ const CoursesPage = ({ darkMode }) => {
                     <p className="text-xs text-gray-500 mt-1">Teaching courses</p>
                 </div>
 
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Classes</h3>
-                        <BookOpen className="w-5 h-5 text-yellow-500" />
+                        <BookOpen className="w-5 h-5 text-yellow-500 group-hover:scale-110 transition-transform" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                         {classes.length - 1} { }
@@ -196,35 +196,33 @@ const CoursesPage = ({ darkMode }) => {
             </div>
 
             { }
-            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                <div className="flex flex-col md:flex-row gap-4">
-                    <div className="flex-1 relative">
-                        <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                        <input
-                            type="text"
-                            placeholder="Search by course name, subject, or teacher..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className={`w-full pl-10 pr-4 py-2 rounded-lg border ${darkMode
-                                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                                : 'bg-gray-50 border-gray-300 text-gray-900'
-                                } focus:outline-none focus:ring-2 focus:ring-purple-500`}
-                        />
-                    </div>
-
-                    <select
-                        value={selectedClass}
-                        onChange={(e) => setSelectedClass(e.target.value)}
-                        className={`px-4 py-2 rounded-lg border ${darkMode
-                            ? 'bg-gray-700 border-gray-600 text-white'
+            <div className="flex flex-col md:flex-row gap-3 md:justify-between md:items-center">
+                <div className="relative md:w-96">
+                    <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                    <input
+                        type="text"
+                        placeholder="Search by course name, subject, or teacher..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className={`w-full pl-9 pr-3 py-2 text-sm rounded-lg border ${darkMode
+                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                             : 'bg-gray-50 border-gray-300 text-gray-900'
                             } focus:outline-none focus:ring-2 focus:ring-purple-500`}
-                    >
-                        {classes.map((cls) => (
-                            <option key={cls} value={cls}>{cls}</option>
-                        ))}
-                    </select>
+                    />
                 </div>
+
+                <select
+                    value={selectedClass}
+                    onChange={(e) => setSelectedClass(e.target.value)}
+                    className={`px-3 py-2 text-sm rounded-lg border md:w-40 ${darkMode
+                        ? 'bg-gray-700 border-gray-600 text-white'
+                        : 'bg-gray-50 border-gray-300 text-gray-900'
+                        } focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                >
+                    {classes.map((cls) => (
+                        <option key={cls} value={cls}>{cls}</option>
+                    ))}
+                </select>
             </div>
 
             { }
@@ -245,11 +243,11 @@ const CoursesPage = ({ darkMode }) => {
                     {filteredCourses.map((course) => (
                         <div
                             key={course.id}
-                            className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-shadow`}
+                            className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group cursor-pointer`}
                         >
                             <div className="flex items-start justify-between mb-4">
                                 <div className="flex-1">
-                                    <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>
+                                    <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1 group-hover:text-purple-600 transition-colors`}>
                                         {course.courseName}
                                     </h3>
                                     <p className="text-sm text-gray-500">{course.subject}</p>
@@ -291,9 +289,9 @@ const CoursesPage = ({ darkMode }) => {
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => setSelectedCourse(course)}
-                                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm flex items-center justify-center space-x-2"
+                                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 hover:shadow-lg transition-all duration-200 text-sm flex items-center justify-center space-x-2 group/btn"
                                 >
-                                    <Eye className="w-4 h-4" />
+                                    <Eye className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
                                     <span>View Details</span>
                                 </button>
                             </div>

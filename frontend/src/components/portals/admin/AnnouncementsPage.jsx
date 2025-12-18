@@ -310,9 +310,9 @@ const AnnouncementsPage = ({ darkMode }) => {
                 </div>
                 <button
                     onClick={handleAdd}
-                    className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                    className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 hover:shadow-lg transition-all duration-200 group"
                 >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
                     <span>New Announcement</span>
                 </button>
             </div>
@@ -326,13 +326,13 @@ const AnnouncementsPage = ({ darkMode }) => {
                         placeholder="Search announcements..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className={`w-full pl-10 pr-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:ring-2 focus:ring-purple-500 outline-none`}
+                        className={`w-full pl-9 pr-4 py-2 rounded-lg border text-sm md:w-80 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-300'} focus:ring-2 focus:ring-purple-500 outline-none`}
                     />
                 </div>
                 <select
                     value={filterAudience}
                     onChange={(e) => setFilterAudience(e.target.value)}
-                    className={`px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:ring-2 focus:ring-purple-500 outline-none`}
+                    className={`px-4 py-2 rounded-lg border text-sm md:w-40 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-300'} focus:ring-2 focus:ring-purple-500 outline-none`}
                 >
                     <option value="All">All Audiences</option>
                     <option value="Teachers">Teachers</option>
@@ -346,7 +346,7 @@ const AnnouncementsPage = ({ darkMode }) => {
                 {filteredAnnouncements.map(announcement => (
                     <div
                         key={announcement.id}
-                        className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6 hover:shadow-lg transition-shadow`}
+                        className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6 hover:shadow-xl hover:scale-[1.01] transition-all duration-200 cursor-pointer group`}
                     >
                         <div className="flex justify-between items-start mb-3">
                             <div className="flex-1">

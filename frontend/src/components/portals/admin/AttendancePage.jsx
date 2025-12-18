@@ -205,7 +205,7 @@ const AttendancePage = ({ darkMode }) => {
                     <button
                         onClick={() => setActiveTab('teachers')}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'teachers'
-                            ? 'bg-white text-blue-600 shadow-sm'
+                            ? 'bg-white text-purple-600 shadow-sm'
                             : 'text-gray-600 hover:text-gray-900'
                             }`}
                     >
@@ -214,7 +214,7 @@ const AttendancePage = ({ darkMode }) => {
                     <button
                         onClick={() => setActiveTab('students')}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'students'
-                            ? 'bg-white text-blue-600 shadow-sm'
+                            ? 'bg-white text-purple-600 shadow-sm'
                             : 'text-gray-600 hover:text-gray-900'
                             }`}
                     >
@@ -223,25 +223,19 @@ const AttendancePage = ({ darkMode }) => {
                 </div>
             </div>
 
-            { }
-            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} p-4 rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                <div className="flex items-center gap-4">
-                    <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                        Select Date:
-                    </label>
-                    <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                            type="date"
-                            value={selectedDate}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                            max={new Date().toISOString().split('T')[0]}
-                            className={`pl-10 pr-4 py-2 rounded-lg border ${darkMode
-                                ? 'bg-gray-700 border-gray-600 text-white'
-                                : 'bg-gray-50 border-gray-300 text-gray-900'
-                                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                        />
-                    </div>
+            {/* Date Selector */}
+            <div className="flex justify-end">
+                <div>
+                    <input
+                        type="date"
+                        value={selectedDate}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                        max={new Date().toISOString().split('T')[0]}
+                        className={`px-4 py-2 rounded-lg border ${darkMode
+                            ? 'bg-gray-700 border-gray-600 text-white'
+                            : 'bg-gray-100 border-gray-300 text-gray-900'
+                            } focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                    />
                 </div>
             </div>
 
@@ -265,9 +259,9 @@ const AttendancePage = ({ darkMode }) => {
                             <button
                                 onClick={saveTeacherAttendance}
                                 disabled={saveStatus === 'saved'}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${saveStatus === 'saved'
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 group ${saveStatus === 'saved'
                                     ? 'bg-green-100 text-green-700 cursor-default'
-                                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                                    : 'bg-purple-600 text-white hover:bg-purple-700 hover:shadow-lg'
                                     }`}
                             >
                                 {saveStatus === 'saved' ? (
@@ -276,7 +270,7 @@ const AttendancePage = ({ darkMode }) => {
                                     </>
                                 ) : (
                                     <>
-                                        <Save className="w-4 h-4" /> Save Changes
+                                        <Save className="w-4 h-4 group-hover:scale-110 transition-transform" /> Save Changes
                                     </>
                                 )}
                             </button>
@@ -462,10 +456,10 @@ const StatCard = ({ title, value, icon: Icon, color, darkMode }) => {
     };
 
     return (
-        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
             <div className="flex items-center justify-between mb-4">
                 <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{title}</h3>
-                <Icon className={`w-5 h-5 ${colors[color]}`} />
+                <Icon className={`w-5 h-5 ${colors[color]} group-hover:scale-110 transition-transform`} />
             </div>
             <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                 {value}
