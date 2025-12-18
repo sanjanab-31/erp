@@ -31,13 +31,25 @@ const studentSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    parent: {
+        type: String,
+        required: false
+    },
     parentEmail: {
         type: String,
         required: true
     },
+    parentPhone: {
+        type: String,
+        required: false
+    },
     phone: {
         type: String,
         required: true
+    },
+    gender: {
+        type: String,
+        required: false
     },
     address: {
         type: String,

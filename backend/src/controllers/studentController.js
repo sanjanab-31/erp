@@ -22,11 +22,28 @@ export const getAllStudents = async (req, res) => {
             filter.class = className;
         }
         if (status && status !== 'All') {
-            filter.status = status; // Assuming status is stored as 'Active', 'Inactive', etc.
+            filter.status = status;
         }
 
         const students = await Student.find(filter).sort({ createdAt: -1 });
-        res.json({ success: true, data: students });
+        
+        // Populate parent information from Parent collection
+        const studentsWithParents = await Promise.all(students.map(async (student) => {
+            const studentObj = student.toObject();
+            
+            // Find parent by studentId
+            const parent = await Parent.findOne({ studentId: studentObj.id });
+            
+            if (parent) {
+                studentObj.parent = parent.name;
+                studentObj.parentPhone = parent.phone;
+                // parentEmail is already in student record
+            }
+            
+            return studentObj;
+        }));
+        
+        res.json({ success: true, data: studentsWithParents });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -71,7 +88,18 @@ export const getStudentById = async (req, res) => {
         if (!student) {
             return res.status(404).json({ success: false, message: 'Student not found' });
         }
-        res.json({ success: true, data: student });
+        
+        const studentObj = student.toObject();
+        
+        // Find parent by studentId
+        const parent = await Parent.findOne({ studentId: studentObj.id });
+        
+        if (parent) {
+            studentObj.parent = parent.name;
+            studentObj.parentPhone = parent.phone;
+        }
+        
+        res.json({ success: true, data: studentObj });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -129,7 +157,8 @@ export const createStudent = async (req, res) => {
         // Auto-create Parent if email is provided
         if (req.body.parentEmail) {
             const parentEmail = req.body.parentEmail;
-            const parentName = req.body.parentName || `Parent of ${name}`; // Fallback name
+            // Use 'parent' field from frontend, only fallback if truly empty
+            const parentName = (req.body.parent && req.body.parent.trim()) ? req.body.parent : `Parent of ${name}`;
             const parentPhone = req.body.parentPhone || req.body.phone; // Fallback phone
 
             // Check if parent user/profile exists
@@ -163,7 +192,8 @@ export const createStudent = async (req, res) => {
         // Auto-create Parent if email is provided
         if (req.body.parentEmail) {
             const parentEmail = req.body.parentEmail;
-            const parentName = req.body.parentName || `Parent of ${name}`;
+            // Use 'parent' field from frontend, only fallback if truly empty
+            const parentName = (req.body.parent && req.body.parent.trim()) ? req.body.parent : `Parent of ${name}`;
             const parentPhone = req.body.parentPhone || rest.phone;
 
             // Check if parent exists in Parent collection
@@ -213,6 +243,11 @@ export const updateStudent = async (req, res) => {
         const { id } = req.params;
         const updates = req.body;
 
+        // Map rollNumber from frontend if provided
+        if (updates.rollNo && !updates.rollNumber) {
+            updates.rollNumber = updates.rollNo;
+        }
+
         if (updates.password) {
             updates.password = await bcrypt.hash(updates.password, 10);
 
@@ -224,6 +259,57 @@ export const updateStudent = async (req, res) => {
 
         if (!student) {
             return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+
+        // Update or create parent information if provided
+        if (updates.parent || updates.parentPhone || updates.parentEmail) {
+            const existingParent = await Parent.findOne({ studentId: parseInt(id) });
+            
+            if (existingParent) {
+                // Update existing parent
+                const parentUpdates = {};
+                if (updates.parent) parentUpdates.name = updates.parent;
+                if (updates.parentPhone) parentUpdates.phone = updates.parentPhone;
+                
+                await Parent.findOneAndUpdate(
+                    { studentId: parseInt(id) },
+                    parentUpdates,
+                    { new: true }
+                );
+            } else if (updates.parentEmail) {
+                // Create parent record if it doesn't exist
+                const hashedPassword = await bcrypt.hash('password', 10);
+                const parentName = updates.parent || `Parent of ${student.name}`;
+                
+                await Parent.create({
+                    id: Date.now() + Math.floor(Math.random() * 1000),
+                    email: updates.parentEmail,
+                    password: hashedPassword,
+                    name: parentName,
+                    role: 'parent',
+                    studentId: parseInt(id),
+                    childName: student.name,
+                    childClass: student.class || '',
+                    relationship: 'Parent',
+                    phone: updates.parentPhone || '',
+                    address: updates.address || '',
+                    createdAt: new Date(),
+                    createdBy: 'system',
+                    active: true
+                });
+                
+                // Also create User account for parent login
+                const existingUser = await User.findOne({ email: updates.parentEmail });
+                if (!existingUser) {
+                    await User.create({
+                        email: updates.parentEmail,
+                        password: hashedPassword,
+                        role: 'parent',
+                        name: parentName,
+                        active: true
+                    });
+                }
+            }
         }
 
         res.json({ success: true, data: student });

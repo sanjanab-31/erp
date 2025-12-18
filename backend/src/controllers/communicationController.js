@@ -132,16 +132,19 @@ export const getAnnouncements = async (req, res) => {
 
 export const createAnnouncement = async (req, res) => {
     try {
-        const { title, description, targetAudience, classes, attachment } = req.body;
+        const { title, description, targetAudience, classes, attachment, priority, category } = req.body;
 
         const newAnnouncement = await Announcement.create({
             id: Date.now(),
             title,
-            content: description,
-            authorId: req.user?.userId || req.user?.id || 1, // Fallback
+            description,
+            targetAudience,
+            classes: classes || [],
+            authorId: Number(req.user?.userId) || Number(req.user?.id) || 1,
             authorName: req.user?.name || req.body.createdByName || 'Admin',
             authorRole: req.user?.role || 'admin',
-            recipients: { audience: targetAudience, classes: classes || [] },
+            priority: priority || 'medium',
+            category: category || 'General',
             attachment,
             timestamp: new Date()
         });
@@ -155,14 +158,19 @@ export const createAnnouncement = async (req, res) => {
 export const updateAnnouncement = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, targetAudience, classes, attachment, status } = req.body;
+        const { title, description, targetAudience, classes, attachment, status, priority, category } = req.body;
 
         const updateData = {};
         if (title) updateData.title = title;
-        if (description) updateData.content = description;
-        if (targetAudience) updateData.recipients = { audience: targetAudience, classes: classes || [] };
+        if (description) updateData.description = description;
+        if (targetAudience) {
+            updateData.targetAudience = targetAudience;
+            updateData.classes = classes || [];
+        }
         if (attachment) updateData.attachment = attachment;
         if (status) updateData.status = status;
+        if (priority) updateData.priority = priority;
+        if (category) updateData.category = category;
 
         const updatedAnnouncement = await Announcement.findOneAndUpdate({ id }, updateData, { new: true });
         res.json({ success: true, data: updatedAnnouncement });
