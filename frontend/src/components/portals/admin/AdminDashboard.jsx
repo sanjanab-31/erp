@@ -28,6 +28,7 @@ const AdminDashboard = () => {
     const location = useLocation();
 
     const userName = localStorage.getItem('userName') || 'John Admin';
+    const userEmail = localStorage.getItem('userEmail') || '';
 
     const [darkMode, setDarkMode] = useState(false);
     const [notifications, setNotifications] = useState(1);
@@ -48,6 +49,11 @@ const AdminDashboard = () => {
         { icon: Calendar, label: 'Exam Schedules', path: '/admin/exams' },
         { icon: BookMarked, label: 'Library', path: '/admin/library' },
         { icon: Megaphone, label: 'Announcements', path: '/admin/announcements' },
+    ];
+
+    // Determine if forgot password should be shown
+    const showForgotPassword = userEmail !== 'admin@sece.ac.in';
+    const extendedMenuItems = [
         { icon: BarChart3, label: 'Reports', path: '/admin/reports' },
         { icon: Settings, label: 'Settings', path: '/admin/settings' }
     ];
