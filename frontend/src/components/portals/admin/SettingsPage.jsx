@@ -369,18 +369,18 @@ const SettingsPage = ({ darkMode }) => {
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 { }
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} h-fit`}>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-4 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} h-fit hover:shadow-md transition-shadow`}>
                     <nav className="space-y-2">
                         {sections.map((section) => (
                             <button
                                 key={section.id}
                                 onClick={() => setActiveSection(section.id)}
-                                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${activeSection === section.id
+                                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all group ${activeSection === section.id
                                     ? 'bg-purple-50 text-purple-600'
                                     : `${darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`
                                     }`}
                             >
-                                <section.icon className="w-5 h-5" />
+                                <section.icon className="w-5 h-5 group-hover:scale-110 transition-transform" />
                                 <span className="font-medium">{section.name}</span>
                             </button>
                         ))}
@@ -389,9 +389,9 @@ const SettingsPage = ({ darkMode }) => {
                         <div className="pt-4 mt-4 border-t border-gray-200">
                             <button
                                 onClick={handleLogout}
-                                className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all bg-red-50 text-red-600 hover:bg-red-100"
+                                className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all bg-red-50 text-red-600 hover:bg-red-100 hover:shadow-md group"
                             >
-                                <LogOut className="w-5 h-5" />
+                                <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
                                 <span className="font-medium">Logout</span>
                             </button>
                         </div>

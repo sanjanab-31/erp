@@ -85,40 +85,40 @@ const ExamsAndGradesPage = ({ darkMode }) => {
 
             { }
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Students</h3>
-                        <Users className="w-5 h-5 text-blue-500" />
+                        <Users className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                         {examData.overview.totalStudents}
                     </p>
                 </div>
 
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Average Score</h3>
-                        <TrendingUp className="w-5 h-5 text-green-500" />
+                        <TrendingUp className="w-5 h-5 text-green-500 group-hover:scale-110 transition-transform" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                         {examData.overview.averageScore}%
                     </p>
                 </div>
 
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Pass Rate</h3>
-                        <Award className="w-5 h-5 text-purple-500" />
+                        <Award className="w-5 h-5 text-purple-500 group-hover:scale-110 transition-transform" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                         {examData.overview.passRate}%
                     </p>
                 </div>
 
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Top Score</h3>
-                        <Award className="w-5 h-5 text-yellow-500" />
+                        <Award className="w-5 h-5 text-yellow-500 group-hover:scale-110 transition-transform" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                         {examData.overview.topScore}%
@@ -132,7 +132,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                     <select
                         value={selectedExam}
                         onChange={(e) => setSelectedExam(e.target.value)}
-                        className={`flex-1 px-4 py-2 rounded-lg border ${darkMode
+                        className={`flex-1 px-4 py-2 rounded-lg border text-sm md:w-64 ${darkMode
                             ? 'bg-gray-700 border-gray-600 text-white'
                             : 'bg-gray-50 border-gray-300 text-gray-900'
                             } focus:outline-none focus:ring-2 focus:ring-purple-500`}
@@ -145,7 +145,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                     <select
                         value={selectedClass}
                         onChange={(e) => setSelectedClass(e.target.value)}
-                        className={`flex-1 px-4 py-2 rounded-lg border ${darkMode
+                        className={`flex-1 px-4 py-2 rounded-lg border text-sm md:w-64 ${darkMode
                             ? 'bg-gray-700 border-gray-600 text-white'
                             : 'bg-gray-50 border-gray-300 text-gray-900'
                             } focus:outline-none focus:ring-2 focus:ring-purple-500`}
@@ -155,8 +155,8 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                         ))}
                     </select>
 
-                    <button className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2">
-                        <Download className="w-5 h-5" />
+                    <button className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 hover:shadow-lg transition-all duration-200 flex items-center space-x-2 group">
+                        <Download className="w-5 h-5 group-hover:scale-110 transition-transform" />
                         <span>Export Report</span>
                     </button>
                 </div>

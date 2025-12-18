@@ -407,34 +407,34 @@ const LibraryPage = ({ darkMode }) => {
         <div className={`space-y-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             { }
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6 shadow-sm`}>
+                <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-gray-500 text-sm font-medium">Total Books</h3>
-                        <Book className="w-5 h-5 text-purple-500" />
+                        <Book className="w-5 h-5 text-purple-500 group-hover:scale-110 transition-transform" />
                     </div>
                     <p className="text-3xl font-bold">{stats.totalBooks}</p>
                     <p className="text-xs text-gray-500 mt-1">{stats.availableBooks} Available</p>
                 </div>
-                <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6 shadow-sm`}>
+                <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-gray-500 text-sm font-medium">Issued Books</h3>
-                        <BookOpen className="w-5 h-5 text-blue-500" />
+                        <BookOpen className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform" />
                     </div>
                     <p className="text-3xl font-bold">{stats.issuedBooks}</p>
                     <p className="text-xs text-blue-500 mt-1">Active Issues</p>
                 </div>
-                <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6 shadow-sm`}>
+                <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-gray-500 text-sm font-medium">Pending Fines</h3>
-                        <IndianRupee className="w-5 h-5 text-red-500" />
+                        <IndianRupee className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform" />
                     </div>
                     <p className="text-3xl font-bold">₹{stats.pendingFines}</p>
                     <p className="text-xs text-red-500 mt-1">Uncollected</p>
                 </div>
-                <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6 shadow-sm cursor-pointer hover:shadow-md transition-all`} onClick={() => handleAction('settings')}>
+                <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group`} onClick={() => handleAction('settings')}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-gray-500 text-sm font-medium">Settings</h3>
-                        <Settings className="w-5 h-5 text-gray-500" />
+                        <Settings className="w-5 h-5 text-gray-500 group-hover:scale-110 transition-transform" />
                     </div>
                     <p className="text-lg font-medium">Fines: ₹{rules.finePerDay}/day</p>
                     <p className="text-xs text-gray-500 mt-1">Click to configure</p>
@@ -472,14 +472,14 @@ const LibraryPage = ({ darkMode }) => {
                             placeholder="Search..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className={`pl-10 pr-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:ring-2 focus:ring-purple-500 focus:outline-none`}
+                            className={`pl-9 pr-4 py-2 rounded-lg border text-sm md:w-64 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-300'} focus:ring-2 focus:ring-purple-500 focus:outline-none`}
                         />
                     </div>
                     <button
                         onClick={() => handleAction('addBook')}
-                        className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                        className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 hover:shadow-lg transition-all duration-200 group"
                     >
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
                         <span>Add Book</span>
                     </button>
                 </div>
