@@ -55,6 +55,11 @@ const teacherSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    status: {
+        type: String,
+        required: true,
+        default: 'Active'
+    },
     active: {
         type: Boolean,
         required: true

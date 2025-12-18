@@ -19,15 +19,19 @@ const messageSchema = new mongoose.Schema({
 const announcementSchema = new mongoose.Schema({
     id: { type: Number, required: true },
     title: { type: String, required: true },
-    content: { type: String, required: true },
+    description: { type: String, required: true }, // Changed from 'content' to matching frontend
+    targetAudience: { type: String, required: true }, // Changed from 'recipients'
+    classes: [{ type: String }], // Added classes support
+    attachment: { type: String }, // Added attachment support
+    status: { type: String, default: 'Published' }, // Added status
+    publishDate: { type: Date, default: Date.now }, // Added publishDate
     authorId: { type: Number, required: true },
     authorName: { type: String, required: true },
     authorRole: { type: String, required: true },
-    recipients: { type: mongoose.Schema.Types.Mixed, required: true }, // 'all', 'parents', or array of IDs
     priority: { type: String, default: 'medium' },
     category: { type: String, default: 'General' },
     timestamp: { type: Date, default: Date.now },
-    read: [{ type: Number }] // Array of user IDs who read it
+    read: [{ type: Number }]
 });
 
 const notificationSchema = new mongoose.Schema({

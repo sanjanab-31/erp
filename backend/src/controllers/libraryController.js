@@ -5,10 +5,11 @@ const bookSchema = new mongoose.Schema({
     id: { type: Number, required: true },
     title: { type: String, required: true },
     author: { type: String, required: true },
+    subject: { type: String, required: true },
     category: { type: String, required: true },
     isbn: { type: String },
-    totalCopies: { type: Number, default: 1 },
-    availableCopies: { type: Number, default: 1 },
+    quantity: { type: Number, default: 1 },
+    available: { type: Number, default: 1 },
     status: { type: String, default: 'Available' },
     coverImage: { type: String }
 });
@@ -20,8 +21,9 @@ const issueSchema = new mongoose.Schema({
     id: { type: Number, required: true },
     bookId: { type: Number, required: true },
     bookTitle: { type: String },
-    studentId: { type: Number, required: true },
-    studentName: { type: String },
+    userId: { type: String, required: true },
+    userName: { type: String },
+    userRole: { type: String, default: 'Student' },
     issueDate: { type: Date, default: Date.now },
     dueDate: { type: Date, required: true },
     returnDate: { type: Date },
@@ -94,7 +96,7 @@ export const issueBook = async (req, res) => {
         // Decrease available copies
         await Book.findOneAndUpdate(
             { id: issueData.bookId },
-            { $inc: { availableCopies: -1 } }
+            { $inc: { available: -1 } }
         );
 
         res.status(201).json({ success: true, data: newIssue });
@@ -116,7 +118,7 @@ export const returnBook = async (req, res) => {
         // Increase available copies
         await Book.findOneAndUpdate(
             { id: issue.bookId },
-            { $inc: { availableCopies: 1 } }
+            { $inc: { available: 1 } }
         );
 
         res.json({ success: true, data: issue });
@@ -127,17 +129,34 @@ export const returnBook = async (req, res) => {
 
 export const getLibraryStats = async (req, res) => {
     try {
-        const totalBooks = await Book.countDocuments();
-        const activeIssues = await Issue.countDocuments({ status: 'Issued' });
-        const overdueIssues = await Issue.countDocuments({ status: 'Overdue' }); // Needs scheduled job or logic to update status
+        const bookStats = await Book.aggregate([
+            {
+                $group: {
+                    _id: null,
+                    totalBooks: { $sum: "$quantity" },
+                    availableBooks: { $sum: "$available" }
+                }
+            }
+        ]);
+
+        const issuedBooks = await Issue.countDocuments({ status: 'Issued' });
+
+        const fineStats = await Issue.aggregate([
+            {
+                $group: {
+                    _id: null,
+                    totalFines: { $sum: "$fine" }
+                }
+            }
+        ]);
 
         res.json({
             success: true,
             data: {
-                totalBooks,
-                activeIssues,
-                overdueIssues,
-                visitorsToday: 0 // Placeholder
+                totalBooks: bookStats[0]?.totalBooks || 0,
+                availableBooks: bookStats[0]?.availableBooks || 0,
+                issuedBooks,
+                pendingFines: fineStats[0]?.totalFines || 0
             }
         });
     } catch (error) {

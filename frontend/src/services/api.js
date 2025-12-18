@@ -84,6 +84,8 @@ export const feeApi = {
     create: (data) => api.post('/fees', data),
     update: (id, data) => api.put(`/fees/${id}`, data),
     getStats: () => api.get('/fees/stats'),
+    pay: (id, data) => api.post(`/fees/${id}/pay`, data),
+    delete: (id) => api.delete(`/fees/${id}`),
 };
 
 export const libraryApi = {
@@ -169,6 +171,13 @@ export const communicationApi = {
 export const paymentApi = {
     createCheckoutSession: (data) => paymentApiInstance.post('/create-checkout-session', data),
     getCheckoutSession: (sessionId) => paymentApiInstance.get(`/checkout-session/${sessionId}`),
+};
+
+export const reportsApi = {
+    getOverview: (params) => api.get('/reports/overview', { params }),
+    getAcademic: (params) => api.get('/reports/academic', { params }),
+    getFinancial: (params) => api.get('/reports/financial', { params }),
+    getAttendance: (params) => api.get('/reports/attendance', { params }),
 };
 
 export default api;

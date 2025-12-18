@@ -129,7 +129,7 @@ const AdminExamSchedules = ({ darkMode }) => {
         const term = searchTerm.toLowerCase();
         return Object.entries(groupedSchedules).filter(([examName, papers]) => {
             return examName.toLowerCase().includes(term) ||
-                papers.some(p => p.subject?.toLowerCase().includes(term));
+                papers.some(p => (p.subject || p.courseName)?.toLowerCase().includes(term));
         });
     }, [searchTerm, groupedSchedules]);
 
@@ -312,7 +312,7 @@ const AdminExamSchedules = ({ darkMode }) => {
                                                 {papers.sort((a, b) => new Date(a.examDate) - new Date(b.examDate)).map(paper => (
                                                     <tr key={paper.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
                                                         <td className={`p-4 font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                            {paper.subject}
+                                                            {paper.subject || paper.courseName}
                                                         </td>
                                                         <td className={`p-4 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                                                             {new Date(paper.examDate).toLocaleDateString()}

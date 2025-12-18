@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Edit, Trash2, Save, X, IndianRupee, Users, AlertCircle, TrendingUp, Calendar, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, IndianRupee, Users, AlertCircle, TrendingUp, Calendar, Search, CreditCard } from 'lucide-react';
 import { feeApi, studentApi } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 
@@ -166,6 +166,103 @@ const FeeModal = ({ darkMode, onClose, onSave, editingFee, students }) => {
     );
 };
 
+
+const PaymentModal = ({ darkMode, onClose, onSave, fee }) => {
+    const [amount, setAmount] = useState(fee.remainingAmount || 0);
+    const [paymentMethod, setPaymentMethod] = useState('Cash');
+    const [transactionId, setTransactionId] = useState('');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave({
+            amount,
+            paymentMethod,
+            transactionId,
+            paidBy: 'Admin'
+        });
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full`}>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6 rounded-t-xl`}>
+                    <div className="flex items-center justify-between">
+                        <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                            Record Payment
+                        </h2>
+                        <button onClick={onClose} className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}>
+                            <X className="w-6 h-6 text-gray-500" />
+                        </button>
+                    </div>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    <div>
+                        <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                            Payment Amount (Remaining: ₹{fee.remainingAmount})
+                        </label>
+                        <input
+                            type="number"
+                            required
+                            max={fee.remainingAmount}
+                            min={1}
+                            value={amount}
+                            onChange={(e) => setAmount(e.target.value)}
+                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                        />
+                    </div>
+
+                    <div>
+                        <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                            Payment Method
+                        </label>
+                        <select
+                            value={paymentMethod}
+                            onChange={(e) => setPaymentMethod(e.target.value)}
+                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                        >
+                            <option value="Cash">Cash</option>
+                            <option value="Online">Online / UPI</option>
+                            <option value="Cheque">Cheque</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                            Transaction ID / Note
+                        </label>
+                        <input
+                            type="text"
+                            value={transactionId}
+                            onChange={(e) => setTransactionId(e.target.value)}
+                            placeholder="Optional"
+                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                        />
+                    </div>
+
+                    <div className="flex justify-end space-x-3 pt-4">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className={`px-6 py-2 rounded-lg border ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2"
+                        >
+                            <IndianRupee className="w-5 h-5" />
+                            <span>Confirm Payment</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
 const FeesAndFinancePage = ({ darkMode }) => {
     const { showSuccess, showError } = useToast();
     const [fees, setFees] = useState([]);
@@ -175,6 +272,9 @@ const FeesAndFinancePage = ({ darkMode }) => {
     const [editingFee, setEditingFee] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('All');
+
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [selectedFeeForPayment, setSelectedFeeForPayment] = useState(null);
 
     const loadData = useCallback(async () => {
         try {
@@ -243,7 +343,19 @@ const FeesAndFinancePage = ({ darkMode }) => {
                 showError('Error deleting fee: ' + (error.response?.data?.message || error.message));
             }
         }
-    }, [showSuccess, showError, loadData]);
+    }, [showSuccess, showError, loadData]);;
+
+    const handleRecordPayment = useCallback(async (paymentData) => {
+        try {
+            await feeApi.pay(selectedFeeForPayment.id, paymentData);
+            showSuccess('Payment recorded successfully!');
+            setShowPaymentModal(false);
+            setSelectedFeeForPayment(null);
+            loadData();
+        } catch (error) {
+            showError('Error recording payment: ' + (error.response?.data?.message || error.message));
+        }
+    }, [selectedFeeForPayment, showSuccess, showError, loadData]);
 
     const filteredFees = Array.isArray(fees) ? fees.filter(fee => {
         const studentName = fee.studentName || '';
@@ -418,6 +530,18 @@ const FeesAndFinancePage = ({ darkMode }) => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            {fee.status !== 'Paid' && (
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedFeeForPayment(fee);
+                                                        setShowPaymentModal(true);
+                                                    }}
+                                                    className="text-green-600 hover:text-green-900 mr-4"
+                                                    title="Record Payment"
+                                                >
+                                                    <CreditCard className="w-5 h-5" />
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={() => {
                                                     setEditingFee(fee);
@@ -450,6 +574,15 @@ const FeesAndFinancePage = ({ darkMode }) => {
                     onSave={handleAddFee}
                     editingFee={editingFee}
                     students={students}
+                />
+            )}
+
+            {showPaymentModal && selectedFeeForPayment && (
+                <PaymentModal
+                    darkMode={darkMode}
+                    onClose={() => { setShowPaymentModal(false); setSelectedFeeForPayment(null); }}
+                    onSave={handleRecordPayment}
+                    fee={selectedFeeForPayment}
                 />
             )}
         </div>

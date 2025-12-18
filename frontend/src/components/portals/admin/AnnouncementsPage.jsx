@@ -94,7 +94,11 @@ const AnnouncementsPage = ({ darkMode }) => {
 
     const Modal = () => {
         const [formData, setFormData] = useState(
-            selectedAnnouncement || {
+            selectedAnnouncement ? {
+                ...selectedAnnouncement,
+                description: selectedAnnouncement.description || selectedAnnouncement.content || '',
+                targetAudience: selectedAnnouncement.targetAudience || (selectedAnnouncement.recipients === 'all' ? 'All' : selectedAnnouncement.recipients) || 'All'
+            } : {
                 title: '',
                 description: '',
                 targetAudience: 'All',
@@ -117,16 +121,17 @@ const AnnouncementsPage = ({ darkMode }) => {
                     // Map frontend form data to backend schema
                     const payload = {
                         title: formData.title,
-                        content: formData.description, // Backend expects 'content'
+                        description: formData.description,
+                        targetAudience: formData.targetAudience,
                         authorId: 1, // Hardcoded for now, should be from auth
                         authorName: localStorage.getItem('userName') || 'Admin',
                         authorRole: 'Admin',
-                        recipients: formData.targetAudience === 'All' ? 'all' : formData.targetAudience.toLowerCase(),
                         category: 'General',
                         priority: 'medium',
-                        classes: formData.classes, // Extra field, might be ignored or handled by controller
+                        classes: formData.classes,
                         attachment: formData.attachment,
-                        publishDate: formData.publishDate
+                        publishDate: formData.publishDate,
+                        status: 'Published'
                     };
 
                     const res = await announcementApi.create(payload);
@@ -357,7 +362,7 @@ const AnnouncementsPage = ({ darkMode }) => {
                                         {announcement.targetAudience}
                                     </span>
                                 </div>
-                                <p className="text-sm text-gray-600 mb-3">{announcement.description}</p>
+                                <p className="text-sm text-gray-600 mb-3">{announcement.description || announcement.content}</p>
                                 <div className="flex items-center space-x-4 text-xs text-gray-500">
                                     <span className="flex items-center">
                                         <Calendar className="w-3 h-3 mr-1" />

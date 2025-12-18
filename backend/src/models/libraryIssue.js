@@ -3,9 +3,10 @@ import mongoose from 'mongoose';
 const libraryIssueSchema = new mongoose.Schema({
     id: { type: Number, required: true, unique: true },
     bookId: { type: Number, required: true },
-    studentId: { type: Number, required: true }, // or userId if general
     bookTitle: { type: String },
-    studentName: { type: String },
+    userId: { type: String, required: true },
+    userName: { type: String },
+    userRole: { type: String, default: 'Student' },
     issuedAt: { type: Date, default: Date.now },
     dueDate: { type: Date, required: true },
     returnedAt: { type: Date },

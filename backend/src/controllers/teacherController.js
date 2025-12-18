@@ -35,7 +35,7 @@ export const getAllTeachers = async (req, res) => {
 export const getTeacherStats = async (req, res) => {
     try {
         const total = await Teacher.countDocuments();
-        const active = await Teacher.countDocuments({ status: 'Active' });
+        const active = await Teacher.countDocuments({ $or: [{ status: 'Active' }, { status: { $exists: false } }] });
         const inactive = await Teacher.countDocuments({ status: 'Inactive' });
         const onLeave = await Teacher.countDocuments({ status: 'On Leave' });
 

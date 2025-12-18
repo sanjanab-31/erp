@@ -508,13 +508,13 @@ const Teachers = ({ darkMode }) => {
                             </div>
 
                             <div className="mt-6 flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${teacher.status === 'Active'
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${(teacher.status || 'Active') === 'Active'
                                     ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                                     : teacher.status === 'On Leave'
                                         ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
                                         : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                                     }`}>
-                                    {teacher.status}
+                                    {teacher.status || 'Active'}
                                 </span>
                                 <div className="flex gap-2">
                                     <button

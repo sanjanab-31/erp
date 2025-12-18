@@ -20,6 +20,260 @@ import {
 import { libraryApi } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 
+const LibraryModal = ({
+    darkMode,
+    modalType,
+    selectedBook,
+    setShowModal,
+    loadData,
+    rules,
+    setRules,
+    showSuccess,
+    showError,
+    showWarning
+}) => {
+    const [formData, setFormData] = useState(
+        selectedBook || {
+            title: '',
+            author: '',
+            subject: '',
+            isbn: '',
+            quantity: 1,
+            category: 'General',
+            type: 'Book'
+        }
+    );
+
+    const [issueData, setIssueData] = useState({
+        userId: '',
+        userName: '',
+        userRole: 'Student'
+    });
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            if (modalType === 'addBook') {
+                await libraryApi.createBook(formData);
+                showSuccess('Book added successfully');
+            } else if (modalType === 'editBook') {
+                await libraryApi.updateBook(selectedBook.id, formData);
+                showSuccess('Book updated successfully');
+            } else if (modalType === 'issueBook') {
+                if (!issueData.userId) {
+                    showWarning('User ID is required');
+                    return;
+                }
+
+                await libraryApi.issueBook({
+                    bookId: selectedBook.id,
+                    bookTitle: selectedBook.title,
+                    userId: issueData.userId,
+                    userName: issueData.userName || issueData.userId,
+                    userRole: issueData.userRole,
+                    issueDate: new Date().toISOString(),
+                    dueDate: new Date(Date.now() + (rules.issueDurationDays * 24 * 60 * 60 * 1000)).toISOString()
+                });
+                showSuccess('Book issued successfully');
+            }
+            setShowModal(false);
+            loadData();
+        } catch (error) {
+            showError(error.response?.data?.message || 'Operation failed');
+        }
+    };
+
+    if (modalType === 'settings') {
+        const [rulesData, setRulesData] = useState(rules);
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-2xl max-w-md w-full p-6`}>
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Library Settings</h2>
+                        <button onClick={() => setShowModal(false)}><X className="text-gray-500" /></button>
+                    </div>
+                    <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        try {
+                            await libraryApi.updateSettings(rulesData);
+                            setRules(rulesData);
+                            showSuccess('Settings updated');
+                            setShowModal(false);
+                        } catch (err) {
+                            showError('Failed to update settings');
+                        }
+                    }} className="space-y-4">
+                        <div>
+                            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Max Books Per User</label>
+                            <input type="number" value={rulesData.maxBooksPerUser} onChange={e => setRulesData({ ...rulesData, maxBooksPerUser: parseInt(e.target.value) })} className="w-full p-2 border rounded-lg " />
+                        </div>
+                        <div>
+                            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Issue Duration (Days)</label>
+                            <input type="number" value={rulesData.issueDurationDays} onChange={e => setRulesData({ ...rulesData, issueDurationDays: parseInt(e.target.value) })} className="w-full p-2 border rounded-lg " />
+                        </div>
+                        <div>
+                            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Fine Per Day</label>
+                            <input type="number" value={rulesData.finePerDay} onChange={e => setRulesData({ ...rulesData, finePerDay: parseInt(e.target.value) })} className="w-full p-2 border rounded-lg " />
+                        </div>
+                        <button type="submit" className="w-full py-2 bg-purple-600 text-white rounded-lg">Save Settings</button>
+                    </form>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="fixed inset-0  bg-black/50 backdrop-blur-sm  flex items-center justify-center z-50 p-4">
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-2xl max-w-lg w-full p-6`}>
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {modalType === 'addBook' ? 'Add New Book' : modalType === 'editBook' ? 'Edit Book' : 'Issue Book'}
+                    </h2>
+                    <button onClick={() => setShowModal(false)}><X className="text-gray-500" /></button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    {modalType === 'issueBook' ? (
+                        <>
+                            <div className="p-4 bg-purple-50 rounded-lg mb-4">
+                                <p className="text-sm text-purple-800 font-medium">Issuing: {selectedBook?.title}</p>
+                                <p className="text-xs text-purple-600">Available copies: {selectedBook?.available}</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">User Email / ID</label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                                    value={issueData.userId}
+                                    onChange={(e) => setIssueData({ ...issueData, userId: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">User Name</label>
+                                <input
+                                    type="text"
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                                    value={issueData.userName}
+                                    onChange={(e) => setIssueData({ ...issueData, userName: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                                <select
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                                    value={issueData.userRole}
+                                    onChange={(e) => setIssueData({ ...issueData, userRole: e.target.value })}
+                                >
+                                    <option value="Student">Student</option>
+                                    <option value="Teacher">Teacher</option>
+                                </select>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="col-span-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Book Title</label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                                    value={formData.title}
+                                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Author</label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                                    value={formData.author}
+                                    onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                                    value={formData.subject}
+                                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">ISBN</label>
+                                <input
+                                    type="text"
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                                    value={formData.isbn}
+                                    onChange={(e) => setFormData({ ...formData, isbn: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    required
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                                    value={formData.quantity}
+                                    onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                                <select
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                                    value={formData.category}
+                                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                >
+                                    <option>General</option>
+                                    <option>Science</option>
+                                    <option>Mathematics</option>
+                                    <option>Literature</option>
+                                    <option>History</option>
+                                    <option>Technology</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                                <select
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                                    value={formData.type}
+                                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                                >
+                                    <option>Book</option>
+                                    <option>Textbook</option>
+                                    <option>Journal</option>
+                                    <option>Reference</option>
+                                </select>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex space-x-3 pt-4">
+                        <button
+                            type="button"
+                            onClick={() => setShowModal(false)}
+                            className="flex-1 px-4 py-2 border text-gray-700 rounded-lg hover:bg-gray-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:shadow-lg"
+                        >
+                            {modalType === 'addBook' ? 'Add Book' : modalType === 'editBook' ? 'Update' : 'Issue'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
 const LibraryPage = ({ darkMode }) => {
     const { showSuccess, showError, showWarning } = useToast();
     const [activeTab, setActiveTab] = useState('books');
@@ -147,247 +401,7 @@ const LibraryPage = ({ darkMode }) => {
         (i.userName || '').toLowerCase().includes(searchQuery.toLowerCase())
     ).sort((a, b) => new Date(b.issueDate) - new Date(a.issueDate));
 
-    const Modal = () => {
-        const [formData, setFormData] = useState(
-            selectedBook || {
-                title: '',
-                author: '',
-                subject: '',
-                isbn: '',
-                quantity: 1,
-                category: 'General',
-                type: 'Book'
-            }
-        );
 
-        const [issueData, setIssueData] = useState({
-            userId: '',
-            userName: '',
-            userRole: 'Student'
-        });
-
-        const handleSubmit = async (e) => {
-            e.preventDefault();
-            try {
-                if (modalType === 'addBook') {
-                    await libraryApi.createBook(formData);
-                    showSuccess('Book added successfully');
-                } else if (modalType === 'editBook') {
-                    await libraryApi.updateBook(selectedBook.id, formData);
-                    showSuccess('Book updated successfully');
-                } else if (modalType === 'issueBook') {
-                    if (!issueData.userId) {
-                        showWarning('User ID is required');
-                        return;
-                    }
-
-                    await libraryApi.issueBook({
-                        bookId: selectedBook.id,
-                        userId: issueData.userId,
-                        userName: issueData.userName || issueData.userId,
-                        userRole: issueData.userRole,
-                        issueDate: new Date().toISOString(),
-                        dueDate: new Date(Date.now() + (rules.issueDurationDays * 24 * 60 * 60 * 1000)).toISOString()
-                    });
-                    showSuccess('Book issued successfully');
-                }
-                setShowModal(false);
-                loadData();
-            } catch (error) {
-                showError(error.response?.data?.message || 'Operation failed');
-            }
-        };
-
-        if (modalType === 'settings') {
-            const [rulesData, setRulesData] = useState(rules);
-            return (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-2xl max-w-md w-full p-6`}>
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Library Settings</h2>
-                            <button onClick={() => setShowModal(false)}><X className="text-gray-500" /></button>
-                        </div>
-                        <form onSubmit={async (e) => {
-                            e.preventDefault();
-                            try {
-                                await libraryApi.updateSettings(rulesData);
-                                setRules(rulesData);
-                                showSuccess('Settings updated');
-                                setShowModal(false);
-                            } catch (err) {
-                                showError('Failed to update settings');
-                            }
-                        }} className="space-y-4">
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Max Books Per User</label>
-                                <input type="number" value={rulesData.maxBooksPerUser} onChange={e => setRulesData({ ...rulesData, maxBooksPerUser: parseInt(e.target.value) })} className="w-full p-2 border rounded-lg " />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Issue Duration (Days)</label>
-                                <input type="number" value={rulesData.issueDurationDays} onChange={e => setRulesData({ ...rulesData, issueDurationDays: parseInt(e.target.value) })} className="w-full p-2 border rounded-lg " />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Fine Per Day</label>
-                                <input type="number" value={rulesData.finePerDay} onChange={e => setRulesData({ ...rulesData, finePerDay: parseInt(e.target.value) })} className="w-full p-2 border rounded-lg " />
-                            </div>
-                            <button type="submit" className="w-full py-2 bg-purple-600 text-white rounded-lg">Save Settings</button>
-                        </form>
-                    </div>
-                </div>
-            )
-        }
-
-        return (
-            <div className="fixed inset-0  bg-black/50 backdrop-blur-sm  flex items-center justify-center z-50 p-4">
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-2xl max-w-lg w-full p-6`}>
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                            {modalType === 'addBook' ? 'Add New Book' : modalType === 'editBook' ? 'Edit Book' : 'Issue Book'}
-                        </h2>
-                        <button onClick={() => setShowModal(false)}><X className="text-gray-500" /></button>
-                    </div>
-
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        {modalType === 'issueBook' ? (
-                            <>
-                                <div className="p-4 bg-purple-50 rounded-lg mb-4">
-                                    <p className="text-sm text-purple-800 font-medium">Issuing: {selectedBook?.title}</p>
-                                    <p className="text-xs text-purple-600">Available copies: {selectedBook?.available}</p>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">User Email / ID</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                                        value={issueData.userId}
-                                        onChange={(e) => setIssueData({ ...issueData, userId: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">User Name</label>
-                                    <input
-                                        type="text"
-                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                                        value={issueData.userName}
-                                        onChange={(e) => setIssueData({ ...issueData, userName: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                                    <select
-                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                                        value={issueData.userRole}
-                                        onChange={(e) => setIssueData({ ...issueData, userRole: e.target.value })}
-                                    >
-                                        <option value="Student">Student</option>
-                                        <option value="Teacher">Teacher</option>
-                                    </select>
-                                </div>
-                            </>
-                        ) : (
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Book Title</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                                        value={formData.title}
-                                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Author</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                                        value={formData.author}
-                                        onChange={(e) => setFormData({ ...formData, author: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                                        value={formData.subject}
-                                        onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">ISBN</label>
-                                    <input
-                                        type="text"
-                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                                        value={formData.isbn}
-                                        onChange={(e) => setFormData({ ...formData, isbn: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        required
-                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                                        value={formData.quantity}
-                                        onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                                    <select
-                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                                        value={formData.category}
-                                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                    >
-                                        <option>General</option>
-                                        <option>Science</option>
-                                        <option>Mathematics</option>
-                                        <option>Literature</option>
-                                        <option>History</option>
-                                        <option>Technology</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                                    <select
-                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                                        value={formData.type}
-                                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                    >
-                                        <option>Book</option>
-                                        <option>Textbook</option>
-                                        <option>Journal</option>
-                                        <option>Reference</option>
-                                    </select>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="flex space-x-3 pt-4">
-                            <button
-                                type="button"
-                                onClick={() => setShowModal(false)}
-                                className="flex-1 px-4 py-2 border text-gray-700 rounded-lg hover:bg-gray-50"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:shadow-lg"
-                            >
-                                {modalType === 'addBook' ? 'Add Book' : modalType === 'editBook' ? 'Update' : 'Issue'}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        );
-    };
 
     return (
         <div className={`space-y-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -635,7 +649,20 @@ const LibraryPage = ({ darkMode }) => {
                 )}
             </div>
 
-            {showModal && <Modal />}
+            {showModal && (
+                <LibraryModal
+                    darkMode={darkMode}
+                    modalType={modalType}
+                    selectedBook={selectedBook}
+                    setShowModal={setShowModal}
+                    loadData={loadData}
+                    rules={rules}
+                    setRules={setRules}
+                    showSuccess={showSuccess}
+                    showError={showError}
+                    showWarning={showWarning}
+                />
+            )}
         </div>
     );
 };
