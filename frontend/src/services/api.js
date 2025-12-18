@@ -1,13 +1,16 @@
 import axios from 'axios';
+import { getToken, logout, refreshToken } from '../utils/auth';
 
-const API_URL = 'http://localhost:5000/api';
-const PAYMENT_SERVER_URL = 'http://localhost:4242';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const PAYMENT_SERVER_URL = import.meta.env.VITE_PAYMENT_SERVER_URL || 'http://localhost:4242';
 
+// Create axios instance with default config
 const api = axios.create({
     baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
     },
+    withCredentials: true // Required for sending cookies with refresh token if using httpOnly
 });
 
 const paymentApiInstance = axios.create({
@@ -17,19 +20,85 @@ const paymentApiInstance = axios.create({
     },
 });
 
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
+// Flag to prevent multiple token refresh attempts
+let isRefreshing = false;
+let failedQueue = [];
 
+const processQueue = (error, token = null) => {
+    failedQueue.forEach(prom => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+    failedQueue = [];
+};
+
+// Request interceptor to add auth token
+api.interceptors.request.use(
+    (config) => {
+        const token = getToken();
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
+
+// Response interceptor to handle token refresh
 api.interceptors.response.use(
     (response) => response,
-    (error) => {
-        console.error('API Error:', error.response?.data?.message || error.message);
-        return Promise.reject(error);
+    async (error) => {
+        const originalRequest = error.config;
+        
+        // If error is not 401 or it's a retry request, reject
+        if (error.response?.status !== 401 || originalRequest._retry) {
+            console.error('API Error:', error.response?.data?.message || error.message);
+            return Promise.reject(error);
+        }
+
+        // If we're already refreshing token, add to queue
+        if (isRefreshing) {
+            return new Promise((resolve, reject) => {
+                failedQueue.push({ resolve, reject });
+            })
+            .then(token => {
+                originalRequest.headers.Authorization = `Bearer ${token}`;
+                return api(originalRequest);
+            })
+            .catch(err => Promise.reject(err));
+        }
+
+        // Mark that we're refreshing the token
+        originalRequest._retry = true;
+        isRefreshing = true;
+
+        try {
+            // Try to refresh the token
+            const response = await refreshToken();
+            const { token } = response.data;
+            
+            // Update the token in storage
+            localStorage.setItem('token', token);
+            
+            // Process the queue of failed requests
+            processQueue(null, token);
+            
+            // Update the authorization header and retry the original request
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+            
+        } catch (refreshError) {
+            // If refresh fails, log out the user
+            processQueue(refreshError, null);
+            logout();
+            window.location.href = '/login';
+            return Promise.reject(refreshError);
+        } finally {
+            isRefreshing = false;
+        }
     }
 );
 

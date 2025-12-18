@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from './AuthLayout';
 import { Mail, Lock, AlertCircle, User, BookOpen, Shield, Users, Eye, EyeOff } from 'lucide-react';
+import { login as authLogin } from '../../utils/auth';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -36,16 +37,12 @@ const Login = () => {
             const response = await authApi.login({ email, password, role: activeRole.toLowerCase() });
 
             const { token, user } = response.data.data;
-
-            localStorage.setItem('token', token);
-            localStorage.setItem('isAuthenticated', 'true');
-            localStorage.setItem('userRole', user.role);
-            localStorage.setItem('userEmail', user.email);
-            localStorage.setItem('userName', user.name);
-            localStorage.setItem('currentUser', JSON.stringify(user));
+            
+            // Use the auth utility to handle login
+            authLogin(token, user);
 
             setTimeout(() => {
-                navigate(`/dashboard/${activeRole.toLowerCase()}`);
+                navigate(`/dashboard/${user.role.toLowerCase()}`);
             }, 800);
         } catch (error) {
             console.error('Login error', error);
@@ -127,9 +124,11 @@ const Login = () => {
                 </div>
 
                 <div className="flex justify-end items-center">
-                    <Link to="/forgot-password" className="text-sm text-blue-600">
-                        Forgot your password?
-                    </Link>
+                    {email !== 'admin@sece.ac.in' && (
+                        <Link to="/forgot-password" className="text-sm text-blue-600">
+                            Forgot your password?
+                        </Link>
+                    )}
                 </div>
 
                 <button

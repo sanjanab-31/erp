@@ -7,7 +7,9 @@ if (!stripePublishableKey) {
     console.error('VITE_STRIPE_PUBLISHABLE_KEY is not defined in environment variables');
 }
 
-const stripePromise = loadStripe(stripePublishableKey);
+const stripePromise = stripePublishableKey
+    ? loadStripe(stripePublishableKey)
+    : Promise.resolve(null);
 
 export const PAYMENT_SERVER_URL = import.meta.env.VITE_PAYMENT_SERVER_URL || 'http://localhost:4242';
 
