@@ -146,16 +146,16 @@ const AdminExamSchedules = ({ darkMode }) => {
             </div>
 
             { }
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto flex-1">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                     <div className="w-full sm:w-64">
-                        <label className={`block text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-700'} mb-1`}>
+                        <label className={`block text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-700'} mb-1.5`}>
                             Select Class
                         </label>
                         <select
                             value={selectedClass}
                             onChange={(e) => setSelectedClass(e.target.value)}
-                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                            className={`w-full px-3 py-2 rounded-lg border text-sm ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-300'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
                         >
                             {classes.map(cls => (
                                 <option key={cls} value={cls}>{cls}</option>
@@ -164,33 +164,31 @@ const AdminExamSchedules = ({ darkMode }) => {
                     </div>
 
                     { }
-                    <div className="w-full sm:w-64 relative">
-                        <label className={`block text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-700'} mb-1`}>
+                    <div className="w-full sm:w-80 relative">
+                        <label className={`block text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-700'} mb-1.5`}>
                             Search Exams
                         </label>
-                        <Search className="absolute left-3 top-8 w-4 h-4 text-gray-400" />
+                        <Search className="absolute left-3 bottom-2.5 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
                             placeholder="Search by name or subject..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className={`w-full pl-9 pr-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                            className={`w-full pl-9 pr-3 py-2 rounded-lg border text-sm ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
                         />
                     </div>
                 </div>
 
-                <div className="md:self-end">
-                    <button
-                        onClick={() => {
-                            setEditData(null);
-                            setShowCreateModal(true);
-                        }}
-                        className="w-full md:w-auto flex items-center justify-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                    >
-                        <Plus className="w-5 h-5" />
-                        <span>Create Multiple Exams</span>
-                    </button>
-                </div>
+                <button
+                    onClick={() => {
+                        setEditData(null);
+                        setShowCreateModal(true);
+                    }}
+                    className="w-full md:w-auto flex items-center justify-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 hover:shadow-lg transition-all duration-200 group whitespace-nowrap"
+                >
+                    <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    <span>Create Multiple Exams</span>
+                </button>
             </div>
 
             { }

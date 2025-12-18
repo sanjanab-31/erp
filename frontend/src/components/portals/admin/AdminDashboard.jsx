@@ -22,6 +22,7 @@ import {
     LogOut
 } from 'lucide-react';
 import { initializeActivityLog } from '../../../utils/activityLogger';
+import { getAllAnnouncements } from '../../../utils/announcementStore';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -31,7 +32,7 @@ const AdminDashboard = () => {
     const userEmail = localStorage.getItem('userEmail') || '';
 
     const [darkMode, setDarkMode] = useState(false);
-    const [notifications, setNotifications] = useState(1);
+    const [unreadCount, setUnreadCount] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [modalType, setModalType] = useState('');
@@ -83,17 +84,37 @@ const AdminDashboard = () => {
             }
         };
 
+        const updateUnreadCount = () => {
+            try {
+                const announcements = getAllAnnouncements();
+                const viewedAnnouncements = JSON.parse(localStorage.getItem('viewedAnnouncements') || '[]');
+                const unread = announcements.filter(a => 
+                    a.status === 'Published' && !viewedAnnouncements.includes(a.id)
+                ).length;
+                setUnreadCount(unread);
+            } catch (error) {
+                console.error('Error updating unread count:', error);
+            }
+        };
+
         fetchRecentActivities();
+        updateUnreadCount();
 
         const handleNewActivity = () => {
             fetchRecentActivities();
         };
 
+        const handleAnnouncementsUpdated = () => {
+            updateUnreadCount();
+        };
+
         window.addEventListener('adminActivityAdded', handleNewActivity);
+        window.addEventListener('announcementsUpdated', handleAnnouncementsUpdated);
         const interval = setInterval(fetchRecentActivities, 30000);
 
         return () => {
             window.removeEventListener('adminActivityAdded', handleNewActivity);
+            window.removeEventListener('announcementsUpdated', handleAnnouncementsUpdated);
             clearInterval(interval);
         };
     }, []);
@@ -173,7 +194,7 @@ const AdminDashboard = () => {
         <div className={`flex h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
             {/* Sidebar */}
             <aside className={`w-64 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r flex flex-col`}>
-                <div className={`px-6 py-3 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className="px-6 py-3">
                     <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg flex items-center justify-center">
                             <GraduationCap className="w-6 h-6 text-white" />
@@ -203,56 +224,39 @@ const AdminDashboard = () => {
                         ))}
                     </ul>
                 </nav>
-
-                <div className={`p-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <button
-                        onClick={handleLogout}
-                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-red-50 hover:text-red-600'}`}
-                    >
-                        <LogOut className="w-5 h-5" />
-                        <span className="text-sm font-medium">Logout</span>
-                    </button>
-                </div>
             </aside>
 
             {/* Main Content */}
             <main className="flex-1 flex flex-col overflow-hidden">
                 <header className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b px-8 py-4`}>
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                            <div className="flex items-center space-x-2 text-sm text-gray-500">
-                                <Home className="w-4 h-4" />
-                                <span>/</span>
-                                <span className={darkMode ? 'text-white' : 'text-gray-900'}>{activeTab}</span>
-                                <span>/</span>
-                                <span className="text-purple-600">Admin</span>
-                            </div>
+                        <div>
+                            <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                {activeTab}
+                            </h2>
                         </div>
 
                         <div className="flex items-center space-x-4">
                             <div className="relative">
-                                <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                                <input
-                                    type="text"
-                                    placeholder="Search..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className={`pl-10 pr-4 py-2 rounded-lg border ${darkMode
-                                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                                        : 'bg-gray-50 border-gray-300 text-gray-900'
-                                        } focus:outline-none focus:ring-2 focus:ring-purple-500 w-64`}
-                                />
-                            </div>
-
-                            <div className="relative">
                                 <button
-                                    onClick={() => setShowNotificationPanel(!showNotificationPanel)}
+                                    onClick={() => {
+                                        setShowNotificationPanel(!showNotificationPanel);
+                                        if (!showNotificationPanel) {
+                                            // Mark all announcements as viewed when panel is opened
+                                            const announcements = getAllAnnouncements();
+                                            const viewedAnnouncements = announcements
+                                                .filter(a => a.status === 'Published')
+                                                .map(a => a.id);
+                                            localStorage.setItem('viewedAnnouncements', JSON.stringify(viewedAnnouncements));
+                                            setUnreadCount(0);
+                                        }
+                                    }}
                                     className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
                                 >
                                     <Bell className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`} />
-                                    {notifications > 0 && (
+                                    {unreadCount > 0 && (
                                         <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
-                                            {notifications}
+                                            {unreadCount}
                                         </span>
                                     )}
                                 </button>
