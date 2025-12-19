@@ -42,7 +42,7 @@ const allowedOrigins = [
     'http://localhost:5174',
     'http://localhost:5175',
     'http://localhost:5176',
-    process.env.FRONTEND_URL
+    'https://erp-frontend-o7c5.onrender.com'
 ].filter(Boolean);
 
 const corsOptions = {
