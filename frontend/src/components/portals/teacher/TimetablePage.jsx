@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
     Calendar,
     Clock,
@@ -9,7 +10,8 @@ import {
 } from 'lucide-react';
 import { timetableApi, teacherApi } from '../../../services/api';
 
-const TimetablePage = ({ darkMode }) => {
+const TimetablePage = () => {
+    const { darkMode } = useOutletContext();
     const [timetable, setTimetable] = useState(null);
     const [loading, setLoading] = useState(true);
 

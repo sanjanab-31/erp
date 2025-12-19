@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { Plus, BookOpen, FileText, Link as LinkIcon, Trash2, Calendar, Users, Upload, X, Save } from 'lucide-react';
 import {
     studentApi,
@@ -372,7 +373,8 @@ const AssignmentModal = ({ darkMode, onClose, onSave }) => {
     );
 };
 
-const CoursesPage = ({ darkMode }) => {
+const CoursesPage = () => {
+    const { darkMode } = useOutletContext();
     const [courses, setCourses] = useState([]);
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [showCourseModal, setShowCourseModal] = useState(false);
@@ -530,18 +532,16 @@ const CoursesPage = ({ darkMode }) => {
     return (
         <div className="flex-1 overflow-y-auto p-8">
             { }
-            <div className="mb-8">
-                <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
-                    My Courses
-                </h1>
-                <p className="text-sm text-gray-500">Manage your courses, materials, and assignments (Real-time sync with Students)</p>
-            </div>
-
-            { }
-            <div className="mb-6">
+            <div className="mb-8 flex items-center justify-between">
+                <div>
+                    <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
+                        My Courses
+                    </h1>
+                    <p className="text-sm text-gray-500">Manage your courses, materials, and assignments (Real-time sync with Students)</p>
+                </div>
                 <button
                     onClick={() => setShowCourseModal(true)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    className="flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md font-medium"
                 >
                     <Plus className="w-5 h-5" />
                     <span>Create New Course</span>
@@ -550,17 +550,17 @@ const CoursesPage = ({ darkMode }) => {
 
             { }
             {courses.length === 0 ? (
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-center`}>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-12 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-center hover:shadow-lg transition-all duration-200`}>
                     <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <h3 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
                         No Courses Yet
                     </h3>
-                    <p className="text-gray-500 mb-4">
+                    <p className="text-gray-500 mb-6">
                         Create your first course to get started
                     </p>
                     <button
                         onClick={() => setShowCourseModal(true)}
-                        className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                        className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md font-medium"
                     >
                         Create Course
                     </button>
@@ -573,20 +573,23 @@ const CoursesPage = ({ darkMode }) => {
                             <div
                                 key={course.id}
                                 onClick={() => setSelectedCourse(course)}
-                                className={`p-4 rounded-lg border cursor-pointer transition-all ${selectedCourse?.id === course.id
-                                    ? 'bg-green-50 border-green-500'
+                                className={`p-4 rounded-lg border cursor-pointer transition-all duration-200 group ${selectedCourse?.id === course.id
+                                    ? 'bg-green-50 border-green-500 shadow-md scale-[1.02]'
                                     : darkMode
-                                        ? 'bg-gray-800 border-gray-700 hover:bg-gray-700'
-                                        : 'bg-white border-gray-200 hover:bg-gray-50'
+                                        ? 'bg-gray-800 border-gray-700 hover:bg-gray-700 hover:scale-[1.02] hover:shadow-lg'
+                                        : 'bg-white border-gray-200 hover:bg-gray-50 hover:scale-[1.02] hover:shadow-lg'
                                     }`}
                             >
-                                <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>
+                                <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1 group-hover:text-green-600 transition-colors`}>
                                     {course.courseName}
                                 </h3>
                                 <p className="text-sm text-gray-500 mb-2">{course.subject}</p>
                                 <div className="flex items-center justify-between text-xs text-gray-500">
                                     <span>{course.class}</span>
-                                    <span>{course.enrolledStudents.length} students</span>
+                                    <span className="flex items-center space-x-1">
+                                        <Users className="w-3 h-3" />
+                                        <span>{course.enrolledStudents.length}</span>
+                                    </span>
                                 </div>
                             </div>
                         ))}
@@ -597,7 +600,7 @@ const CoursesPage = ({ darkMode }) => {
                         {selectedCourse ? (
                             <div className="space-y-6">
                                 { }
-                                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200`}>
                                     <div className="flex items-start justify-between mb-4">
                                         <div>
                                             <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
@@ -607,7 +610,7 @@ const CoursesPage = ({ darkMode }) => {
                                         </div>
                                         <button
                                             onClick={() => handleDeleteCourse(selectedCourse.id)}
-                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg hover:scale-110 transition-all duration-200"
                                         >
                                             <Trash2 className="w-5 h-5" />
                                         </button>
@@ -634,14 +637,14 @@ const CoursesPage = ({ darkMode }) => {
                                 </div>
 
                                 { }
-                                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all duration-200`}>
                                     <div className="flex items-center justify-between mb-4">
                                         <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                             Course Materials
                                         </h3>
                                         <button
                                             onClick={() => setShowMaterialModal(true)}
-                                            className="flex items-center space-x-2 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                                            className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 hover:scale-105 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md"
                                         >
                                             <Plus className="w-4 h-4" />
                                             <span>Add Material</span>

@@ -24,6 +24,18 @@ import SettingsPage from './components/portals/student/SettingsPage';
 import AnnouncementsPage from './components/portals/student/AnnouncementsPage';
 import ReportsPage from './components/portals/student/ReportsPage';
 
+// Teacher Portal Pages
+import TeacherHome from './components/portals/teacher/TeacherHome';
+import TeacherStudentsPage from './components/portals/teacher/StudentsPage';
+import TeacherAttendancePage from './components/portals/teacher/AttendancePage';
+import TeacherExamsPage from './components/portals/teacher/ExamsAndGradesPage';
+import TeacherCoursesPage from './components/portals/teacher/CoursesPage';
+import TeacherTimetablePage from './components/portals/teacher/TimetablePage';
+import TeacherLibraryPage from './components/portals/teacher/LibraryPage';
+import TeacherAnnouncementsPage from './components/portals/teacher/AnnouncementsPage';
+import TeacherReportsPage from './components/portals/teacher/ReportsPage';
+import TeacherSettingsPage from './components/portals/teacher/SettingsPage';
+
 // Admin Portal Pages
 import Students from './components/portals/admin/Students';
 import Teachers from './components/portals/admin/Teachers';
@@ -57,7 +69,7 @@ const DashboardRouter = () => {
     case 'student':
       return <Navigate to="/dashboard/student" replace />; // Redirect to explicit route
     case 'teacher':
-      return <TeacherDashboard />;
+      return <Navigate to="/teacher/dashboard" replace />;
     case 'admin':
       return <Navigate to="/admin/dashboard" replace />;
     case 'parent':
@@ -109,6 +121,28 @@ function App() {
             <Route path="settings" element={<SettingsPage />} />
             <Route path="announcements" element={<AnnouncementsPage />} />
             <Route path="reports" element={<ReportsPage />} />
+          </Route>
+
+          {/* Teacher Routes */}
+          <Route
+            path="/teacher"
+            element={
+              <ProtectedRoute>
+                <TeacherDashboard />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<TeacherHome />} />
+            <Route path="students" element={<TeacherStudentsPage />} />
+            <Route path="attendance" element={<TeacherAttendancePage />} />
+            <Route path="exams" element={<TeacherExamsPage />} />
+            <Route path="courses" element={<TeacherCoursesPage />} />
+            <Route path="timetable" element={<TeacherTimetablePage />} />
+            <Route path="library" element={<TeacherLibraryPage />} />
+            <Route path="announcements" element={<TeacherAnnouncementsPage />} />
+            <Route path="reports" element={<TeacherReportsPage />} />
+            <Route path="settings" element={<TeacherSettingsPage />} />
           </Route>
 
           {/* Admin Routes */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
     BookOpen,
     Edit,
@@ -20,7 +21,8 @@ import {
 } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 
-const ExamsAndGradesPage = ({ darkMode }) => {
+const ExamsAndGradesPage = () => {
+    const { darkMode } = useOutletContext();
     const { showSuccess, showError, showWarning, showInfo } = useToast();
     const [courses, setCourses] = useState([]);
     const [selectedCourse, setSelectedCourse] = useState(null);
@@ -46,9 +48,21 @@ const ExamsAndGradesPage = ({ darkMode }) => {
     const loadCourses = async () => {
         try {
             const res = await courseApi.getAll();
-            const data = res.data?.data;
+            const data = res.data?.data || res.data;
             const allCourses = Array.isArray(data) ? data : [];
-            const teacherCourses = allCourses.filter(c => c.teacherId === teacherId || c.teacher === currentUser.name);
+            
+            console.log('All courses:', allCourses.length);
+            console.log('Current teacher ID:', teacherId, 'Name:', currentUser.name);
+            
+            const teacherCourses = allCourses.filter(c => 
+                c.teacherId === teacherId || 
+                c.teacherId == teacherId ||
+                c.teacher === currentUser.name ||
+                c.teacherName === currentUser.name
+            );
+            
+            console.log('Teacher courses:', teacherCourses.length);
+            
             setCourses(teacherCourses);
             if (teacherCourses.length > 0 && !selectedCourse) {
                 setSelectedCourse(teacherCourses[0]);
@@ -233,7 +247,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
 
     const filteredStudents = students.filter(student =>
         student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        student.rollNo?.toLowerCase().includes(searchQuery.toLowerCase())
+        (student.rollNumber || student.rollNo || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const calculateStats = () => {
@@ -265,52 +279,52 @@ const ExamsAndGradesPage = ({ darkMode }) => {
 
             { }
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:scale-[1.02] hover:shadow-lg transition-all duration-200 group cursor-pointer`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Students</h3>
-                        <Users className="w-5 h-5 text-green-500" />
+                        <Users className="w-5 h-5 text-green-500 group-hover:scale-110 transition-transform" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{students.length}</p>
                 </div>
 
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:scale-[1.02] hover:shadow-lg transition-all duration-200 group cursor-pointer`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Average Score</h3>
-                        <TrendingUp className="w-5 h-5 text-green-500" />
+                        <TrendingUp className="w-5 h-5 text-green-500 group-hover:scale-110 transition-transform" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.average}/100</p>
                 </div>
 
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:scale-[1.02] hover:shadow-lg transition-all duration-200 group cursor-pointer`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Top Score</h3>
-                        <Award className="w-5 h-5 text-yellow-500" />
+                        <Award className="w-5 h-5 text-yellow-500 group-hover:scale-110 transition-transform" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.topScore}/100</p>
                 </div>
 
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:scale-[1.02] hover:shadow-lg transition-all duration-200 group cursor-pointer`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Pass Rate</h3>
-                        <FileText className="w-5 h-5 text-purple-500" />
+                        <FileText className="w-5 h-5 text-purple-500 group-hover:scale-110 transition-transform" />
                     </div>
                     <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.passRate}%</p>
                 </div>
             </div>
 
             { }
-            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6`}>
-                <div className="flex flex-col md:flex-row gap-4 mb-4">
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6 hover:shadow-lg transition-all duration-200`}>
+                <div className="flex flex-col md:flex-row gap-4">
                     <select
                         value={selectedCourse?.id || ''}
                         onChange={(e) => {
                             const course = courses.find(c => c.id === e.target.value);
                             setSelectedCourse(course);
                         }}
-                        className={`px-4 py-2 rounded-lg border ${darkMode
+                        className={`w-48 px-4 py-2.5 text-sm rounded-lg border ${darkMode
                             ? 'bg-gray-700 border-gray-600 text-white'
                             : 'bg-gray-50 border-gray-300 text-gray-900'
-                            } focus:outline-none focus:ring-2 focus:ring-green-500`}
+                            } focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 cursor-pointer hover:border-green-400`}
                     >
                         {courses.map((course) => (
                             <option key={course.id} value={course.id}>
@@ -319,57 +333,56 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                         ))}
                     </select>
 
-                    <div className="flex-1 relative">
-                        <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                    <div className="w-80 relative">
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                         <input
                             type="text"
                             placeholder="Search student..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className={`w-full pl-10 pr-4 py-2 rounded-lg border ${darkMode
+                            className={`w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border ${darkMode
                                 ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                                 : 'bg-gray-50 border-gray-300 text-gray-900'
-                                } focus:outline-none focus:ring-2 focus:ring-green-500`}
+                                } focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200`}
                         />
                     </div>
-                </div>
+                    
+                    <div className="flex flex-wrap gap-3 ml-auto">
+                        {editMode ? (
+                            <>
+                                <button
+                                    onClick={handleSave}
+                                    disabled={saving}
+                                    className={`px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 hover:scale-105 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                    <Save className="w-4 h-4" />
+                                    <span className="text-sm font-medium">{saving ? 'Saving...' : 'Save Changes'}</span>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setEditMode(false);
+                                        loadCourseData(selectedCourse.id);
+                                    }}
+                                    className="px-4 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md text-sm font-medium"
+                                >
+                                    Cancel
+                                </button>
+                            </>
+                        ) : (
+                            <button
+                                onClick={() => setEditMode(true)}
+                                className="px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 hover:scale-105 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md"
+                            >
+                                <Edit className="w-4 h-4" />
+                                <span className="text-sm font-medium">Edit Grades</span>
+                            </button>
+                        )}
 
-                <div className="flex flex-wrap gap-3">
-                    {editMode ? (
-                        <button
-                            onClick={handleSave}
-                            disabled={saving}
-                            className={`px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                            <Save className="w-5 h-5" />
-                            <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+                        <button className="px-4 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 hover:scale-105 transition-all duration-200 flex items-center space-x-2 shadow-sm hover:shadow-md">
+                            <Download className="w-4 h-4" />
+                            <span className="text-sm font-medium">Export Report</span>
                         </button>
-                    ) : (
-                        <button
-                            onClick={() => setEditMode(true)}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
-                        >
-                            <Edit className="w-5 h-5" />
-                            <span>Edit Grades</span>
-                        </button>
-                    )}
-
-                    {editMode && (
-                        <button
-                            onClick={() => {
-                                setEditMode(false);
-                                loadCourseData(selectedCourse.id);
-                            }}
-                            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                    )}
-
-                    <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2">
-                        <Download className="w-5 h-5" />
-                        <span>Export Report</span>
-                    </button>
+                    </div>
                 </div>
             </div>
 
@@ -446,11 +459,11 @@ const ExamsAndGradesPage = ({ darkMode }) => {
                                     const gradeInfo = getGrade(totals.finalTotal);
 
                                     return (
-                                        <tr key={student.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}>
+                                        <tr key={student.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-all duration-200 group`}>
                                             { }
-                                            <td className={`px-4 py-3 whitespace-nowrap sticky left-0 ${darkMode ? 'bg-gray-800' : 'bg-white'} z-10`}>
+                                            <td className={`px-4 py-3 whitespace-nowrap sticky left-0 ${darkMode ? 'bg-gray-800 group-hover:bg-gray-700' : 'bg-white group-hover:bg-gray-50'} z-10 transition-all duration-200`}>
                                                 <div className="flex items-center">
-                                                    <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                                    <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-semibold shadow-sm group-hover:scale-110 transition-transform duration-200">
                                                         {student.name.split(' ').map(n => n[0]).join('')}
                                                     </div>
                                                     <div className="ml-3">
@@ -463,7 +476,7 @@ const ExamsAndGradesPage = ({ darkMode }) => {
 
                                             { }
                                             <td className="px-4 py-3 text-center">
-                                                <span className="text-xs text-gray-500">{student.rollNo || student.id}</span>
+                                                <span className="text-xs text-gray-500">{student.rollNumber || student.rollNo || student.id}</span>
                                             </td>
 
                                             { }

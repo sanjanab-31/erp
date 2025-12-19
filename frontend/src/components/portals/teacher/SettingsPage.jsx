@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import {
     Settings as SettingsIcon,
@@ -19,7 +20,8 @@ import {
 } from 'lucide-react';
 import { teacherApi, settingsApi } from '../../../services/api';
 
-const SettingsPage = ({ darkMode }) => {
+const SettingsPage = () => {
+    const { darkMode } = useOutletContext();
     const navigate = useNavigate();
     const [activeSection, setActiveSection] = useState('profile');
     const [showPassword, setShowPassword] = useState(false);
@@ -28,19 +30,18 @@ const SettingsPage = ({ darkMode }) => {
     const [loading, setLoading] = useState(true);
 
     const [profileData, setProfileData] = useState({
+        id: '',
         name: '',
         email: '',
         phone: '',
         address: '',
         dateOfBirth: '',
-        employeeId: '',
         department: '',
         qualification: '',
-        experience: '',
         subject: '',
-        joiningDate: '',
-        gender: '',
-        bloodGroup: ''
+        role: '',
+        status: '',
+        createdAt: ''
     });
 
     const [notificationSettings, setNotificationSettings] = useState({
@@ -89,25 +90,23 @@ const SettingsPage = ({ darkMode }) => {
         if (teacherEmail) {
             try {
                 const res = await teacherApi.getAll();
-                const teachers = res.data || [];
+                const teachers = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
                 const teacher = teachers.find(t => t.email === teacherEmail);
 
                 if (teacher) {
                     setProfileData({
-                        id: teacher.id,
+                        id: teacher.id || teacher._id || '',
                         name: teacher.name || '',
                         email: teacher.email || '',
                         phone: teacher.phone || '',
                         address: teacher.address || '',
-                        dateOfBirth: teacher.dateOfBirth || '',
-                        employeeId: teacher.employeeId || teacher.id || '',
+                        dateOfBirth: teacher.dateOfBirth ? teacher.dateOfBirth.split('T')[0] : '',
                         department: teacher.department || '',
                         qualification: teacher.qualification || '',
-                        experience: teacher.experience || '',
                         subject: teacher.subject || '',
-                        joiningDate: teacher.joiningDate || '',
-                        gender: teacher.gender || '',
-                        bloodGroup: teacher.bloodGroup || ''
+                        role: teacher.role || 'Teacher',
+                        status: teacher.status || 'Active',
+                        createdAt: teacher.createdAt || ''
                     });
                 }
             } catch (error) {
@@ -177,7 +176,7 @@ const SettingsPage = ({ darkMode }) => {
                         <div className="flex items-center space-x-6 mb-8">
                             <div className="relative">
                                 <div className="w-24 h-24 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center text-white text-3xl font-bold">
-                                    SJ
+                                    {profileData.name ? profileData.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'T'}
                                 </div>
                                 <button className="absolute bottom-0 right-0 p-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors">
                                     <Camera className="w-4 h-4" />
@@ -185,10 +184,11 @@ const SettingsPage = ({ darkMode }) => {
                             </div>
                             <div>
                                 <h3 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                    {profileData.name}
+                                    {profileData.name || 'Teacher'}
                                 </h3>
-                                <p className="text-gray-500">{profileData.department} Teacher</p>
-                                <p className="text-sm text-gray-500">Employee ID: {profileData.employeeId}</p>
+                                <p className="text-gray-500">{profileData.department} Department</p>
+                                <p className="text-sm text-gray-500">ID: {profileData.id}</p>
+                                <p className="text-sm text-green-600 font-medium">{profileData.status}</p>
                             </div>
                         </div>
 
@@ -326,10 +326,10 @@ const SettingsPage = ({ darkMode }) => {
                                 />
                             </div>
 
-                            { }
+                            {/* Subject - Read Only */}
                             <div>
                                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Subject
+                                    Subject/Specialization
                                 </label>
                                 <input
                                     type="text"
@@ -342,34 +342,14 @@ const SettingsPage = ({ darkMode }) => {
                                 />
                             </div>
 
-                            { }
+                            {/* Role - Read Only */}
                             <div>
                                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Experience
+                                    Role
                                 </label>
                                 <input
                                     type="text"
-                                    value={profileData.experience}
-                                    onChange={(e) => {
-                                        const updated = { ...profileData, experience: e.target.value };
-                                        setProfileData(updated);
-                                        updateSettingsSection('teacher', 'profile', updated);
-                                    }}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode
-                                        ? 'bg-gray-700 border-gray-600 text-white'
-                                        : 'bg-white border-gray-300 text-gray-900'
-                                        } focus:outline-none focus:ring-2 focus:ring-green-500`}
-                                />
-                            </div>
-
-                            { }
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Employee ID
-                                </label>
-                                <input
-                                    type="text"
-                                    value={profileData.employeeId}
+                                    value={profileData.role}
                                     disabled
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-gray-400'
@@ -378,14 +358,14 @@ const SettingsPage = ({ darkMode }) => {
                                 />
                             </div>
 
-                            { }
+                            {/* Status - Read Only */}
                             <div>
                                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Joining Date
+                                    Account Status
                                 </label>
                                 <input
                                     type="text"
-                                    value={profileData.joiningDate}
+                                    value={profileData.status}
                                     disabled
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-gray-400'
@@ -394,30 +374,14 @@ const SettingsPage = ({ darkMode }) => {
                                 />
                             </div>
 
-                            { }
+                            {/* Created Date - Read Only */}
                             <div>
                                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Gender
+                                    Member Since
                                 </label>
                                 <input
                                     type="text"
-                                    value={profileData.gender}
-                                    disabled
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode
-                                        ? 'bg-gray-700 border-gray-600 text-gray-400'
-                                        : 'bg-gray-100 border-gray-300 text-gray-500'
-                                        } cursor-not-allowed`}
-                                />
-                            </div>
-
-                            { }
-                            <div>
-                                <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                                    Blood Group
-                                </label>
-                                <input
-                                    type="text"
-                                    value={profileData.bloodGroup}
+                                    value={profileData.createdAt ? new Date(profileData.createdAt).toLocaleDateString() : ''}
                                     disabled
                                     className={`w-full px-4 py-2 rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-gray-400'

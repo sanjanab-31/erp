@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
     FileText,
     Download,
@@ -20,7 +21,8 @@ import {
     assignmentApi
 } from '../../../services/api';
 
-const ReportsPage = ({ darkMode }) => {
+const ReportsPage = () => {
+    const { darkMode } = useOutletContext();
     const [selectedReportType, setSelectedReportType] = useState('attendance');
     const [selectedClass, setSelectedClass] = useState('All Classes');
     const [dateRange, setDateRange] = useState('This Month');
@@ -47,22 +49,28 @@ const ReportsPage = ({ darkMode }) => {
 
     const loadReportData = async () => {
         try {
-            const [studentsRes, attendanceRes, resultsRes, assignmentsRes] = await Promise.all([
+            const [studentsRes, attendanceRes, assignmentsRes, resultsRes] = await Promise.all([
                 studentApi.getAll(),
                 attendanceApi.getAll(),
-                resultApi.getAll(),
-                assignmentApi.getAll()
+                assignmentApi.getAll(),
+                resultApi.getAll()
             ]);
 
-            const allStudentsData = studentsRes.data?.data;
-            const allAttendanceData = attendanceRes.data?.data;
-            const allResultsData = resultsRes.data?.data;
-            const allAssignmentsData = assignmentsRes.data?.data;
+            const allStudentsData = studentsRes.data?.data || studentsRes.data;
+            const allAttendanceData = attendanceRes.data?.data || attendanceRes.data;
+            const allAssignmentsData = assignmentsRes.data?.data || assignmentsRes.data;
+            const allResultsData = resultsRes.data?.data || resultsRes.data;
 
             const allStudents = Array.isArray(allStudentsData) ? allStudentsData : [];
             const allAttendance = Array.isArray(allAttendanceData) ? allAttendanceData : [];
-            const allResults = Array.isArray(allResultsData) ? allResultsData : [];
             const allAssignments = Array.isArray(allAssignmentsData) ? allAssignmentsData : [];
+            const allResults = Array.isArray(allResultsData) ? allResultsData : [];
+
+            console.log('Reports API Data Loaded:');
+            console.log('Students:', allStudents.length);
+            console.log('Attendance Records:', allAttendance.length);
+            console.log('Assignments:', allAssignments.length);
+            console.log('Results:', allResults.length);
 
             const filteredStudents = selectedClass === 'All Classes'
                 ? allStudents
@@ -192,40 +200,48 @@ const ReportsPage = ({ darkMode }) => {
                 const attendanceData = reportData.attendance;
                 return (
                     <div className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-green-50'} rounded-lg p-4`}>
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm text-gray-500">Total Classes</span>
-                                    <BookOpen className="w-5 h-5 text-green-500" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className={`group ${darkMode ? 'bg-gray-700' : 'bg-green-50'} rounded-xl p-5 hover:shadow-md transition-all duration-200 hover:scale-105`}>
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Total Classes</span>
+                                    <div className="p-2 bg-green-100 rounded-lg group-hover:scale-110 transition-transform duration-200">
+                                        <BookOpen className="w-4 h-4 text-green-600" />
+                                    </div>
                                 </div>
-                                <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                     {attendanceData.totalClasses}
                                 </p>
                             </div>
-                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-green-50'} rounded-lg p-4`}>
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm text-gray-500">Avg. Attendance</span>
-                                    <TrendingUp className="w-5 h-5 text-green-500" />
+                            <div className={`group ${darkMode ? 'bg-gray-700' : 'bg-green-50'} rounded-xl p-5 hover:shadow-md transition-all duration-200 hover:scale-105`}>
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Avg. Attendance</span>
+                                    <div className="p-2 bg-green-100 rounded-lg group-hover:scale-110 transition-transform duration-200">
+                                        <TrendingUp className="w-4 h-4 text-green-600" />
+                                    </div>
                                 </div>
-                                <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                     {attendanceData.averageAttendance}%
                                 </p>
                             </div>
-                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-purple-50'} rounded-lg p-4`}>
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm text-gray-500">Avg. Present</span>
-                                    <CheckCircle className="w-5 h-5 text-purple-500" />
+                            <div className={`group ${darkMode ? 'bg-gray-700' : 'bg-purple-50'} rounded-xl p-5 hover:shadow-md transition-all duration-200 hover:scale-105`}>
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Avg. Present</span>
+                                    <div className="p-2 bg-purple-100 rounded-lg group-hover:scale-110 transition-transform duration-200">
+                                        <CheckCircle className="w-4 h-4 text-purple-600" />
+                                    </div>
                                 </div>
-                                <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                     {attendanceData.presentDays}
                                 </p>
                             </div>
-                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-red-50'} rounded-lg p-4`}>
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm text-gray-500">Avg. Absent</span>
-                                    <Clock className="w-5 h-5 text-red-500" />
+                            <div className={`group ${darkMode ? 'bg-gray-700' : 'bg-red-50'} rounded-xl p-5 hover:shadow-md transition-all duration-200 hover:scale-105`}>
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Avg. Absent</span>
+                                    <div className="p-2 bg-red-100 rounded-lg group-hover:scale-110 transition-transform duration-200">
+                                        <Clock className="w-4 h-4 text-red-600" />
+                                    </div>
                                 </div>
-                                <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                                     {attendanceData.absentDays}
                                 </p>
                             </div>
@@ -394,43 +410,59 @@ const ReportsPage = ({ darkMode }) => {
 
     return (
         <div className="flex-1 overflow-y-auto p-8">
-            { }
-            <div className="mb-8">
-                <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
-                    Reports & Analytics
-                </h1>
-                <p className="text-sm text-gray-500">Generate and view detailed real-time reports</p>
+            <div className="flex justify-between items-center bg-gradient-to-r from-green-50 to-green-50 p-6 rounded-xl border border-green-200 mb-6 hover:shadow-lg transition-all duration-200 group">
+                <div>
+                    <h2 className="text-2xl font-bold text-green-900">Reports & Analytics</h2>
+                    <p className="text-sm text-green-900 mt-1">Generate and view detailed real-time reports</p>
+                </div>
+                <BarChart3 className="w-10 h-10 text-green-600 group-hover:scale-110 transition-transform duration-200" />
             </div>
 
-            { }
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                {reportTypes.map((type) => (
-                    <button
-                        key={type.id}
-                        onClick={() => setSelectedReportType(type.id)}
-                        className={`p-6 rounded-xl border-2 transition-all ${selectedReportType === type.id
-                            ? `border-${type.color}-500 ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`
-                            : `${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} hover:border-${type.color}-300`
-                            }`}
-                    >
-                        <type.icon className={`w-8 h-8 text-${type.color}-500 mb-3`} />
-                        <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                            {type.name}
-                        </h3>
-                    </button>
-                ))}
+            {/* Report Type Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                {reportTypes.map((type) => {
+                    const iconColors = {
+                        blue: 'text-blue-500 bg-blue-50',
+                        green: 'text-green-500 bg-green-50',
+                        purple: 'text-purple-500 bg-purple-50',
+                        yellow: 'text-yellow-500 bg-yellow-50'
+                    };
+                    const borderColors = {
+                        blue: 'border-blue-500',
+                        green: 'border-green-500',
+                        purple: 'border-purple-500',
+                        yellow: 'border-yellow-500'
+                    };
+                    return (
+                        <button
+                            key={type.id}
+                            onClick={() => setSelectedReportType(type.id)}
+                            className={`group p-6 rounded-xl border-2 transition-all duration-200 ${selectedReportType === type.id
+                                ? `${borderColors[type.color]} ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg scale-105`
+                                : `${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} hover:shadow-md hover:scale-[1.02]`
+                                }`}
+                        >
+                            <div className={`w-12 h-12 rounded-lg ${iconColors[type.color]} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200`}>
+                                <type.icon className="w-6 h-6" />
+                            </div>
+                            <h3 className={`font-semibold text-left ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                {type.name}
+                            </h3>
+                        </button>
+                    );
+                })}
             </div>
 
-            { }
-            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6`}>
-                <div className="flex flex-col md:flex-row gap-4">
+            {/* Filters and Export */}
+            <div className="space-y-6 mb-8">
+                <div className="flex flex-wrap items-center gap-4">
                     <select
                         value={selectedClass}
                         onChange={(e) => setSelectedClass(e.target.value)}
-                        className={`flex-1 px-4 py-2 rounded-lg border ${darkMode
-                            ? 'bg-gray-700 border-gray-600 text-white'
-                            : 'bg-gray-50 border-gray-300 text-gray-900'
-                            } focus:outline-none focus:ring-2 focus:ring-green-500`}
+                        className={`px-4 py-2.5 rounded-lg border text-sm ${darkMode
+                            ? 'bg-gray-800 border-gray-700 text-white'
+                            : 'bg-white border-gray-300 text-gray-900'
+                            } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 shadow-sm hover:shadow-md`}
                     >
                         {classes.map((cls) => (
                             <option key={cls} value={cls}>{cls}</option>
@@ -440,29 +472,31 @@ const ReportsPage = ({ darkMode }) => {
                     <select
                         value={dateRange}
                         onChange={(e) => setDateRange(e.target.value)}
-                        className={`flex-1 px-4 py-2 rounded-lg border ${darkMode
-                            ? 'bg-gray-700 border-gray-600 text-white'
-                            : 'bg-gray-50 border-gray-300 text-gray-900'
-                            } focus:outline-none focus:ring-2 focus:ring-green-500`}
+                        className={`px-4 py-2.5 rounded-lg border text-sm ${darkMode
+                            ? 'bg-gray-800 border-gray-700 text-white'
+                            : 'bg-white border-gray-300 text-gray-900'
+                            } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 shadow-sm hover:shadow-md`}
                     >
                         {dateRanges.map((range) => (
                             <option key={range} value={range}>{range}</option>
                         ))}
                     </select>
 
-                    <button className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2">
-                        <Download className="w-5 h-5" />
-                        <span>Export PDF</span>
-                    </button>
+                    <div className="flex gap-3 ml-auto">
+                        <button className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 hover:shadow-lg transition-all duration-200 flex items-center space-x-2 text-sm font-medium">
+                            <Download className="w-4 h-4" />
+                            <span>Export PDF</span>
+                        </button>
 
-                    <button className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2">
-                        <Download className="w-5 h-5" />
-                        <span>Export Excel</span>
-                    </button>
+                        <button className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 hover:shadow-lg transition-all duration-200 flex items-center space-x-2 text-sm font-medium">
+                            <Download className="w-4 h-4" />
+                            <span>Export Excel</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            { }
+            {/* Report Content */}
             {renderReportContent()}
         </div>
     );

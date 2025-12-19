@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
     Calendar,
     Users,
@@ -21,7 +22,8 @@ import {
     attendanceApi
 } from '../../../services/api';
 
-const AttendancePage = ({ darkMode }) => {
+const AttendancePage = () => {
+    const { darkMode } = useOutletContext();
 
     const [activeTab, setActiveTab] = useState('student_attendance');
     const [currentUser, setCurrentUser] = useState(null);
@@ -35,9 +37,7 @@ const AttendancePage = ({ darkMode }) => {
     const [localAttendanceData, setLocalAttendanceData] = useState({});
 
     const [myAttendanceHistory, setMyAttendanceHistory] = useState([]);
-
-    const classes = ['All Classes', 'Grade 9-A', 'Grade 9-B', 'Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 11-B', 'Grade 12-A', 'Grade 12-B'];
-
+    const [availableClasses, setAvailableClasses] = useState(['All Classes']);
     const [allAttendance, setAllAttendance] = useState([]);
 
     useEffect(() => {
@@ -74,8 +74,16 @@ const AttendancePage = ({ darkMode }) => {
     const loadStudents = async () => {
         try {
             const res = await studentApi.getAll();
-            const data = res.data?.data;
-            setAllStudents(Array.isArray(data) ? data : []);
+            const data = res.data?.data || res.data;
+            const students = Array.isArray(data) ? data : [];
+            setAllStudents(students);
+            
+            // Extract unique classes from students
+            const uniqueClasses = [...new Set(students.map(s => s.class).filter(Boolean))];
+            setAvailableClasses(['All Classes', ...uniqueClasses.sort()]);
+            
+            console.log('Loaded students:', students.length);
+            console.log('Available classes:', uniqueClasses);
         } catch (error) {
             console.error('Error loading students:', error);
         }
@@ -84,8 +92,12 @@ const AttendancePage = ({ darkMode }) => {
     const loadStudentAttendance = async () => {
         try {
             const res = await attendanceApi.getAll();
-            const recordsData = res.data?.data;
+            const recordsData = res.data?.data || res.data;
             const records = Array.isArray(recordsData) ? recordsData : [];
+            
+            console.log('Loaded attendance records:', records.length);
+            console.log('Sample attendance records:', records.slice(0, 3));
+            
             setAllAttendance(records);
 
             const todayRecords = records.filter(r => r.date === selectedDate);
@@ -113,10 +125,23 @@ const AttendancePage = ({ darkMode }) => {
     };
 
     const calculateAttendancePercentage = (studentId) => {
-        const studentRecords = allAttendance.filter(r => r.studentId === studentId);
+        // Handle both number and string IDs
+        const studentRecords = allAttendance.filter(r => 
+            r.studentId == studentId || r.student_id == studentId || r.id == studentId
+        );
+        
+        console.log(`Student ${studentId} has ${studentRecords.length} attendance records`);
+        
         if (studentRecords.length === 0) return 0;
-        const presentCount = studentRecords.filter(r => r.status === 'Present').length;
-        return Math.round((presentCount / studentRecords.length) * 100);
+        
+        const presentCount = studentRecords.filter(r => 
+            r.status === 'Present' || r.status === 'present'
+        ).length;
+        
+        const percentage = Math.round((presentCount / studentRecords.length) * 100);
+        console.log(`Student ${studentId}: ${presentCount} present out of ${studentRecords.length} = ${percentage}%`);
+        
+        return percentage;
     };
 
     const toggleAttendance = (studentId, newStatus) => {
@@ -154,13 +179,16 @@ const AttendancePage = ({ darkMode }) => {
                 date: selectedDate,
                 studentId: student.id,
                 status: localAttendanceData[student.id] || 'Absent',
-                teacherId: currentUser?.id
-
+                teacherId: currentUser?.id,
+                markedBy: teacherName
             })).filter(r => localAttendanceData[r.studentId]);
 
             await attendanceApi.markBulk(attendanceList);
             setSaveStatus('saved');
-            loadStudentAttendance();
+            
+            // Reload attendance data to update percentages immediately
+            await loadStudentAttendance();
+            
             setTimeout(() => setSaveStatus(null), 3000);
         } catch (error) {
             console.error(error);
@@ -170,7 +198,7 @@ const AttendancePage = ({ darkMode }) => {
 
     const filteredStudents = allStudents.filter(student => {
         const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            student.rollNo.toLowerCase().includes(searchQuery.toLowerCase());
+            (student.rollNumber || student.rollNo || '').toLowerCase().includes(searchQuery.toLowerCase());
         const matchesClass = selectedClass === 'All Classes' || student.class === selectedClass;
         return matchesSearch && matchesClass;
     });
@@ -280,41 +308,41 @@ const AttendancePage = ({ darkMode }) => {
                 <>
                     { }
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:scale-[1.02] hover:shadow-lg transition-all duration-200 group cursor-pointer`}>
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Students</h3>
-                                <Users className="w-5 h-5 text-green-500" />
+                                <Users className="w-5 h-5 text-green-500 group-hover:scale-110 transition-transform" />
                             </div>
                             <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{filteredStudents.length}</p>
                         </div>
 
-                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:scale-[1.02] hover:shadow-lg transition-all duration-200 group cursor-pointer`}>
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Present</h3>
-                                <UserCheck className="w-5 h-5 text-green-500" />
+                                <UserCheck className="w-5 h-5 text-green-500 group-hover:scale-110 transition-transform" />
                             </div>
                             <p className={`text-3xl font-bold text-green-600`}>{currentPresentCount}</p>
                         </div>
 
-                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:scale-[1.02] hover:shadow-lg transition-all duration-200 group cursor-pointer`}>
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Absent</h3>
-                                <UserX className="w-5 h-5 text-red-500" />
+                                <UserX className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform" />
                             </div>
                             <p className={`text-3xl font-bold text-red-600`}>{currentAbsentCount}</p>
                         </div>
 
-                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:scale-[1.02] hover:shadow-lg transition-all duration-200 group cursor-pointer`}>
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Rate</h3>
-                                <TrendingUp className="w-5 h-5 text-purple-500" />
+                                <TrendingUp className="w-5 h-5 text-purple-500 group-hover:scale-110 transition-transform" />
                             </div>
                             <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{currentAttendancePercentage}%</p>
                         </div>
                     </div>
 
                     { }
-                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6`}>
+                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6 hover:shadow-lg transition-all duration-200`}>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                             <div>
                                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
@@ -324,10 +352,10 @@ const AttendancePage = ({ darkMode }) => {
                                     type="date"
                                     value={selectedDate}
                                     onChange={(e) => setSelectedDate(e.target.value)}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode
+                                    className={`w-full px-4 py-2.5 text-sm rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-gray-50 border-gray-300 text-gray-900'
-                                        } focus:outline-none`}
+                                        } focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 cursor-pointer hover:border-green-400`}
                                 />
                             </div>
 
@@ -338,12 +366,12 @@ const AttendancePage = ({ darkMode }) => {
                                 <select
                                     value={selectedClass}
                                     onChange={(e) => setSelectedClass(e.target.value)}
-                                    className={`w-full px-4 py-2 rounded-lg border ${darkMode
+                                    className={`w-full px-4 py-2.5 text-sm rounded-lg border ${darkMode
                                         ? 'bg-gray-700 border-gray-600 text-white'
                                         : 'bg-gray-50 border-gray-300 text-gray-900'
-                                        } focus:outline-none`}
+                                        } focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 cursor-pointer hover:border-green-400`}
                                 >
-                                    {classes.map((cls) => (
+                                    {availableClasses.map((cls) => (
                                         <option key={cls} value={cls}>{cls}</option>
                                     ))}
                                 </select>
@@ -354,26 +382,26 @@ const AttendancePage = ({ darkMode }) => {
                                     Search
                                 </label>
                                 <div className="relative">
-                                    <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                                    <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                                     <input
                                         type="text"
                                         placeholder="Search student..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className={`w-full pl-10 pr-4 py-2 rounded-lg border ${darkMode
+                                        className={`w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border ${darkMode
                                             ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                                             : 'bg-gray-50 border-gray-300 text-gray-900'
-                                            } focus:outline-none`}
+                                            } focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200`}
                                     />
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-3 border-t pt-4 border-gray-100">
+                        <div className={`flex flex-wrap gap-3 border-t pt-4 ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
                             <div className="flex gap-2">
                                 <button
                                     onClick={markAllPresent}
-                                    className="px-3 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors flex items-center space-x-1 text-sm border border-green-200"
+                                    className="px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 hover:scale-105 transition-all duration-200 flex items-center space-x-2 text-sm font-medium border border-green-200 shadow-sm hover:shadow-md"
                                 >
                                     <CheckCircle className="w-4 h-4" />
                                     <span>Mark All Present</span>
@@ -381,7 +409,7 @@ const AttendancePage = ({ darkMode }) => {
 
                                 <button
                                     onClick={markAllAbsent}
-                                    className="px-3 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors flex items-center space-x-1 text-sm border border-red-200"
+                                    className="px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 hover:scale-105 transition-all duration-200 flex items-center space-x-2 text-sm font-medium border border-red-200 shadow-sm hover:shadow-md"
                                 >
                                     <XCircle className="w-4 h-4" />
                                     <span>Mark All Absent</span>
@@ -391,9 +419,9 @@ const AttendancePage = ({ darkMode }) => {
                             <button
                                 onClick={saveAttendance}
                                 disabled={saveStatus === 'saved'}
-                                className={`ml-auto px-6 py-2 rounded-lg transition-colors flex items-center space-x-2 font-medium ${saveStatus === 'saved'
+                                className={`ml-auto px-6 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 font-medium shadow-sm ${saveStatus === 'saved'
                                     ? 'bg-green-600 text-white cursor-default'
-                                    : 'bg-green-600 text-white hover:bg-green-700'
+                                    : 'bg-green-600 text-white hover:bg-green-700 hover:scale-105 hover:shadow-md'
                                     }`}
                             >
                                 {saveStatus === 'saved' ? (
@@ -445,13 +473,13 @@ const AttendancePage = ({ darkMode }) => {
                                             const todayStatus = localAttendanceData[student.id];
 
                                             return (
-                                                <tr key={student.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}>
-                                                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                                        {student.rollNo}
+                                                <tr key={student.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-all duration-200 group`}>
+                                                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                        {student.rollNumber || student.rollNo}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="flex items-center">
-                                                            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-semibold text-xs mr-3">
+                                                            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold text-xs mr-3 shadow-sm group-hover:scale-110 transition-transform duration-200">
                                                                 {student.name.substring(0, 2).toUpperCase()}
                                                             </div>
                                                             <div>
@@ -464,12 +492,12 @@ const AttendancePage = ({ darkMode }) => {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="flex items-center">
-                                                            <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                            <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'} mr-2`}>
                                                                 {overallAttendance}%
                                                             </span>
-                                                            <div className="ml-2 w-16 bg-gray-200 rounded-full h-1.5">
+                                                            <div className="w-20 bg-gray-200 rounded-full h-2">
                                                                 <div
-                                                                    className={`h-1.5 rounded-full ${overallAttendance >= 90 ? 'bg-green-500' :
+                                                                    className={`h-2 rounded-full transition-all duration-500 ${overallAttendance >= 90 ? 'bg-green-500' :
                                                                         overallAttendance >= 75 ? 'bg-yellow-500' : 'bg-red-500'
                                                                         }`}
                                                                     style={{ width: `${overallAttendance}%` }}
@@ -481,7 +509,7 @@ const AttendancePage = ({ darkMode }) => {
                                                         <div className="flex items-center justify-center space-x-2">
                                                             <button
                                                                 onClick={() => toggleAttendance(student.id, 'Present')}
-                                                                className={`p-2 rounded-lg transition-all ${getStatusStyle('Present', todayStatus === 'Present')}`}
+                                                                className={`p-2.5 rounded-lg transition-all duration-200 hover:scale-110 ${getStatusStyle('Present', todayStatus === 'Present')}`}
                                                                 title="Present"
                                                             >
                                                                 <CheckCircle className="w-5 h-5" />
@@ -489,7 +517,7 @@ const AttendancePage = ({ darkMode }) => {
 
                                                             <button
                                                                 onClick={() => toggleAttendance(student.id, 'Late')}
-                                                                className={`p-2 rounded-lg transition-all ${getStatusStyle('Late', todayStatus === 'Late')}`}
+                                                                className={`p-2.5 rounded-lg transition-all duration-200 hover:scale-110 ${getStatusStyle('Late', todayStatus === 'Late')}`}
                                                                 title="Late"
                                                             >
                                                                 <Clock className="w-5 h-5" />
@@ -497,7 +525,7 @@ const AttendancePage = ({ darkMode }) => {
 
                                                             <button
                                                                 onClick={() => toggleAttendance(student.id, 'Absent')}
-                                                                className={`p-2 rounded-lg transition-all ${getStatusStyle('Absent', todayStatus === 'Absent')}`}
+                                                                className={`p-2.5 rounded-lg transition-all duration-200 hover:scale-110 ${getStatusStyle('Absent', todayStatus === 'Absent')}`}
                                                                 title="Absent"
                                                             >
                                                                 <XCircle className="w-5 h-5" />
