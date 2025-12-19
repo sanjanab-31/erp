@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "npm install @rollup/rollup-linux-x64-gnu lightningcss-linux-x64-gnu --save-dev --force || true",
+    "prebuild": "npm install @rollup/rollup-linux-x64-gnu lightningcss-linux-x64-gnu @tailwindcss/oxide-linux-x64-gnu --save-dev --force || true",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
