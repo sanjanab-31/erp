@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { Calendar, CheckCircle, XCircle, Clock, TrendingUp, AlertCircle, User } from 'lucide-react';
-import { studentApi, attendanceApi } from '../../../services/api';
+import { studentApi, attendanceApi, parentApi } from '../../../services/api';
 
-const AttendancePage = ({ darkMode }) => {
+const AttendancePage = () => {
+    const { darkMode } = useOutletContext();
     const [attendanceRecords, setAttendanceRecords] = useState([]);
     const [loading, setLoading] = useState(true);
     const [childName, setChildName] = useState('');
@@ -20,22 +22,41 @@ const AttendancePage = ({ darkMode }) => {
     const loadAttendance = useCallback(async () => {
         setLoading(true);
         try {
-            const studentsRes = await studentApi.getAll();
-            const students = studentsRes.data || [];
-            const child = students.find(s => s.parentEmail === parentEmail || s.guardianEmail === parentEmail || s.email === parentEmail);
+            // Fetch everything in parallel for efficiency
+            const [parentsRes, studentsRes, attendanceRes] = await Promise.all([
+                parentApi.getAll(),
+                studentApi.getAll(),
+                attendanceApi.getAll()
+            ]);
+
+            const allParents = Array.isArray(parentsRes?.data?.data) ? parentsRes.data.data : [];
+            const currentParent = allParents.find(p => p.email?.toLowerCase() === parentEmail?.toLowerCase());
+
+            if (!currentParent) {
+                console.error('Parent record not found for:', parentEmail);
+                setLoading(false);
+                return;
+            }
+
+            const allStudents = Array.isArray(studentsRes?.data?.data) ? studentsRes.data.data : [];
+            const child = allStudents.find(s =>
+                (s.id?.toString() === currentParent.studentId?.toString()) ||
+                (s.parentEmail?.toLowerCase() === currentParent.email?.toLowerCase())
+            );
 
             if (child) {
                 setChildName(child.name);
                 setChildClass(child.class);
                 setChildId(child.id);
 
-                const attendanceRes = await attendanceApi.getAll();
-                const allRecords = attendanceRes.data || [];
+                const allRecords = Array.isArray(attendanceRes?.data?.data) ? attendanceRes.data.data : [];
 
                 const childRecords = allRecords.filter(record =>
-                    record.studentId.toString() === child.id.toString()
+                    record.studentId?.toString() === child.id?.toString()
                 );
                 setAttendanceRecords(childRecords);
+            } else {
+                console.error('Student not found for studentId:', currentParent.studentId);
             }
         } catch (error) {
             console.error('Error loading attendance:', error);

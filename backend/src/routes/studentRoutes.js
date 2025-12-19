@@ -6,7 +6,8 @@ import {
     createStudent,
     updateStudent,
     deleteStudent,
-    getStudentByEmail
+    getStudentByEmail,
+    getStudentResults
 } from '../controllers/studentController.js';
 import { authenticateToken } from '../middleware/auth.js';
 
@@ -19,6 +20,7 @@ router.use(authenticateToken); // Apply auth middleware to all routes below
 router.get('/', getAllStudents);
 router.get('/stats', getStudentStats); // Stats endpoint must be before /:id
 router.get('/email/:email', getStudentByEmail);
+router.get('/:id/results', getStudentResults);
 router.get('/:id', getStudentById);
 router.post('/', createStudent); // Should strictly be Admin only in real app
 router.put('/:id', updateStudent);

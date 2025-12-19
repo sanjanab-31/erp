@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
     Book,
     BookOpen,
@@ -6,9 +7,10 @@ import {
     CheckCircle,
     Info
 } from 'lucide-react';
-import { libraryApi, studentApi } from '../../../services/api';
+import { libraryApi, studentApi, parentApi } from '../../../services/api';
 
-const ParentLibraryPage = ({ darkMode }) => {
+const ParentLibraryPage = () => {
+    const { darkMode } = useOutletContext();
     const [childIssues, setChildIssues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [rules, setRules] = useState({
@@ -24,19 +26,38 @@ const ParentLibraryPage = ({ darkMode }) => {
         const loadData = async () => {
             setLoading(true);
             try {
+                // Fetch everything in parallel
+                const [parentsRes, studentRes, libraryRes] = await Promise.all([
+                    parentApi.getAll(),
+                    studentApi.getAll(),
+                    libraryApi.getAllIssues()
+                ]);
 
-                const studentRes = await studentApi.getAll();
-                const students = studentRes.data || [];
-                const child = students.find(s => s.parentEmail === parentEmail || s.guardianEmail === parentEmail || s.email === parentEmail);
+                const allParents = Array.isArray(parentsRes?.data?.data) ? parentsRes.data.data : [];
+                const currentParent = allParents.find(p => p.email?.toLowerCase() === parentEmail?.toLowerCase());
+
+                if (!currentParent) {
+                    console.error('Parent record not found for:', parentEmail);
+                    setLoading(false);
+                    return;
+                }
+
+                const allStudents = Array.isArray(studentRes?.data?.data) ? studentRes.data.data : [];
+                const child = allStudents.find(s =>
+                    (s.id?.toString() === currentParent.studentId?.toString()) ||
+                    (s.parentEmail?.toLowerCase() === currentParent.email?.toLowerCase())
+                );
 
                 if (child) {
-
-                    const res = await libraryApi.getAllIssues();
-                    const allIssues = res.data || [];
+                    const allIssues = Array.isArray(libraryRes?.data?.data) ? libraryRes.data.data : [];
                     const childRecords = allIssues.filter(i =>
-                        i.userId === child.email || i.studentId === child.id
+                        i.userId === child.email ||
+                        i.studentId?.toString() === child.id?.toString() ||
+                        i.studentId === child.id
                     );
                     setChildIssues(childRecords);
+                } else {
+                    console.error('Student not found for studentId:', currentParent.studentId);
                 }
             } catch (error) {
                 console.error('Error loading library data:', error);
@@ -54,15 +75,15 @@ const ParentLibraryPage = ({ darkMode }) => {
 
     return (
         <div className={`space-y-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            <div className="flex justify-between items-center bg-orange-50 p-4 rounded-xl border border-orange-100">
+            <div className={`flex justify-between items-center ${darkMode ? 'bg-orange-900/20' : 'bg-orange-50'} p-6 rounded-xl`}>
                 <div>
-                    <h2 className="text-xl font-bold text-orange-900">Child's Library Records</h2>
-                    <p className="text-sm text-orange-700">Track book issues and returns for your child</p>
+                    <h2 className={`text-xl font-bold ${darkMode ? 'text-orange-400' : 'text-orange-900'}`}>Child's Library Records</h2>
+                    <p className={`text-sm ${darkMode ? 'text-orange-300' : 'text-orange-700'}`}>Track book issues and returns for your child</p>
                 </div>
-                <Book className="w-8 h-8 text-orange-600" />
+                <Book className={`w-8 h-8 ${darkMode ? 'text-orange-400' : 'text-orange-600'}`} />
             </div>
 
-            {}
+            { }
             {overdueCount > 0 && (
                 <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg flex items-center shadow-sm">
                     <AlertTriangle className="w-5 h-5 text-red-500 mr-3 flex-shrink-0" />
@@ -73,39 +94,39 @@ const ParentLibraryPage = ({ darkMode }) => {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border p-4 rounded-xl`}>
-                    <div className="flex items-center justify-between mb-2">
-                        <p className="text-gray-500 text-sm">Books Currently Issued</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border p-6 rounded-xl shadow-sm`}>
+                    <div className="flex items-center justify-between mb-3">
+                        <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Books Currently Issued</p>
                         <BookOpen className="w-5 h-5 text-blue-500" />
                     </div>
-                    <p className="text-2xl font-bold">{activeIssues}</p>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{activeIssues}</p>
                 </div>
-                <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border p-4 rounded-xl`}>
-                    <div className="flex items-center justify-between mb-2">
-                        <p className="text-gray-500 text-sm">Overdue Books</p>
+                <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border p-6 rounded-xl shadow-sm`}>
+                    <div className="flex items-center justify-between mb-3">
+                        <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Overdue Books</p>
                         <AlertTriangle className="w-5 h-5 text-red-500" />
                     </div>
-                    <p className="text-2xl font-bold text-red-500">{overdueCount}</p>
+                    <p className={`text-3xl font-bold ${overdueCount > 0 ? 'text-red-500' : (darkMode ? 'text-white' : 'text-gray-900')}`}>{overdueCount}</p>
                 </div>
-                <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border p-4 rounded-xl`}>
-                    <div className="flex items-center justify-between mb-2">
-                        <p className="text-gray-500 text-sm">Total Pending Fines</p>
+                <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border p-6 rounded-xl shadow-sm`}>
+                    <div className="flex items-center justify-between mb-3">
+                        <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Total Pending Fines</p>
                         <Info className="w-5 h-5 text-orange-500" />
                     </div>
-                    <p className="text-2xl font-bold text-red-500">{rules.currency}{totalFines}</p>
+                    <p className={`text-3xl font-bold ${totalFines > 0 ? 'text-red-500' : (darkMode ? 'text-white' : 'text-gray-900')}`}>{rules.currency}{totalFines}</p>
                 </div>
             </div>
 
-            {}
-            <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl overflow-hidden`}>
-                <div className="p-4 border-b">
-                    <h3 className="font-bold">Issue History</h3>
-                    <p className="text-sm text-gray-500 mt-1">Complete borrowing history for your child</p>
+            {/* Issue History */}
+            <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl overflow-hidden shadow-sm`}>
+                <div className={`p-6 ${darkMode ? 'border-gray-700' : 'border-gray-200'} border-b`}>
+                    <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Issue History</h3>
+                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>Complete borrowing history for your child</p>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className={`${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-50 text-gray-600'} text-xs uppercase font-semibold`}>
+                        <thead className={`${darkMode ? 'bg-gray-750 text-gray-400' : 'bg-gray-100 text-gray-600'} text-xs uppercase font-semibold`}>
                             <tr>
                                 <th className="px-6 py-4">Book Title</th>
                                 <th className="px-6 py-4">Issued On</th>
@@ -145,9 +166,9 @@ const ParentLibraryPage = ({ darkMode }) => {
                             })}
                             {childIssues.length === 0 && (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
-                                        <BookOpen className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                                        No records found for your child.
+                                    <td colSpan="5" className="px-6 py-12 text-center">
+                                        <BookOpen className={`w-16 h-16 mx-auto mb-3 ${darkMode ? 'text-gray-600' : 'text-gray-300'}`} />
+                                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No records found for your child.</p>
                                     </td>
                                 </tr>
                             )}

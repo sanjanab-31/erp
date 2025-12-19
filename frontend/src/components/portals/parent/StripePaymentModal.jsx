@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CreditCard, Lock, Loader, ExternalLink } from 'lucide-react';
+import { X, CreditCard, Lock, Loader, ExternalLink, AlertCircle } from 'lucide-react';
 import { paymentApi } from '../../../services/api';
 
 const StripePaymentModal = ({ darkMode, fee, studentName, onClose }) => {
@@ -22,14 +22,6 @@ const StripePaymentModal = ({ darkMode, fee, studentName, onClose }) => {
         setError(null);
 
         try {
-            console.log('💳 Payment submission:', {
-                amount: paymentData.amount,
-                type: typeof paymentData.amount,
-                parsed: parseFloat(paymentData.amount),
-                feeId: fee.id,
-                studentName,
-                feeType: fee.feeType
-            });
 
             const amount = parseFloat(paymentData.amount);
 
@@ -41,7 +33,6 @@ const StripePaymentModal = ({ darkMode, fee, studentName, onClose }) => {
                 throw new Error(`Amount cannot be greater than remaining amount (₹${fee.remainingAmount})`);
             }
 
-            console.log('✅ Amount validated:', amount);
 
             const res = await paymentApi.createCheckoutSession({
                 amount,
@@ -52,7 +43,6 @@ const StripePaymentModal = ({ darkMode, fee, studentName, onClose }) => {
 
             const { url, sessionId } = res.data;
 
-            console.log('✅ Session created:', sessionId);
 
             sessionStorage.setItem('pendingPayment', JSON.stringify({
                 feeId: fee.id,
@@ -69,172 +59,115 @@ const StripePaymentModal = ({ darkMode, fee, studentName, onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl max-w-md w-full`}>
-                { }
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6 rounded-t-xl`}>
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                                <CreditCard className="w-6 h-6 text-white" />
-                            </div>
-                            <div>
-                                <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                                    Pay with Card
-                                </h2>
-                                <p className="text-xs text-gray-500 flex items-center mt-1">
-                                    <Lock className="w-3 h-3 mr-1" />
-                                    Secured by Stripe
-                                </p>
-                            </div>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-2xl max-w-md w-full shadow-2xl overflow-hidden`}>
+                {/* Header */}
+                <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                            <CreditCard className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                         </div>
-                        <button
-                            onClick={onClose}
-                            disabled={loading}
-                            className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} disabled:opacity-50`}
-                        >
-                            <X className="w-6 h-6 text-gray-500" />
-                        </button>
+                        <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Fee Payment</h2>
                     </div>
+                    <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                        <X className="w-5 h-5 text-gray-400" />
+                    </button>
                 </div>
 
-                { }
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    { }
-                    <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                        <div className="space-y-2">
-                            <div className="flex justify-between">
-                                <span className="text-sm text-gray-500">Student:</span>
-                                <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{studentName || 'Student'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-sm text-gray-500">Fee Type:</span>
-                                <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{fee.feeType}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-sm text-gray-500">Total Amount:</span>
-                                <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>₹{fee.amount.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-sm text-gray-500">Paid:</span>
-                                <span className="text-sm font-medium text-green-600">₹{fee.paidAmount.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between border-t pt-2">
-                                <span className="text-sm font-semibold text-gray-500">Remaining:</span>
-                                <span className="text-sm font-bold text-red-600">₹{fee.remainingAmount.toLocaleString()}</span>
-                            </div>
+                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                    {/* Summary Card */}
+                    <div className={`${darkMode ? 'bg-gray-700/50' : 'bg-gray-50'} p-4 rounded-xl space-y-3`}>
+                        <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Student</span>
+                            <span className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{studentName}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Fee Category</span>
+                            <span className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{fee.feeType}</span>
+                        </div>
+                        <div className="pt-2 border-t border-gray-200 dark:border-gray-600 flex justify-between items-center">
+                            <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Balance Due</span>
+                            <span className="text-lg font-bold text-purple-600">₹{fee.remainingAmount.toLocaleString()}</span>
                         </div>
                     </div>
 
-                    { }
-                    <div>
-                        <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                            Payment Type *
+                    {/* Payment Options */}
+                    <div className="space-y-3">
+                        <label className={`block text-sm font-bold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                            Payment Type
                         </label>
-                        <div className="flex gap-4">
-                            <label className="flex items-center">
-                                <input
-                                    type="radio"
-                                    value="full"
-                                    checked={paymentType === 'full'}
-                                    onChange={(e) => setPaymentType(e.target.value)}
-                                    disabled={loading}
-                                    className="mr-2"
-                                />
-                                <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Full Payment</span>
-                            </label>
-                            <label className="flex items-center">
-                                <input
-                                    type="radio"
-                                    value="partial"
-                                    checked={paymentType === 'partial'}
-                                    onChange={(e) => setPaymentType(e.target.value)}
-                                    disabled={loading}
-                                    className="mr-2"
-                                />
-                                <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Partial Payment</span>
-                            </label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setPaymentType('full')}
+                                className={`py-3 px-4 rounded-xl border text-sm font-bold transition-all ${paymentType === 'full'
+                                    ? 'border-purple-600 bg-purple-50 dark:bg-purple-900/20 text-purple-600'
+                                    : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'
+                                    }`}
+                            >
+                                Full Payment
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPaymentType('partial')}
+                                className={`py-3 px-4 rounded-xl border text-sm font-bold transition-all ${paymentType === 'partial'
+                                    ? 'border-purple-600 bg-purple-50 dark:bg-purple-900/20 text-purple-600'
+                                    : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'
+                                    }`}
+                            >
+                                Partial
+                            </button>
                         </div>
                     </div>
 
-                    { }
-                    <div>
-                        <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                            Amount (₹) *
+                    {/* Amount Input */}
+                    <div className="space-y-2">
+                        <label className={`block text-sm font-bold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                            Amount (₹)
                         </label>
                         <input
                             type="number"
-                            required
-                            min="50"
-                            max={fee.remainingAmount}
-                            step="1"
                             value={paymentData.amount}
                             onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
                             disabled={paymentType === 'full' || loading}
-                            placeholder="Enter amount (min ₹50)"
-                            className={`w-full px-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 placeholder-gray-400'} focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50`}
+                            className={`w-full px-4 py-3 rounded-xl border transition-all ${darkMode
+                                ? 'bg-gray-700 border-gray-600 text-white focus:border-purple-500'
+                                : 'bg-white border-gray-200 text-gray-900 focus:border-purple-500'
+                                } outline-none disabled:opacity-50`}
+                            placeholder="Enter amount"
                         />
-                        {paymentType === 'partial' && (
-                            <p className="text-xs text-gray-500 mt-1">Minimum: ₹50 | Maximum: ₹{fee.remainingAmount.toLocaleString()}</p>
-                        )}
                     </div>
 
-                    { }
-                    <div className={`p-4 rounded-lg ${darkMode ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200'} border`}>
-                        <div className="flex items-start space-x-2">
-                            <ExternalLink className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                            <div>
-                                <p className="text-sm text-blue-600 dark:text-blue-400 font-semibold mb-1">
-                                    You'll be redirected to Stripe
-                                </p>
-                                <p className="text-xs text-blue-600 dark:text-blue-400">
-                                    Complete your payment securely on Stripe's payment page. You'll be redirected back after payment.
-                                </p>
-                                <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 font-semibold">
-                                    ⚠️ Stripe requires minimum ₹50 per transaction
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {}
-                    <div className={`p-3 rounded-lg ${darkMode ? 'bg-green-900/20 border-green-700' : 'bg-green-50 border-green-200'} border`}>
-                        <p className="text-xs text-green-600 dark:text-green-400 font-semibold mb-1">Test Mode - Use Test Card:</p>
-                        <p className="text-xs text-green-600 dark:text-green-400">Card: 4242 4242 4242 4242</p>
-                        <p className="text-xs text-green-600 dark:text-green-400">Expiry: Any future date | CVC: Any 3 digits</p>
-                    </div>
-
-                    {}
                     {error && (
-                        <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-                            <p className="text-sm text-red-600">{error}</p>
+                        <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                            <p className="text-xs text-red-600 dark:text-red-400 font-medium">{error}</p>
                         </div>
                     )}
 
-                    {}
-                    <div className="flex justify-end space-x-3 pt-4">
+                    {/* Actions */}
+                    <div className="flex gap-3 pt-2">
                         <button
                             type="button"
                             onClick={onClose}
-                            disabled={loading}
-                            className={`px-6 py-2 rounded-lg border ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'} disabled:opacity-50`}
+                            className={`flex-1 py-3 px-4 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-bold ${darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'}`}
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold shadow-lg shadow-purple-200 dark:shadow-none flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                             {loading ? (
-                                <>
-                                    <Loader className="w-5 h-5 animate-spin" />
-                                    <span>Redirecting...</span>
-                                </>
+                                <Loader className="w-4 h-4 animate-spin" />
                             ) : (
                                 <>
-                                    <Lock className="w-5 h-5" />
-                                    <span>Pay ₹{parseFloat(paymentData.amount).toLocaleString()}</span>
+                                    <Lock className="w-4 h-4" />
+                                    <span>Pay Now</span>
                                 </>
                             )}
                         </button>
@@ -242,6 +175,9 @@ const StripePaymentModal = ({ darkMode, fee, studentName, onClose }) => {
                 </form>
             </div>
         </div>
+
+
+
     );
 };
 

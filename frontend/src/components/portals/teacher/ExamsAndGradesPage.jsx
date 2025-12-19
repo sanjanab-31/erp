@@ -196,6 +196,7 @@ const ExamsAndGradesPage = () => {
 
                     await resultApi.save({
                         courseId: selectedCourse.id,
+                        courseName: selectedCourse.name,
                         studentId: student.id,
                         studentName: student.name,
                         examScores: {

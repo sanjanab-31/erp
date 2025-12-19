@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import {
     Settings as SettingsIcon,
     User,
@@ -12,9 +12,10 @@ import {
     Phone,
     LogOut
 } from 'lucide-react';
-import { studentApi, settingsApi } from '../../../services/api';
+import { studentApi, settingsApi, parentApi } from '../../../services/api';
 
-const SettingsPage = ({ darkMode }) => {
+const SettingsPage = () => {
+    const { darkMode } = useOutletContext();
     const navigate = useNavigate();
     const [activeSection, setActiveSection] = useState('profile');
     const [showPassword, setShowPassword] = useState(false);
@@ -67,27 +68,46 @@ const SettingsPage = ({ darkMode }) => {
             const parentEmail = localStorage.getItem('userEmail');
             if (parentEmail) {
                 try {
-                    const res = await studentApi.getAll();
-                    const students = res.data || [];
-                    const parentChildren = students.filter(s => s.parentEmail === parentEmail || s.guardianEmail === parentEmail || s.email === parentEmail);
-                    setChildren(parentChildren);
-
-                    if (parentChildren.length > 0) {
-                        const child = parentChildren[0];
-                        setProfileData({
-                            name: child.parentName || localStorage.getItem('userName') || '',
-                            email: child.parentEmail || parentEmail,
-                            phone: child.parentPhone || '',
-                            address: child.address || '',
-                            relationship: 'Parent/Guardian'
-                        });
-                    } else {
+                    // First, get the parent record to find the student ID
+                    const parentsRes = await parentApi.getAll();
+                    const allParents = Array.isArray(parentsRes?.data) ? parentsRes.data : [];
+                    const currentParent = allParents.find(p => p.email === parentEmail);
+                    
+                    if (!currentParent) {
+                        console.error('Parent record not found for:', parentEmail);
                         setProfileData({
                             name: localStorage.getItem('userName') || '',
                             email: parentEmail,
                             phone: '',
                             address: '',
                             relationship: 'Parent/Guardian'
+                        });
+                        setLoading(false);
+                        return;
+                    }
+
+                    // Get student data using the studentId from parent record
+                    const res = await studentApi.getAll();
+                    const allStudents = Array.isArray(res?.data) ? res.data : [];
+                    const child = allStudents.find(s => s.id === currentParent.studentId);
+                    
+                    if (child) {
+                        setChildren([child]);
+                        setProfileData({
+                            name: currentParent.name || localStorage.getItem('userName') || '',
+                            email: currentParent.email || parentEmail,
+                            phone: currentParent.phone || '',
+                            address: currentParent.address || '',
+                            relationship: currentParent.relationship || 'Parent/Guardian'
+                        });
+                    } else {
+                        console.error('Student not found for studentId:', currentParent.studentId);
+                        setProfileData({
+                            name: currentParent.name || localStorage.getItem('userName') || '',
+                            email: currentParent.email || parentEmail,
+                            phone: currentParent.phone || '',
+                            address: currentParent.address || '',
+                            relationship: currentParent.relationship || 'Parent/Guardian'
                         });
                     }
 

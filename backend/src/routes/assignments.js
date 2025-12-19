@@ -1,5 +1,6 @@
 import express from 'express';
 import {
+    getAllAssignments,
     getAssignmentsByCourse,
     createAssignment,
     updateAssignment,
@@ -11,12 +12,15 @@ const router = express.Router();
 
 router.use(authenticateToken);
 
-// api.js calls GET /assignments with params. 
-// Existing controller gets by courseId. modifying to allow query param based fetching.
-router.get('/', (req, res, next) => {
-    if (req.query.courseId) return getAssignmentsByCourse(req, res);
-    // Fallback or getAll logic 
-    res.json({ success: true, data: [] });
+// GET /assignments - gets all or by courseId query
+router.get('/', (req, res) => {
+    if (req.query.courseId) {
+        // We can reuse the controller if we modify it to check query too, 
+        // but let's keep it simple here.
+        req.params.courseId = req.query.courseId;
+        return getAssignmentsByCourse(req, res);
+    }
+    return getAllAssignments(req, res);
 });
 router.get('/course/:courseId', getAssignmentsByCourse);
 router.post('/', createAssignment);

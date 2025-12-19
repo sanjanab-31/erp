@@ -1,5 +1,14 @@
 import Assignment from '../models/assignmentmodel.js';
 
+export const getAllAssignments = async (req, res) => {
+    try {
+        const assignments = await Assignment.find().sort({ createdAt: -1 });
+        res.json({ success: true, data: assignments });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 export const getAssignmentsByCourse = async (req, res) => {
     try {
         const { courseId } = req.params;

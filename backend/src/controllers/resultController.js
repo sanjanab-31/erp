@@ -5,7 +5,7 @@ export const getAllResults = async (req, res) => {
         const { studentId } = req.query;
         let query = {};
         if (studentId) {
-            query.studentId = studentId;
+            query.studentId = Number(studentId);
         }
 
         const results = await ExamMarks.find(query);
@@ -13,6 +13,7 @@ export const getAllResults = async (req, res) => {
         const formattedResults = results.map(r => ({
             id: r.id,
             courseId: r.courseId,
+            courseName: r.courseName,
             studentId: r.studentId,
             studentName: r.studentName,
             examScores: {

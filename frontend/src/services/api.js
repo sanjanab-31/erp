@@ -124,6 +124,14 @@ export const studentApi = {
     getStats: () => api.get('/students/stats'),
 };
 
+export const parentApi = {
+    getAll: (params) => api.get('/parents', { params }),
+    getById: (id) => api.get(`/parents/${id}`),
+    create: (data) => api.post('/parents', data),
+    update: (id, data) => api.put(`/parents/${id}`, data),
+    delete: (id) => api.delete(`/parents/${id}`),
+};
+
 export const teacherApi = {
     getAll: (params) => api.get('/teachers', { params }),
     getById: (id) => api.get(`/teachers/${id}`),
@@ -212,6 +220,15 @@ export const assignmentApi = {
     getSubmissions: (assignmentId) => api.get(`/submissions/assignment/${assignmentId}`),
     gradeSubmission: (id, data) => api.put(`/submissions/${id}/grade`, data),
     createSubmission: (data) => api.post(`/submissions`, data)
+};
+
+export const submissionApi = {
+    getAll: (params) => api.get('/submissions', { params }),
+    getByStudent: (studentId) => api.get(`/submissions/student/${studentId}`),
+    getByAssignment: (assignmentId) => api.get(`/submissions/assignment/${assignmentId}`),
+    create: (data) => api.post('/submissions', data),
+    update: (id, data) => api.put(`/submissions/${id}`, data),
+    grade: (id, data) => api.put(`/submissions/${id}/grade`, data)
 };
 
 export const timetableApi = {

@@ -54,12 +54,12 @@ const AnnouncementsPage = () => {
     return (
         <div className={`space-y-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             { }
-            <div className="flex justify-between items-center bg-blue-50 p-4 rounded-xl border border-blue-100">
+            <div className={`flex justify-between items-center p-4 rounded-xl border ${darkMode ? 'bg-blue-900 border-blue-800' : 'bg-blue-50 border-blue-100'}`}>
                 <div>
-                    <h2 className="text-xl font-bold text-blue-900">Announcements</h2>
-                    <p className="text-sm text-blue-700">Stay informed with important updates</p>
+                    <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>Announcements</h2>
+                    <p className={`text-sm ${darkMode ? 'text-blue-200' : 'text-blue-700'}`}>Stay informed with important updates</p>
                 </div>
-                <Megaphone className="w-8 h-8 text-blue-600" />
+                <Megaphone className={`w-8 h-8 ${darkMode ? 'text-blue-300' : 'text-blue-600'}`} />
             </div>
 
             { }
@@ -82,18 +82,18 @@ const AnnouncementsPage = () => {
                         className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-6 hover:shadow-lg transition-shadow`}
                     >
                         <div className="flex items-start space-x-4">
-                            <div className="p-3 bg-blue-50 rounded-lg text-blue-600 flex-shrink-0">
+                            <div className={`p-3 rounded-lg flex-shrink-0 ${darkMode ? 'bg-blue-900 text-blue-300' : 'bg-blue-50 text-blue-600'}`}>
                                 <Bell className="w-6 h-6" />
                             </div>
                             <div className="flex-1">
                                 <div className="flex items-center space-x-3 mb-2">
-                                    <h3 className="text-lg font-bold">{announcement.title}</h3>
+                                    <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{announcement.title}</h3>
                                     <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700">
                                         {announcement.targetAudience}
                                     </span>
                                 </div>
-                                <p className="text-sm text-gray-600 mb-3">{announcement.description}</p>
-                                <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                <p className={`text-sm mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{announcement.description}</p>
+                                <div className={`flex items-center space-x-4 text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                     <span className="flex items-center">
                                         <Calendar className="w-3 h-3 mr-1" />
                                         {new Date(announcement.publishDate).toLocaleDateString()}
@@ -125,7 +125,7 @@ const AnnouncementsPage = () => {
                 ))}
 
                 {filteredAnnouncements.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
+                    <div className={`text-center py-12 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                         <Megaphone className="w-16 h-16 mx-auto mb-4 opacity-50" />
                         <p>No announcements available at the moment.</p>
                     </div>

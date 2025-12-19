@@ -102,25 +102,25 @@ const StudentLibraryPage = () => {
 
     return (
         <div className={`space-y-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            <div className="flex justify-between items-center bg-blue-50 p-4 rounded-xl border border-blue-100">
+            <div className={`flex justify-between items-center p-4 rounded-xl border ${darkMode ? 'bg-blue-900 border-blue-800' : 'bg-blue-50 border-blue-100'}`}>
                 <div>
-                    <h2 className="text-xl font-bold text-blue-900">Student Library</h2>
-                    <p className="text-sm text-blue-700">Request books and track your reading</p>
+                    <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-blue-900'}`}>Student Library</h2>
+                    <p className={`text-sm ${darkMode ? 'text-blue-200' : 'text-blue-700'}`}>Request books and track your reading</p>
                 </div>
-                <Book className="w-8 h-8 text-blue-600" />
+                <Book className={`w-8 h-8 ${darkMode ? 'text-blue-300' : 'text-blue-600'}`} />
             </div>
 
             { }
-            <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
+            <div className={`flex space-x-1 p-1 rounded-lg w-fit ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
                 <button
                     onClick={() => setActiveTab('browse')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'browse' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'}`}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'browse' ? `${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm text-blue-600` : `${darkMode ? 'text-gray-300' : 'text-gray-600'}`}`}
                 >
                     Browse Books ({books.length})
                 </button>
                 <button
                     onClick={() => setActiveTab('myIssues')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'myIssues' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'}`}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'myIssues' ? `${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm text-blue-600` : `${darkMode ? 'text-gray-300' : 'text-gray-600'}`}`}
                 >
                     My Records ({myIssues.length})
                 </button>
@@ -141,7 +141,7 @@ const StudentLibraryPage = () => {
                     </div>
 
                     {filteredBooks.length === 0 ? (
-                        <div className="text-center py-12 text-gray-500">
+                        <div className={`text-center py-12 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                             <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-50" />
                             <p>No books found. {searchQuery ? 'Try a different search.' : 'The library is empty.'}</p>
                         </div>
@@ -153,22 +153,22 @@ const StudentLibraryPage = () => {
                                 return (
                                     <div key={book.id} className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-5 hover:shadow-lg transition-shadow`}>
                                         <div className="flex justify-between items-start mb-3">
-                                            <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                                            <div className={`p-2 rounded-lg ${darkMode ? 'bg-blue-900 text-blue-300' : 'bg-blue-50 text-blue-600'}`}>
                                                 <BookOpen className="w-6 h-6" />
                                             </div>
                                             <span className={`text-xs px-2 py-1 rounded-full ${book.available > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                                 {book.available > 0 ? `${book.available} Available` : 'Out of Stock'}
                                             </span>
                                         </div>
-                                        <h3 className="font-bold text-lg mb-1 line-clamp-1" title={book.title}>{book.title}</h3>
-                                        <p className="text-sm text-gray-500 mb-2">by {book.author}</p>
+                                        <h3 className={`font-bold text-lg mb-1 line-clamp-1 ${darkMode ? 'text-white' : 'text-gray-900'}`} title={book.title}>{book.title}</h3>
+                                        <p className={`text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>by {book.author}</p>
 
-                                        <div className="flex justify-between items-center text-xs text-gray-500 mb-4">
-                                            <span className="bg-gray-100 px-2 py-1 rounded">{book.subject}</span>
+                                        <div className={`flex justify-between items-center text-xs mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                            <span className={`px-2 py-1 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>{book.subject}</span>
                                             <span>{book.type}</span>
                                         </div>
 
-                                        <div className="text-xs text-gray-400 mb-3">
+                                        <div className={`text-xs mb-3 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                                             ISBN: {book.isbn || 'N/A'}
                                         </div>
 
@@ -193,7 +193,7 @@ const StudentLibraryPage = () => {
             {activeTab === 'myIssues' && (
                 <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl overflow-hidden`}>
                     <table className="w-full text-left">
-                        <thead className={`${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-50 text-gray-600'} text-xs uppercase font-semibold`}>
+                        <thead className={`text-xs uppercase font-semibold ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-50 text-gray-600'}`}>
                             <tr>
                                 <th className="px-6 py-4">Book</th>
                                 <th className="px-6 py-4">Issue Date</th>
@@ -202,17 +202,17 @@ const StudentLibraryPage = () => {
                                 <th className="px-6 py-4">Fine</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200">
+                        <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
                             {myIssues.map(issue => {
                                 const isOverdue = issue.status === 'Issued' && new Date(issue.dueDate) < new Date();
 
                                 return (
                                     <tr key={issue.id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
-                                        <td className="px-6 py-4 font-medium">{issue.bookTitle}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                        <td className={`px-6 py-4 font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{issue.bookTitle}</td>
+                                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                             {issue.status === 'Requested' ? '-' : new Date(issue.issueDate).toLocaleDateString()}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                             {issue.status === 'Requested' ? '-' : new Date(issue.dueDate).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-4">
@@ -233,7 +233,7 @@ const StudentLibraryPage = () => {
                             })}
                             {myIssues.length === 0 && (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                                    <td colSpan="5" className={`px-6 py-8 text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                         <BookOpen className="w-12 h-12 mx-auto mb-2 opacity-30" />
                                         No books requested or issued yet.
                                     </td>

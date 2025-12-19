@@ -77,7 +77,12 @@ export const deleteBook = async (req, res) => {
 
 export const getAllIssues = async (req, res) => {
     try {
-        const issues = await Issue.find().sort({ issueDate: -1 });
+        const { userId, studentId } = req.query;
+        let query = {};
+        if (userId) query.userId = userId;
+        else if (studentId) query.userId = String(studentId);
+
+        const issues = await Issue.find(query).sort({ issueDate: -1 });
         res.json({ success: true, data: issues });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

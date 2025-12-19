@@ -610,7 +610,7 @@ const CoursesPage = () => {
                                         </div>
                                         <button
                                             onClick={() => handleDeleteCourse(selectedCourse.id)}
-                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg hover:scale-110 transition-all duration-200"
+                                            className={`p-2 text-red-600 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-red-50'}`}
                                         >
                                             <Trash2 className="w-5 h-5" />
                                         </button>
@@ -644,7 +644,7 @@ const CoursesPage = () => {
                                         </h3>
                                         <button
                                             onClick={() => setShowMaterialModal(true)}
-                                            className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 hover:scale-105 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md"
+                                            className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
                                         >
                                             <Plus className="w-4 h-4" />
                                             <span>Add Material</span>
@@ -656,7 +656,7 @@ const CoursesPage = () => {
                                     ) : (
                                         <div className="space-y-3">
                                             {selectedCourse.materials.map(material => (
-                                                <div key={material.id} className={`p-4 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                                                <div key={material.id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                                                     <div className="flex items-start justify-between">
                                                         <div className="flex-1">
                                                             <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>
@@ -708,7 +708,7 @@ const CoursesPage = () => {
                                     ) : (
                                         <div className="space-y-4">
                                             {selectedCourse.assignments.map(assignment => (
-                                                <div key={assignment.id} className={`p-4 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                                                <div key={assignment.id} className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                                                     <div className="flex items-start justify-between mb-3">
                                                         <div className="flex-1">
                                                             <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>
@@ -730,7 +730,7 @@ const CoursesPage = () => {
                                                         </div>
                                                         <button
                                                             onClick={() => handleDeleteAssignment(assignment.id)}
-                                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                                                            className={`p-2 text-red-600 rounded-lg ${darkMode ? 'hover:bg-gray-600' : 'hover:bg-red-50'}`}
                                                         >
                                                             <Trash2 className="w-4 h-4" />
                                                         </button>
@@ -738,7 +738,7 @@ const CoursesPage = () => {
 
                                                     { }
                                                     {(assignment.submissions || []).length > 0 && (
-                                                        <div className="mt-3 pt-3 border-t border-gray-200">
+                                                        <div className={`mt-3 pt-3 border-t ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
                                                             <p className="text-sm font-medium text-gray-500 mb-2">Submissions:</p>
                                                             <div className="space-y-2">
                                                                 {assignment.submissions.map(submission => (

@@ -94,22 +94,38 @@ const StudentCoursesPage = ({ darkMode }) => {
 
     const handleSubmitAssignment = async (e) => {
         e.preventDefault();
+
+        const sid = Number(studentId) || Number(localStorage.getItem('userId'));
+        const sName = studentName || localStorage.getItem('userName') || 'Student';
+        const cid = Number(selectedCourse.id);
+        const aid = Number(selectedAssignment.id);
+
+        const submissionData = {
+            assignmentId: aid,
+            courseId: cid,
+            studentId: sid,
+            studentName: String(sName),
+            driveLink: String(driveLink).trim(),
+            status: 'Submitted',
+            submittedAt: new Date().toISOString()
+        };
+
+        console.log('StudentCoursesPage: Sending submission:', submissionData);
+
+        if (!submissionData.driveLink) {
+            showError('Please enter a valid link');
+            return;
+        }
+
         try {
-            await assignmentApi.createSubmission({
-                assignmentId: selectedAssignment.id,
-                courseId: selectedCourse.id,
-                studentId,
-                studentName,
-                driveLink,
-                status: 'submitted',
-                submittedAt: new Date().toISOString()
-            });
+            await assignmentApi.createSubmission(submissionData);
             setShowSubmitModal(false);
             setDriveLink('');
             setSelectedAssignment(null);
             showSuccess('Assignment submitted successfully!');
             loadData();
         } catch (error) {
+            console.error('StudentCoursesPage: Submission failed:', error.response?.data || error.message);
             showError('Error submitting assignment: ' + (error.response?.data?.message || error.message));
         }
     };

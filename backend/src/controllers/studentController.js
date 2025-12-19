@@ -1,6 +1,7 @@
 import Student from '../models/studentmodel.js';
 import User from '../models/userModel.js';
 import Parent from '../models/parentmodel.js';
+import ExamMarks from '../models/exammarksmodel.js';
 import bcrypt from 'bcryptjs';
 
 export const getAllStudents = async (req, res) => {
@@ -26,23 +27,23 @@ export const getAllStudents = async (req, res) => {
         }
 
         const students = await Student.find(filter).sort({ createdAt: -1 });
-        
+
         // Populate parent information from Parent collection
         const studentsWithParents = await Promise.all(students.map(async (student) => {
             const studentObj = student.toObject();
-            
+
             // Find parent by studentId
             const parent = await Parent.findOne({ studentId: studentObj.id });
-            
+
             if (parent) {
                 studentObj.parent = parent.name;
                 studentObj.parentPhone = parent.phone;
                 // parentEmail is already in student record
             }
-            
+
             return studentObj;
         }));
-        
+
         res.json({ success: true, data: studentsWithParents });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -88,17 +89,17 @@ export const getStudentById = async (req, res) => {
         if (!student) {
             return res.status(404).json({ success: false, message: 'Student not found' });
         }
-        
+
         const studentObj = student.toObject();
-        
+
         // Find parent by studentId
         const parent = await Parent.findOne({ studentId: studentObj.id });
-        
+
         if (parent) {
             studentObj.parent = parent.name;
             studentObj.parentPhone = parent.phone;
         }
-        
+
         res.json({ success: true, data: studentObj });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -264,13 +265,13 @@ export const updateStudent = async (req, res) => {
         // Update or create parent information if provided
         if (updates.parent || updates.parentPhone || updates.parentEmail) {
             const existingParent = await Parent.findOne({ studentId: parseInt(id) });
-            
+
             if (existingParent) {
                 // Update existing parent
                 const parentUpdates = {};
                 if (updates.parent) parentUpdates.name = updates.parent;
                 if (updates.parentPhone) parentUpdates.phone = updates.parentPhone;
-                
+
                 await Parent.findOneAndUpdate(
                     { studentId: parseInt(id) },
                     parentUpdates,
@@ -280,7 +281,7 @@ export const updateStudent = async (req, res) => {
                 // Create parent record if it doesn't exist
                 const hashedPassword = await bcrypt.hash('password', 10);
                 const parentName = updates.parent || `Parent of ${student.name}`;
-                
+
                 await Parent.create({
                     id: Date.now() + Math.floor(Math.random() * 1000),
                     email: updates.parentEmail,
@@ -297,7 +298,7 @@ export const updateStudent = async (req, res) => {
                     createdBy: 'system',
                     active: true
                 });
-                
+
                 // Also create User account for parent login
                 const existingUser = await User.findOne({ email: updates.parentEmail });
                 if (!existingUser) {
@@ -331,6 +332,41 @@ export const deleteStudent = async (req, res) => {
         await User.findOneAndDelete({ email: student.email });
 
         res.json({ success: true, message: 'Student deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const getStudentResults = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const sid = Number(id);
+
+        // Get student to verify existence
+        const student = await Student.findOne({ id: sid });
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+
+        // Get all exam marks for this student
+        const results = await ExamMarks.find({ studentId: sid });
+
+        const formattedResults = results.map(r => ({
+            id: r.id,
+            courseId: r.courseId,
+            courseName: r.courseName,
+            studentId: r.studentId,
+            studentName: r.studentName,
+            examScores: {
+                exam1: r.exam1 || 0,
+                exam2: r.exam2 || 0,
+                exam3: r.exam3 || 0
+            },
+            enteredBy: r.enteredBy,
+            enteredAt: r.enteredAt
+        }));
+
+        res.json({ success: true, data: formattedResults });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

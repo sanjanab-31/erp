@@ -10,6 +10,10 @@ const examMarksSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    courseName: {
+        type: String,
+        required: false
+    },
     studentId: {
         type: Number,
         required: true

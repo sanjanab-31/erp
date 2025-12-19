@@ -11,7 +11,9 @@ import {
     attendanceApi,
     resultApi,
     courseApi,
-    libraryApi
+    libraryApi,
+    assignmentApi,
+    submissionApi
 } from '../../../services/api';
 
 const StudentHome = () => {
@@ -45,12 +47,16 @@ const StudentHome = () => {
                     attendanceRes,
                     resultsRes,
                     coursesRes,
-                    libraryUsageRes
+                    libraryUsageRes,
+                    assignmentsRes,
+                    submissionsRes
                 ] = await Promise.all([
                     attendanceApi.getByStudent(student.id),
-                    resultApi.getAll({ studentId: student.id }),
+                    resultApi.getByStudent(student.id),
                     courseApi.getAll({ class: student.class }),
-                    libraryApi.getAllIssues({ studentId: student.id })
+                    libraryApi.getAllIssues({ studentId: student.id }),
+                    assignmentApi.getAll(),
+                    submissionApi.getByStudent(student.id)
                 ]);
 
                 // Attendance Calculation
@@ -86,29 +92,30 @@ const StudentHome = () => {
                 });
 
                 // Assignments
-                // Need to filter assignments for courses.
                 const studentCourses = coursesRes.data?.data || [];
+                const allAssignments = assignmentsRes.data?.data || [];
+                const mySubmissions = submissionsRes.data?.data || [];
+
+                // Filter assignments for student's courses
+                const studentCourseIds = studentCourses.map(c => c.id);
+                const relevantAssignments = allAssignments.filter(a => studentCourseIds.includes(a.courseId));
 
                 let pendingSubmissions = 0;
-                let totalAssignments = 0;
                 let upcomingAssignments = [];
 
-                studentCourses.forEach(c => {
-                    const assigns = c.assignments || [];
-                    totalAssignments += assigns.length;
-                    assigns.forEach(a => {
-                        const isSubmitted = a.submissions && a.submissions.some(s => s.studentId === student.id);
-                        if (!isSubmitted) {
-                            pendingSubmissions++;
-                            upcomingAssignments.push({
-                                id: a.id,
-                                title: a.title,
-                                description: c.name,
-                                dueDate: a.dueDate,
-                                status: new Date(a.dueDate) < new Date(Date.now() + 86400000) ? 'urgent' : 'normal'
-                            });
-                        }
-                    });
+                relevantAssignments.forEach(a => {
+                    const isSubmitted = mySubmissions.some(s => s.assignmentId === a.id);
+                    if (!isSubmitted) {
+                        pendingSubmissions++;
+                        const course = studentCourses.find(c => c.id === a.courseId);
+                        upcomingAssignments.push({
+                            id: a.id,
+                            title: a.title,
+                            description: course?.name || 'Course',
+                            dueDate: a.dueDate,
+                            status: new Date(a.dueDate) < new Date(Date.now() + 86400000) ? 'urgent' : 'normal'
+                        });
+                    }
                 });
 
                 const myIssues = libraryUsageRes.data?.data || [];
@@ -120,7 +127,7 @@ const StudentHome = () => {
                     gradePerformance: studentResults.length > 0 ? `Average: ${avgGrade.toFixed(1)}%` : 'No grades yet',
                     assignments: {
                         pending: pendingSubmissions,
-                        total: totalAssignments
+                        total: relevantAssignments.length
                     },
                     libraryBooks: {
                         issued: myIssuedBooks.length,
@@ -157,15 +164,13 @@ const StudentHome = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Attendance</h3>
-                        <TrendingUp className="w-5 h-5 text-gray-400" />
+                        <h3 className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Attendance</h3>
+                        <TrendingUp className="w-5 h-5 text-green-500" />
                     </div>
-                    <div className="mb-3">
-                        <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.attendance}%</p>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.attendance}%</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
                         <div
-                            className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500"
+                            className="bg-green-500 h-2 rounded-full"
                             style={{ width: `${dashboardData.attendance}%` }}
                         ></div>
                     </div>
@@ -173,91 +178,93 @@ const StudentHome = () => {
 
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Current Grade</h3>
-                        <GraduationCap className="w-5 h-5 text-gray-400" />
+                        <h3 className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Current Grade</h3>
+                        <GraduationCap className="w-5 h-5 text-blue-500" />
                     </div>
-                    <div className="mb-2">
-                        <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.currentGrade}</p>
-                    </div>
-                    <p className="text-sm text-gray-500">{dashboardData.gradePerformance}</p>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.currentGrade}</p>
+                    <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{dashboardData.gradePerformance}</p>
                 </div>
 
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Assignments</h3>
-                        <BookOpenCheck className="w-5 h-5 text-gray-400" />
+                        <h3 className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Assignments</h3>
+                        <BookOpenCheck className="w-5 h-5 text-purple-500" />
                     </div>
-                    <div className="mb-2">
-                        <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.assignments.pending}</p>
-                    </div>
-                    <p className="text-sm text-gray-500">Pending submissions</p>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.assignments.pending}</p>
+                    <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Pending submissions</p>
                 </div>
 
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Library Books</h3>
-                        <Library className="w-5 h-5 text-gray-400" />
+                        <h3 className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Library Books</h3>
+                        <Library className="w-5 h-5 text-orange-500" />
                     </div>
-                    <div className="mb-2">
-                        <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.libraryBooks.issued}</p>
-                    </div>
-                    <p className="text-sm text-gray-500">Currently issued</p>
+                    <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{dashboardData.libraryBooks.issued}</p>
+                    <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Currently issued</p>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Upcoming Assignments</h3>
-                    <div className="space-y-4">
-                        {dashboardData.upcomingAssignments.map((assignment) => (
-                            <div
-                                key={assignment.id}
-                                className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}
-                            >
-                                <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                        <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>{assignment.title}</h4>
-                                        <p className="text-sm text-gray-500 mb-2">{assignment.description}</p>
-                                        <p className={`text-xs ${assignment.status === 'urgent' ? 'text-red-500' : 'text-gray-500'}`}>
-                                            {assignment.dueDate}
-                                        </p>
+                    {dashboardData.upcomingAssignments.length > 0 ? (
+                        <div className="space-y-3">
+                            {dashboardData.upcomingAssignments.map((assignment) => (
+                                <div
+                                    key={assignment.id}
+                                    className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}
+                                >
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex-1">
+                                            <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>{assignment.title}</h4>
+                                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{assignment.description}</p>
+                                            <p className={`text-xs mt-1 ${assignment.status === 'urgent' ? 'text-red-500' : darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                                                Due: {new Date(assignment.dueDate).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                        {assignment.status === 'urgent' && (
+                                            <span className="px-2 py-1 bg-red-100 text-red-600 text-xs font-medium rounded">
+                                                Urgent
+                                            </span>
+                                        )}
                                     </div>
-                                    {assignment.status === 'urgent' && (
-                                        <span className="px-3 py-1 bg-red-100 text-red-600 text-xs font-semibold rounded-full">
-                                            Due tomorrow
-                                        </span>
-                                    )}
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>No upcoming assignments</p>
+                    )}
                 </div>
 
                 <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Recent Grades</h3>
-                    <div className="space-y-4">
-                        {dashboardData.recentGrades.map((grade) => (
-                            <div
-                                key={grade.id}
-                                className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div className="flex-1">
-                                        <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>{grade.subject}</h4>
-                                        <p className="text-sm text-gray-500">{grade.assessment}</p>
+                    {dashboardData.recentGrades.length > 0 ? (
+                        <div className="space-y-3">
+                            {dashboardData.recentGrades.map((grade) => (
+                                <div
+                                    key={grade.id}
+                                    className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex-1">
+                                            <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>{grade.subject}</h4>
+                                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{grade.assessment}</p>
+                                        </div>
+                                        <span
+                                            className={`px-3 py-1 rounded-lg font-semibold ${grade.color === 'green'
+                                                ? 'bg-green-100 text-green-600'
+                                                : 'bg-blue-100 text-blue-600'
+                                                }`}
+                                        >
+                                            {grade.grade}
+                                        </span>
                                     </div>
-                                    <span
-                                        className={`px-4 py-2 rounded-lg font-bold text-lg ${grade.color === 'green'
-                                            ? 'bg-green-100 text-green-600'
-                                            : 'bg-blue-100 text-blue-600'
-                                            }`}
-                                    >
-                                        {grade.grade}
-                                    </span>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>No grades available</p>
+                    )}
                 </div>
             </div>
         </div>

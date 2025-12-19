@@ -4,7 +4,7 @@ export const getAllFees = async (req, res) => {
     try {
         const { studentId } = req.query;
         const filter = {};
-        if (studentId) filter.studentId = studentId;
+        if (studentId) filter.studentId = Number(studentId);
 
         const fees = await Fee.find(filter).sort({ createdAt: -1 });
         res.json({ success: true, data: fees });
@@ -82,6 +82,12 @@ export const makePayment = async (req, res) => {
 
         const fee = await Fee.findOne({ id: Number(id) });
         if (!fee) return res.status(404).json({ success: false, message: 'Fee not found' });
+
+        // Idempotency check: Don't process the same transaction twice
+        const isDuplicate = fee.payments.some(p => p.transactionId === transactionId && transactionId !== 'STRIPE_TXN');
+        if (isDuplicate) {
+            return res.json({ success: true, data: fee, message: 'Payment already processed' });
+        }
 
         const newPaidAmount = fee.paidAmount + Number(amount);
         const newRemainingAmount = fee.amount - newPaidAmount;

@@ -8,8 +8,19 @@ import AdminDashboard from './components/portals/admin/AdminDashboard';
 import AdminOverview from './components/portals/admin/AdminOverview';
 import ParentDashboard from './components/portals/parent/ParentDashboard';
 import { isAuthenticated, getUserRole } from './utils/jwt';
+
+// Parent Portal Pages
+import ParentHome from './components/portals/parent/ParentHome';
+import ParentAcademicProgressPage from './components/portals/parent/AcademicProgressPage';
+import ParentAttendancePage from './components/portals/parent/AttendancePage';
+import ParentFeeManagementPage from './components/portals/parent/FeeManagementPage';
+import ParentTimetablePage from './components/portals/parent/TimetablePage';
+import ParentLibraryPage from './components/portals/parent/LibraryPage';
+import ParentAnnouncementsPage from './components/portals/parent/AnnouncementsPage';
+import ParentSettingsPage from './components/portals/parent/SettingsPage';
 import { ToastProvider } from './context/ToastContext';
 import ToastContainer from './components/common/ToastContainer';
+import NotFound from './components/common/NotFound';
 import './App.css';
 
 // Student Portal Pages
@@ -56,8 +67,18 @@ const ProtectedRoute = ({ children }) => {
 
 const PublicRoute = ({ children }) => {
   const authenticated = isAuthenticated();
-  const userRole = getUserRole() || 'student';
-  return authenticated ? <Navigate to={`/dashboard/${userRole.toLowerCase()}`} replace /> : children;
+  const userRole = (getUserRole() || 'student').toLowerCase();
+
+  const roleRoutes = {
+    student: '/student/dashboard',
+    teacher: '/teacher/dashboard',
+    admin: '/admin/dashboard',
+    parent: '/parent/dashboard'
+  };
+
+  const redirectPath = roleRoutes[userRole] || '/student/dashboard';
+
+  return authenticated ? <Navigate to={redirectPath} replace /> : children;
 };
 
 const DashboardRouter = () => {
@@ -67,13 +88,13 @@ const DashboardRouter = () => {
 
   switch (userRole) {
     case 'student':
-      return <Navigate to="/dashboard/student" replace />; // Redirect to explicit route
+      return <Navigate to="/student/dashboard" replace />; // Redirect to explicit route
     case 'teacher':
       return <Navigate to="/teacher/dashboard" replace />;
     case 'admin':
       return <Navigate to="/admin/dashboard" replace />;
     case 'parent':
-      return <ParentDashboard />;
+      return <Navigate to="/parent/dashboard" replace />;
     default:
       return <StudentDashboard />;
   }
@@ -104,14 +125,15 @@ function App() {
 
           {/* Student Routes */}
           <Route
-            path="/dashboard/student"
+            path="/student"
             element={
               <ProtectedRoute>
                 <StudentDashboard />
               </ProtectedRoute>
             }
           >
-            <Route index element={<StudentHome />} />
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<StudentHome />} />
             <Route path="attendance" element={<AttendancePage />} />
             <Route path="fees" element={<FeePage />} />
             <Route path="exams" element={<ExamsAndGrades />} />
@@ -169,6 +191,26 @@ function App() {
             <Route path="settings" element={<AdminSettingsPage />} />
           </Route>
 
+          {/* Parent Routes */}
+          <Route
+            path="/parent"
+            element={
+              <ProtectedRoute>
+                <ParentDashboard />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<ParentHome />} />
+            <Route path="academic-progress" element={<ParentAcademicProgressPage />} />
+            <Route path="attendance" element={<ParentAttendancePage />} />
+            <Route path="fees" element={<ParentFeeManagementPage />} />
+            <Route path="timetable" element={<ParentTimetablePage />} />
+            <Route path="library" element={<ParentLibraryPage />} />
+            <Route path="announcements" element={<ParentAnnouncementsPage />} />
+            <Route path="settings" element={<ParentSettingsPage />} />
+          </Route>
+
           {/* Fallback/Legacy Wrapper for other roles (Teacher, Parent, Student) */}
           <Route
             path="/dashboard/:role"
@@ -179,7 +221,7 @@ function App() {
             }
           />
 
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
     </ToastProvider>

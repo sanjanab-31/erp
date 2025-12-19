@@ -186,30 +186,46 @@ const TimetablePage = () => {
                                 </thead>
                                 <tbody>
                                     {timeSlots.map(slot => (
-                                        <tr key={slot}>
-                                            <td className={`border ${darkMode ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-300 bg-gray-50 text-gray-700'} p-3 font-medium whitespace-nowrap sticky left-0 z-10`}>
-                                                {formatTime(slot)}
+                                        <tr key={slot} className={`${darkMode ? 'hover:bg-gray-750' : 'hover:bg-gray-50'} transition-colors`}>
+                                            <td className={`border ${darkMode ? 'border-gray-700 bg-gray-800 text-gray-300' : 'border-gray-200 bg-gray-50 text-gray-700'} p-4 font-bold whitespace-nowrap sticky left-0 z-10 shadow-sm text-sm`}>
+                                                <div className="flex items-center space-x-2">
+                                                    <Clock className="w-4 h-4 text-purple-500" />
+                                                    <span>{formatTime(slot)}</span>
+                                                </div>
                                             </td>
                                             {days.map(day => {
                                                 const daySchedule = scheduleByDay[day] || [];
-                                                const classAtTime = daySchedule.find(entry => entry.time === slot);
+                                                const classAtTime = daySchedule.find(entry =>
+                                                    entry.time === slot ||
+                                                    (entry.startTime && entry.endTime && `${entry.startTime}-${entry.endTime}` === slot)
+                                                );
 
                                                 return (
-                                                    <td key={day} className={`border ${darkMode ? 'border-gray-600' : 'border-gray-300'} p-2`}>
+                                                    <td key={day} className={`border ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-2 h-28 vertical-top min-w-[160px]`}>
                                                         {classAtTime ? (
-                                                            <div className={`p-3 rounded-lg border ${getSubjectColor(classAtTime.subject)}`}>
-                                                                <h4 className="font-semibold text-sm mb-2">
+                                                            <div className={`p-4 rounded-xl border-l-4 h-full shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02] cursor-default ${getSubjectColor(classAtTime.subject)}`}>
+                                                                <h4 className="font-bold text-sm mb-2 line-clamp-2">
                                                                     {classAtTime.subject}
                                                                 </h4>
-                                                                {classAtTime.room && (
-                                                                    <div className="flex items-center space-x-1 text-xs">
-                                                                        <MapPin className="w-3 h-3" />
-                                                                        <span>Room {classAtTime.room}</span>
-                                                                    </div>
-                                                                )}
+                                                                <div className="space-y-1">
+                                                                    {classAtTime.room && (
+                                                                        <div className="flex items-center space-x-1.5 text-xs font-medium opacity-80">
+                                                                            <MapPin className="w-3.5 h-3.5" />
+                                                                            <span>Room {classAtTime.room}</span>
+                                                                        </div>
+                                                                    )}
+                                                                    {classAtTime.teacherName && (
+                                                                        <div className="flex items-center space-x-1.5 text-xs font-medium opacity-80">
+                                                                            <User className="w-3.5 h-3.5" />
+                                                                            <span>{classAtTime.teacherName}</span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         ) : (
-                                                            <div className="text-center text-gray-400 text-xs">-</div>
+                                                            <div className="flex items-center justify-center h-full">
+                                                                <span className={`text-gray-300 ${darkMode ? 'text-gray-700' : 'text-gray-200'} font-medium`}>—</span>
+                                                            </div>
                                                         )}
                                                     </td>
                                                 );

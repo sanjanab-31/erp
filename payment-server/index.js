@@ -8,7 +8,7 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-dotenv.config({ path: join(__dirname, '..', '.env') });
+dotenv.config({ path: join(__dirname, '.env') });
 
 const app = express();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -28,15 +28,11 @@ app.get('/health', (req, res) => {
 });
 
 app.post('/create-checkout-session', async (req, res) => {
-    console.log('\n🔔 NEW REQUEST RECEIVED');
-    console.log('Request body:', JSON.stringify(req.body, null, 2));
 
     try {
         const { amount, currency, feeId, studentName, feeType } = req.body;
 
         const numAmount = parseFloat(amount);
-        console.log('Amount received:', amount, 'Type:', typeof amount);
-        console.log('Parsed amount:', numAmount);
 
         if (!numAmount || numAmount <= 0 || isNaN(numAmount)) {
             console.error('❌ Invalid amount');
@@ -50,8 +46,13 @@ app.post('/create-checkout-session', async (req, res) => {
             });
         }
 
-        console.log('✅ Creating Stripe session...');
+        console.log('✅ Creating Stripe session for:', {
+            feeId,
+            studentName,
+            amount: numAmount
+        });
 
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             line_items: [{
@@ -66,8 +67,8 @@ app.post('/create-checkout-session', async (req, res) => {
                 quantity: 1,
             }],
             mode: 'payment',
-            success_url: `http://localhost:5173/dashboard/parent?payment=success&session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `http://localhost:5173/dashboard/parent?payment=cancelled`,
+            success_url: `${frontendUrl}/parent/fees?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${frontendUrl}/parent/fees?payment=cancelled`,
             metadata: {
                 feeId: String(feeId || ''),
                 studentName: String(studentName || ''),
@@ -75,8 +76,6 @@ app.post('/create-checkout-session', async (req, res) => {
             },
         });
 
-        console.log('✅ Session created successfully!');
-        console.log('Session ID:', session.id);
 
         res.json({
             sessionId: session.id,
@@ -84,18 +83,31 @@ app.post('/create-checkout-session', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('\n❌ ERROR OCCURRED:');
-        console.error('Message:', error.message);
-        console.error('Type:', error.type);
-        console.error('Code:', error.code);
-        console.error('Param:', error.param);
-        console.error('Stack:', error.stack);
+        console.error('❌ STRIPE ERROR:', error.message);
+        if (error.type === 'StripeAuthenticationError') {
+            console.error('👉 Check your STRIPE_SECRET_KEY in payment-server/.env');
+        }
 
         res.status(500).json({
             error: error.message,
-            type: error.type,
-            code: error.code
+            stripeError: true
         });
+    }
+});
+
+app.get('/checkout-session/:sessionId', async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        console.log('🔍 Retrieved session for verification:', {
+            id: session.id,
+            status: session.payment_status,
+            feeId: session.metadata?.feeId
+        });
+        res.json(session);
+    } catch (error) {
+        console.error('❌ GET SESSION ERROR:', error.message);
+        res.status(500).json({ error: error.message });
     }
 });
 

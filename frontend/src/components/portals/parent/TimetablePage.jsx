@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
     Calendar,
     MapPin,
@@ -7,9 +8,10 @@ import {
     BookOpen,
     User
 } from 'lucide-react';
-import { timetableApi, studentApi } from '../../../services/api';
+import { timetableApi, studentApi, parentApi } from '../../../services/api';
 
-const TimetablePage = ({ darkMode }) => {
+const TimetablePage = () => {
+    const { darkMode } = useOutletContext();
     const [timetable, setTimetable] = useState(null);
     const [loading, setLoading] = useState(true);
     const [childClass, setChildClass] = useState('');
@@ -21,18 +23,37 @@ const TimetablePage = ({ darkMode }) => {
         const init = async () => {
             setLoading(true);
             try {
-                const studentsRes = await studentApi.getAll();
-                const students = studentsRes.data || [];
-                const child = students.find(s => s.parentEmail === parentEmail || s.guardianEmail === parentEmail || s.email === parentEmail);
+                // Fetch everything in parallel
+                const [parentsRes, studentsRes, ttRes] = await Promise.all([
+                    parentApi.getAll(),
+                    studentApi.getAll(),
+                    timetableApi.getClassTimetables()
+                ]);
+
+                const allParents = Array.isArray(parentsRes?.data?.data) ? parentsRes.data.data : [];
+                const currentParent = allParents.find(p => p.email?.toLowerCase() === parentEmail?.toLowerCase());
+
+                if (!currentParent) {
+                    console.error('Parent record not found for:', parentEmail);
+                    setLoading(false);
+                    return;
+                }
+
+                const allStudents = Array.isArray(studentsRes?.data?.data) ? studentsRes.data.data : [];
+                const child = allStudents.find(s =>
+                    (s.id?.toString() === currentParent.studentId?.toString()) ||
+                    (s.parentEmail?.toLowerCase() === currentParent.email?.toLowerCase())
+                );
 
                 if (child) {
                     setChildClass(child.class);
                     setChildName(child.name);
 
-                    const ttRes = await timetableApi.getClassTimetables();
-                    const allTimetables = ttRes.data || [];
+                    const allTimetables = Array.isArray(ttRes?.data?.data) ? ttRes.data.data : [];
                     const classTT = allTimetables.find(t => t.className === child.class);
                     setTimetable(classTT);
+                } else {
+                    console.error('Student not found for studentId:', currentParent.studentId);
                 }
             } catch (error) {
                 console.error('Error loading timetable:', error);
@@ -170,7 +191,7 @@ const TimetablePage = ({ darkMode }) => {
                         </div>
                     </div>
 
-                    {}
+                    { }
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden mb-6`}>
                         <div className="p-6 border-b border-gray-200">
                             <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -232,7 +253,7 @@ const TimetablePage = ({ darkMode }) => {
                         </div>
                     </div>
 
-                    {}
+                    { }
                     {uniqueSubjects.length > 0 && (
                         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'} mb-6`}>
                             <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
@@ -251,7 +272,7 @@ const TimetablePage = ({ darkMode }) => {
                         </div>
                     )}
 
-                    {}
+                    { }
                     <div className={`${darkMode ? 'bg-blue-900 border-blue-700' : 'bg-blue-50 border-blue-200'} border rounded-xl p-4`}>
                         <div className="flex items-start space-x-3">
                             <AlertCircle className={`w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'} mt-0.5`} />

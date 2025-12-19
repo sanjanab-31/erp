@@ -41,8 +41,18 @@ const Login = () => {
             // Use the auth utility to handle login
             authLogin(token, user);
 
+            // Redirect based on role
+            const roleRoutes = {
+                student: '/dashboard/student',
+                teacher: '/teacher/dashboard',
+                admin: '/admin/dashboard',
+                parent: '/parent/dashboard'
+            };
+
+            const redirectPath = roleRoutes[user.role.toLowerCase()] || '/dashboard/student';
+
             setTimeout(() => {
-                navigate(`/dashboard/${user.role.toLowerCase()}`);
+                navigate(redirectPath);
             }, 800);
         } catch (error) {
             console.error('Login error', error);
