@@ -1,4 +1,6 @@
-const API_URL = 'http://localhost:5000/api/email';
+const API_URL = import.meta.env.VITE_API_URL 
+    ? `${import.meta.env.VITE_API_URL}/email` 
+    : 'http://localhost:5000/api/email';
 
 export const sendStudentCredentials = async (data) => {
     try {

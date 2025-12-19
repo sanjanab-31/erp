@@ -44,6 +44,6 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: https://erp-backend.onrender.com/api
+        value: https://erp-backend-qbu2.onrender.com/api
       - key: VITE_PAYMENT_SERVER_URL
         value: https://erp-payment-server.onrender.com
